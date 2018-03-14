@@ -66,6 +66,34 @@ def load_data(name='cifar10', file='data_batch_1'):
     y = y[:n]
     return X, y
 
+def load_cifar_data():
+    '''
+    :return:
+    list of samples per class
+    '''
+    import _pickle
+    f = open('datasets/CIFAR10/data_batch_1', 'rb')
+    dict = _pickle.load(f, encoding='latin1')
+    images = dict['data']
+    images = np.reshape(images, (10000, -1))
+    # images = np.reshape(images, (10000, 3, 32, 32))
+    # images = images.transpose([0, 2, 3, 1])
+    labels = dict['labels']
+    labels = np.reshape(labels, (10000,1))
+    data = np.append(images, labels, axis=1)
+
+    classes = np.unique(data[:, -1])
+    sorted_data = [[] for cl in classes]
+    for sample in data:
+        x = sample[:-1].reshape((3, 32, 32))
+        # channels last
+        x = x.transpose([1, 2, 0])
+        sorted_data[sample[-1]].append(x)
+    return sorted_data
+
+if __name__ == '__main__':
+    load_cifar_data()
+
 def split_data(X, y, test_size=0.33, seed=0):
     from sklearn.model_selection import train_test_split
     return train_test_split(X, y, test_size=test_size, random_state=seed)

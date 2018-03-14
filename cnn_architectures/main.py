@@ -1,4 +1,4 @@
-from data_loader import load_data, split_data, downsample_data, add_augmented_data
+from data_loader import load_data, split_data, downsample_data, get_augmented_data, load_cifar_data
 from vgg16 import vgg16_model
 from SimNet import simnet_model
 from keras.layers import Input
@@ -33,38 +33,54 @@ if __name__ == '__main__':
         score = log_loss(Y_valid, predictions_valid)
         print(score)
 
-    def test_simnet():
-        # make augmented data
-        X_train, y_train = add_augmented_data(X, y)
+    def test_simnet_on_cifar():
 
-        X_train4, X_train8 = downsample_data(X_train)  # reuse labels
+        clusters = load_cifar_data()
+        n_clusters = len(clusters)
+        datasets = []
 
-        mdl = simnet_model(X_train[0,:,:,0].shape,
-                           X_train4[0, :, :, 0].shape,
-                           X_train8[0, :, :, 0].shape,
-                           3, 10)
-        # model requires 1 normal img, 2 downsampled + label (1 if similar, 0 if dissimilar)
-        # TODO prepare dataset and make one pass randomized training
-        # train on similar
-        mdl.fit(
-            {'img1' : X_train, 'img1_sc1' : X_train4, 'img1_sc2' : X_train8,
-            'img2' : X_train, 'img2_sc1' : X_train4, 'img2_sc2' : X_train8},
-            {'distance' : np.zeros(len(y_train))},
-            epochs=10,
-            batch_size=100,
-            validation_split=0.33
-        )
+        for i in range(n_clusters):
+            # make augmented data
+            x = np.asarray(clusters[i])
+            n_samples = len(x)
+            y = np.zeros(n_samples) + i
+
+            x_aug, _ = get_augmented_data(x, y, n_samples)
+            x4, x8 = downsample_data(x)
+            x_aug4, x_aug8 = downsample_data(x_aug)
+
+            datasets.append([x, x4, x8, x_aug, x_aug4, x_aug8])
+
+            mdl = simnet_model(x[0,:,:,0].shape,
+                               x4[0, :, :, 0].shape,
+                               x8[0, :, :, 0].shape,
+                               3, 10)
+
+            # model requires 1 normal img, 2 downsampled + label (1 if similar, 0 if dissimilar)
+            # train on similar
+            mdl.fit(
+                {'img1' : x, 'img1_sc1' : x4, 'img1_sc2' : x8,
+                'img2' : x_aug, 'img2_sc1' : x_aug4, 'img2_sc2' : x_aug8},
+                {'distance' : np.zeros(n_samples)},
+                epochs=10,
+                batch_size=100,
+                validation_split=0.33
+            )
+
         # train on different
-        n_samples = len(y_train)
-        # just a trick to avoid reverting
-        distances = [1 if y_train[i] != y_train[n_samples-i-1] else 0 for i in range(n_samples)]
-        mdl.fit(
-            {'img1': X_train, 'img1_sc1': X_train4, 'img1_sc2': X_train8,
-             'img2': np.flip(X_train, 0), 'img2_sc1': np.flip(X_train4, 0), 'img2_sc2': np.flip(X_train8, 0)},
-            {'distance': np.zeros(len(y_train))},
-            epochs=10,
-            batch_size=100,
-            validation_split=0.33
-        )
+        for i in range(n_clusters):
+            cluster_a = datasets[i]
+            for j in range(i, n_clusters):
+                size = np.abs(len(cluster_b)-len(cluster_a))
+                cluster_a = cluster_a[:size]
+                cluster_b = datasets[j][:size]
+                mdl.fit(
+                    {'img1': cluster_a[0], 'img1_sc1': cluster_a[1], 'img1_sc2': cluster_a[2],
+                     'img2': cluster_b[0], 'img2_sc1': cluster_b[1], 'img2_sc2': cluster_b[2]},
+                    {'distance': np.zeros(size)},
+                    epochs=10,
+                    batch_size=100,
+                    validation_split=0.33
+                )
 
-    test_simnet()
+    test_simnet_on_cifar()
