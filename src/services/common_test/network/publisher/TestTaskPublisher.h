@@ -24,6 +24,9 @@ namespace services {
             this->sendStatus = status;
         }
 
+        void StopServer() override {
+        }
+
         void SetAnswer(const std::vector<byte>& request, std::chrono::milliseconds& timeout,
                        const std::vector<byte>& response) {
             answers[request] = {timeout, response};

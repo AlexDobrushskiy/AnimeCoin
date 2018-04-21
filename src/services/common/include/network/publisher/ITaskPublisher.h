@@ -21,7 +21,9 @@ namespace services {
             callback = onReceiveCallback;
         }
 
-        SendResult Send(const std::shared_ptr<ITask>& task) {
+        virtual void StopServer() = 0;
+
+        virtual SendResult Send(const std::shared_ptr<ITask>& task) {
             std::vector<byte> buf;
             auto serializeResult = protocol->Serialize(buf, task);
             if (IProtocol::SerializeResult::SR_Success == serializeResult) {

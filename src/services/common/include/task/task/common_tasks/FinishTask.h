@@ -3,9 +3,11 @@
 namespace services {
     class FinishTask : public ITask {
     public:
-        FinishTask() {}
+        FinishTask() {
+            header.SetType(TT_FinishWork);
+        }
 
-        TaskType GetType() { return TT_FinishWork; }
+        virtual TaskType GetType() const override { return TT_FinishWork; }
 
         std::unordered_map<std::string, std::vector<byte>> AdditionalFieldsToSerialize() override {
             return std::unordered_map<std::string, std::vector<byte>>();

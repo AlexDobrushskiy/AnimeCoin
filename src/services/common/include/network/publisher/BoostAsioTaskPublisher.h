@@ -23,6 +23,10 @@ namespace services {
 
         BoostAsioTaskPublisher(std::unique_ptr<IProtocol> protocol) : ITaskPublisher(std::move(protocol)) {}
 
+        ~BoostAsioTaskPublisher(){
+            StopServer();
+        }
+
         SendResult Send(const std::shared_ptr<ITask>& task) {
             return ITaskPublisher::Send(task);
         }
@@ -54,7 +58,7 @@ namespace services {
             listenPort = port;
         }
 
-        void StopServer() {
+        void StopServer() override {
             ioService.stop();
             if (serverThread.joinable()) {
                 serverThread.join();

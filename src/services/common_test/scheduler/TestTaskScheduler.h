@@ -10,11 +10,12 @@ namespace services {
     public:
         TestTaskScheduler(std::unique_ptr<ITaskPublisher> publisher) : ITaskScheduler(std::move(publisher)) {}
 
-        ITaskScheduler* Clone() const override {
+        ITaskScheduler* Clone() const override {;
             return new TestTaskScheduler(std::unique_ptr<ITaskPublisher>(publisher->Clone()));
         }
 
     protected:
+    private:
         bool IsAppropriateTask(std::shared_ptr<ITask>& task) override {
             return task->GetType() == TaskType::TT_Test;
         }

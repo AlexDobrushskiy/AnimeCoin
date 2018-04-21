@@ -8,6 +8,9 @@
 namespace services {
     class TestTask : public ITask {
     public:
+        TestTask(TaskHeader header):ITask(header){
+        }
+
         TaskType GetType() const override {
             return TaskType::TT_Test;
         }
