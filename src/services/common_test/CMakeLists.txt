@@ -10,7 +10,11 @@ set(TEST_SOURCE_FILES
         task/TestTaskWithAdditionalField.h
         scheduler/TestTaskScheduler.h
         network/publisher/TestTaskPublisher.h
-        network/publisher/test_TestTaskPublisher.cpp util/test_AsynchronousQueue.cpp network/publisher/test_BoostAsioTaskPublisher.cpp)
+        network/publisher/test_TestTaskPublisher.cpp
+        util/test_AsynchronousQueue.cpp
+        network/publisher/test_BoostAsioTaskPublisher.cpp
+        integration_testing/test_WholeServiceSystem.cpp
+        scheduler/test_ImageTaskScheduler.cpp)
 
 include_directories(./)
 include_directories(../common/include)

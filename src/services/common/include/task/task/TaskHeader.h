@@ -11,6 +11,7 @@ namespace services {
         TT_Test,
         TT_TestInappropriate,
         TT_FinishWork,
+        TT_Image,
         TT_CheckNSFW,
     };
 
@@ -31,6 +32,8 @@ namespace services {
         boost::uuids::uuid GetId() const { return id; }
 
         TaskType GetType() const { return type; }
+
+        void SetType(TaskType type) { this->type = type; }
 
         ResponseCallback GetResponseCallback() const { return callback; }
 
