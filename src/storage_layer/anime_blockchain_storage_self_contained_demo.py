@@ -13,14 +13,14 @@ from bitcoinrpc.authproxy import AuthServiceProxy
 # Mac: bitcoind -- https://www.dropbox.com/s/hkgjs38vzlpwv82/bitcoind?dl=0
 
 #Parameters:
-root_animecoin_folder_path = '/Users/jemanuel/animecoin/'
+root_animecoin_folder_path = '/home/synapse/tmp/animecoin'
 path_to_zstd_compression_dictionaries = os.path.join(root_animecoin_folder_path,'zstd_compression_dictionaries' + os.sep)
 path_where_animecoin_html_ticket_templates_are_stored = './'
 
 #Pay to fake multi-sig params:
 rpc_user = 'test' 
 rpc_password ='testpw'
-rpc_port = '18443' #mainnet: 8332; testnet: 18332; regtest: 18443 
+rpc_port = '18443' #mainnet: 8332; testnet: 18332; regtest: 18443
 rpc_connection_string = 'http://'+rpc_user+':'+rpc_password+'@127.0.0.1:'+rpc_port
 base_transaction_amount = 0.000001
 COIN = 100000000 #satoshis in 1 btc
@@ -309,7 +309,7 @@ def retrieve_data_from_animecoin_blockchain_UTXO_func(blockchain_transaction_id)
     print('Successfully reconstructed and decompressed data!')
     return reconstructed_animecoin_zstd_uncompressed_data
     
-use_demonstrate_blockchain_UTXO_storage = 0
+use_demonstrate_blockchain_UTXO_storage = 1
 
 if use_demonstrate_blockchain_UTXO_storage: 
     
