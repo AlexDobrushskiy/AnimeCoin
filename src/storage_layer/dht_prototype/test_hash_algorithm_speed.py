@@ -3,14 +3,21 @@ import hashlib
 
 from datetime import datetime as dt, timedelta as td
 
-HASHLISTSIZE = 1000000
+HASHLISTSIZE = 1000*1000*10
+HASH_ENTRY_SIZE = 32
+
+
+def getrandbytes(n):
+    return random.getrandbits(n * 8).to_bytes(n, byteorder="big")
+
 
 print("[+] Building hashlist")
 hashlist = []
 for i in range(HASHLISTSIZE):
-    hashlist.append(random.getrandbits(1024*8).to_bytes(1024, byteorder="big"))
+    hashlist.append(getrandbytes(HASH_ENTRY_SIZE))
 
 algos = sorted(hashlib.algorithms_guaranteed)
+print("[+] Testing %s entries of %s size" % (HASHLISTSIZE, HASH_ENTRY_SIZE))
 print("[+] Testing hash algorithms: %s" % algos)
 for algo in algos:
     # shake has variable length digests, ignore it
@@ -19,12 +26,9 @@ for algo in algos:
 
     algo_class = getattr(hashlib, algo)
     start = dt.now()
-    for key in hashlist:
-        m = algo_class()
-        m.update(key)
-        digest = m.digest()
+    ret = list(map(lambda x: algo_class(x).digest(), hashlist))
     end = dt.now()
 
     total_time = (end-start).total_seconds()
-    print("  [+] Algo %s in %.2f -> %.2f kh/s" % (algo, total_time, HASHLISTSIZE/total_time/1000))
+    print("  [+] Algo %s in %.2f -> %.2f MB/s" % (algo, total_time, (HASHLISTSIZE*HASH_ENTRY_SIZE/1024/1024)/total_time))
 print("[+] Done")
