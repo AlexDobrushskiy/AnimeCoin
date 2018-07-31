@@ -8,7 +8,7 @@ NODE_SEED = b'/Q\xe0\xbftE+\xff4YpA\t\x96\xa1`\xc6)\xe2\xad\x0c\xf4\xa9\xf0\xa9_
 KEY_SEED = b"\r\xfd\x9a\x84'\x06>\xf8\x0e\xb4[\xcc\x94\xb8\x08m\xfa\xd9\x0fV`\\s*\x87H>d\x95Y^$"
 ALIAS_SEED = b'd\xad`n\xdc\x89\xc2/\xf6\xcd\xd6\xec\xcc\x1c\xc7\xd4\x83B9\x01\xb4\x06\xa2\xc9=\xf8_\x98\xa1p\x01&'
 
-NODE_NUM = 10
+NODE_NUM = 100
 KEY_NUM = 1000 * 1000
 KEY_REPLICATION_FACTOR = 10
 
@@ -44,17 +44,30 @@ def findclosest(nodes, key):
     return best
 
 
-def find_keys_for_node(node_number, keys, nodes, replication_db):
+def generate_node_databases(node_number, keys, nodes, replication_db):
     file_database = {}
     key_alias_database = {}
 
-    for original_id in keys:
-        alternate_keys = generate_alternate_keys(replication_db, original_id)
+    my_nodeid = nodes[node_number]
 
-        # TODO: this can be VERY heavily optimized
-        for alt_key in alternate_keys:
-            closest_node = findclosest(nodes, alt_key)
-            if closest_node == node_number:
+    other_nodes = []
+    for nodenumber, nodeid in nodes.items():
+        if nodenumber != node_number:
+            other_nodes.append(nodeid)
+
+    for original_id in keys:
+        for repl_num, repl_digest in replication_db.items():
+            alt_key = repl_digest ^ original_id
+
+            my_distance = alt_key ^ my_nodeid
+
+            store = True
+            for othernodeid in other_nodes:
+                if alt_key ^ othernodeid < my_distance:
+                    store = False
+                    break
+
+            if store:
                 file_database[original_id] = True
                 key_alias_database[alt_key] = original_id
 
@@ -99,7 +112,7 @@ def main():
 
     print("[+] Figure out which keys belong to Node 0")
     start = dt.now()
-    file_database, key_alias_database = find_keys_for_node(0, keys, nodes, replication_db)
+    file_database, key_alias_database = generate_node_databases(0, keys, nodes, replication_db)
     end = dt.now()
     elapsed = (end - start).total_seconds()
     print("DONE in %s" % elapsed)
