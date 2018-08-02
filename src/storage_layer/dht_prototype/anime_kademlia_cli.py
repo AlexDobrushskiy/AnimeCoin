@@ -1,6 +1,6 @@
 import sys
 
-from kademlia_module.kademlia_core import Kademlia, MASTER_ADDR
+from .kademlia_module.kademlia_core import Kademlia, MASTER_ADDR
 
 
 if __name__ == "__main__":
