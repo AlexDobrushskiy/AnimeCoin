@@ -8,8 +8,6 @@ from kademlia.network import Server
 # # TODO: hack, we have to emit a log message for this to work in the kamelia module, no idea why
 # logging.info("HI")
 
-MASTER_ADDR = ("127.0.0.1", 12345)
-
 
 class Kademlia:
     def __init__(self, nodename, port, bootstrap=None):

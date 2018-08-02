@@ -1,65 +1,77 @@
-from flask import Flask
-
-import time
-import logging
-from multiprocessing import Process
-
-from dht_prototype.kademlia_module.kademlia_core import Kademlia, MASTER_ADDR
-
-# setting up logging
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-# TODO: hack, we have to emit a log message for this to work in the kamelia module, no idea why
-logging.info("HI")
-
-BASEPORT = 12345
+from flask import Flask, request, redirect, render_template
 
 
-def run_kademlia_node(nodename, portnum, bootstrap=None):
-    k = Kademlia(nodename, portnum, bootstrap=bootstrap)
-    time.sleep(1)
-    k.set(str(nodename), "%s hello" % nodename)
-    k.run_forever()
+class RPC:
+    pass
 
 
-def main():
-    processes = []
-    for i in range(0, 10):
-        nodename, portnum = "node_%s" % i, BASEPORT+i
-
-        if i == 0:
-            bootstrap = None
-        else:
-            bootstrap = MASTER_ADDR
-
-        print("Starting nodename: %s, port: %s, bootstrap: %s" % (nodename, portnum, bootstrap))
-        p = Process(target=run_kademlia_node, args=(nodename, portnum, bootstrap))
-        p.start()
-        processes.append(p)
-
-    print("Daemons spawned, Ctrl-C to stop")
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        for p in processes:
-            print("Strpping process %s" % p)
-            p.join()
-    print("Halted")
-
-
-processes = []
-
+rpc = RPC()
 app = Flask(__name__)
 
 
+@app.route("/", methods=['GET'])
+def index():
+    processes = rpc.get_processes()
+    return render_template("index.tpl", processes=processes)
 
-@app.route("/")
-def hello():
-    return "Processes: %s" % len(processes)
 
-
-@app.route("/spawn_node")
+@app.route("/spawn_node", methods=['POST'])
 def spawn_node():
-    processes.append("test")
-    return "Processes: %s" % len(processes)
+    rpc.spawn_node()
+    return redirect("/")
+
+
+@app.route("/kill_node", methods=['POST'])
+def kill_node():
+    rpc.kill_node()
+    return redirect("/")
+
+
+# import zerorpc
+# import logging
+# import time
+#
+# from multiprocessing import Process
+# from dht_prototype.kademlia_module.kademlia_core import Kademlia
+#
+# BASEPORT = 12345
+#
+# # setting up logging
+# logger = logging.getLogger()
+# logger.setLevel(logging.INFO)
+# # TODO: hack, we have to emit a log message for this to work in the kamelia module, no idea why
+# logging.info("HI")
+#
+#
+# def run_kademlia_node(nodename, portnum, bootstrap=None):
+#     k = Kademlia(nodename, portnum, bootstrap=bootstrap)
+#     time.sleep(1)
+#     k.set(str(nodename), "%s hello" % nodename)
+#     k.run_forever()
+#
+#
+# class Context:
+#     def __init__(self):
+#         self.processes = {}
+#         self.processid = 0
+#
+#     def spawn_node(self):
+#         if len(self.processes) == 0:
+#             nodename, portnum, bootstrap = str(self.processid), BASEPORT, None
+#         else:
+#             nodename, portnum, bootstrap = str(self.processid), BASEPORT + self.processid, ("127.0.0.1", BASEPORT)
+#
+#         print("Starting nodename: %s, port: %s, bootstrap: %s" % (nodename, portnum, bootstrap))
+#         p = Process(target=run_kademlia_node, args=(nodename, portnum, bootstrap))
+#         p.start()
+#
+#         self.processes[self.processid] = p
+#         self.processid += 1
+#
+#     def kill_node(self, processid):
+#         if processid not in self.processes:
+#             return "ERROR: No such process: %s" % processid
+#
+#         p = self.processes.pop(processid)
+#         p.terminate()
+#         p.join()
