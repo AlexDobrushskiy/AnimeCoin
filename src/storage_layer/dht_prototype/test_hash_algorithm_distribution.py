@@ -3,6 +3,7 @@ import hashlib
 
 from datetime import datetime as dt, timedelta as td
 
+from masternode_modules.helpers import get_digest, getrandbytes
 
 NODE_SEED = b'/Q\xe0\xbftE+\xff4YpA\t\x96\xa1`\xc6)\xe2\xad\x0c\xf4\xa9\xf0\xa9_Ir\xc0\x8aw\xb0'
 KEY_SEED = b"\r\xfd\x9a\x84'\x06>\xf8\x0e\xb4[\xcc\x94\xb8\x08m\xfa\xd9\x0fV`\\s*\x87H>d\x95Y^$"
@@ -13,44 +14,36 @@ KEY_NUM = 1000 * 1000
 KEY_REPLICATION_FACTOR = 10
 
 
-def getrandbytes(n):
-    return random.getrandbits(n * 8).to_bytes(n, byteorder="big")
-
-
-def get_digest(data):
-    sha256 = hashlib.sha256()
-    sha256.update(data)
-    return sha256.digest()
-
-
-def generate_node_databases(node_number, keys, nodes, replication_db):
-    file_database = {}
-    key_alias_database = {}
-
-    my_nodeid = nodes[node_number]
-
-    other_nodes = []
-    for nodenumber, nodeid in nodes.items():
-        if nodenumber != node_number:
-            other_nodes.append(nodeid)
-
-    for repl_num, repl_digest in replication_db.items():
-        for original_id in keys:
-            alt_key = repl_digest ^ original_id
-
-            my_distance = alt_key ^ my_nodeid
-
-            store = True
-            for othernodeid in other_nodes:
-                if alt_key ^ othernodeid < my_distance:
-                    store = False
-                    break
-
-            if store:
-                file_database[original_id] = True
-                key_alias_database[alt_key] = original_id
-
-    return file_database, key_alias_database
+# This code has moved to ChunkManager
+#
+# def generate_node_databases(node_number, keys, nodes, replication_db):
+#     file_database = {}
+#     key_alias_database = {}
+#
+#     my_nodeid = nodes[node_number]
+#
+#     other_nodes = []
+#     for nodenumber, nodeid in nodes.items():
+#         if nodenumber != node_number:
+#             other_nodes.append(nodeid)
+#
+#     for repl_num, repl_digest in replication_db.items():
+#         for original_id in keys:
+#             alt_key = repl_digest ^ original_id
+#
+#             my_distance = alt_key ^ my_nodeid
+#
+#             store = True
+#             for othernodeid in other_nodes:
+#                 if alt_key ^ othernodeid < my_distance:
+#                     store = False
+#                     break
+#
+#             if store:
+#                 file_database[original_id] = True
+#                 key_alias_database[alt_key] = original_id
+#
+#     return file_database, key_alias_database
 
 
 def main():
