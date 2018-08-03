@@ -3,13 +3,10 @@ import hashlib
 
 from datetime import datetime as dt, timedelta as td
 
+from masternode_modules.helpers import get_digest, getrandbytes
+
 HASHLISTSIZE = 1000*1000*10
 HASH_ENTRY_SIZE = 32
-
-
-def getrandbytes(n):
-    return random.getrandbits(n * 8).to_bytes(n, byteorder="big")
-
 
 print("[+] Building hashlist")
 hashlist = []
