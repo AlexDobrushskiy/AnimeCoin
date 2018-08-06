@@ -1,6 +1,3 @@
-import hashlib
-import random
-
 from masternode_modules.chunk_storage import ChunkStorage
 from masternode_modules.helpers import get_intdigest, getrandbytes
 
