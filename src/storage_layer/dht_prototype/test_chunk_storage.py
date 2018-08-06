@@ -1,5 +1,5 @@
 from masternode_modules.chunk_storage import ChunkStorage
-from masternode_modules.helpers import get_intdigest, getrandbytes
+from masternode_modules.helpers import get_intdigest, getrandbytes, generate_chunks
 
 
 if __name__ == "__main__":
@@ -10,12 +10,7 @@ if __name__ == "__main__":
     x = ChunkStorage(BASEDIR + "/chunkdata", mode=0o0700)
 
     print("[+] Generating %s chunks of size %s" % (NUM_CHUNKS, CHUNK_SIZE))
-    chunks = {}
-    for i in range(NUM_CHUNKS):
-        data = getrandbytes(CHUNK_SIZE)
-        data_digest = get_intdigest(data)
-        data_key = data_digest
-        chunks[data_key] = data
+    chunks = generate_chunks(NUM_CHUNKS, CHUNK_SIZE)
 
     print("[+] Storing chunks")
     for chunkname, data in chunks.items():
