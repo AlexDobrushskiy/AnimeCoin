@@ -30,7 +30,6 @@ async def send_rpc_to_random_mn(masternode_list, myid):
 
         if sockets.get(nodeid) is None:
             sock = ctx.socket(zmq.DEALER)
-            # TODO: use encryption
             sock.setsockopt(zmq.IDENTITY, bytes(str(uuid.uuid4()), "utf-8"))
             sock.connect("tcp://%s:%s" % (ip, port))
             sockets[nodeid] = sock
