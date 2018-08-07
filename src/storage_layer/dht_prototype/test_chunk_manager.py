@@ -11,7 +11,9 @@ from masternode_modules.chunk_manager import ChunkManager
 from masternode_modules.settings import MasterNodeSettings
 from masternode_modules.helpers import generate_chunks, generate_masternodes, int_to_hex
 
+
 BASEDIR = "/home/synapse/tmp/animecoin/tmpstorage"
+TEST_CHUNKS = "/home/synapse/tmp/animecoin/test_chunks/"
 
 
 async def heartbeat():
@@ -47,14 +49,23 @@ async def send_rpc_to_random_mn(masternode_list, myid):
         await asyncio.sleep(SLEEPTIME)
 
 if __name__ == "__main__":
-    NUM_CHUNKS = 100
-    CHUNK_SIZE = 128
-    NUM_MN = 3
+    NUM_MN = 2
 
     masternode_list = generate_masternodes(NUM_MN, "127.0.0.1", 86752, None)
 
-    chunks = [int_to_hex(x) for x in generate_chunks(NUM_CHUNKS, CHUNK_SIZE).keys()]
+    # we can use this to generate chunks, but right now we use the pregenerated test chunks
+    # NUM_CHUNKS = 1000
+    # CHUNK_SIZE = 1024*1024
+    # chunks = [(int_to_hex(k), v) for k,v in generate_chunks(NUM_CHUNKS, CHUNK_SIZE).items()]
 
+    # read test chunks from disk
+    chunks = []
+    for i in os.listdir(TEST_CHUNKS)[:10]:
+        k, v = i, open(os.path.join(TEST_CHUNKS, i), "rb").read()
+        chunks.append((k, v))
+    print("Read %s chunks from testdir" % len(chunks))
+
+    # spawn masternodes
     masternodes = []
     for i, config in enumerate(masternode_list):
         name = "mn_%s" % i
@@ -63,18 +74,23 @@ if __name__ == "__main__":
         masternode_settings = MasterNodeSettings(basedir=chunkdir)
 
         nodeid, ip, port, pubkey = config
-        mn = ChunkManager(name, nodeid, masternode_settings, chunks, masternode_list)
+        mn = ChunkManager(name, nodeid, masternode_settings, masternode_list)
         masternodes.append(mn)
+
+    # load full chunks
+    for mn in masternodes:
+        # we have to use this to bootstrap the system
+        mn.load_full_chunks(chunks)
 
     # start async loops
     loop = asyncio.get_event_loop()
     for mn in masternodes:
         loop.create_task(mn.zmq_run_forever())
 
-    # loop.create_task(heartbeat())
+    loop.create_task(heartbeat())
 
-    for i in range(5):
-        loop.create_task(send_rpc_to_random_mn(masternode_list, i))
+    for mn in masternodes:
+        loop.create_task(mn.issue_random_tests_forever(1))
 
     loop.run_forever()
 
