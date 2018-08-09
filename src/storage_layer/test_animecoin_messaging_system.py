@@ -4,12 +4,11 @@ import os
 
 from animecoin_modules.animecoin_keys import import_animecoin_public_and_private_keys_from_pem_files_func, \
     animecoin_id_keypair_generation_func, write_animecoin_public_and_private_key_to_file_func
-from animecoin_modules.animecoin_messenger_object import messengerObject
+from animecoin_modules.animecoin_messenger_object import generate_message_func, verify_compressed_message_file,\
+    read_unverified_compressed_message_file, verify_raw_message_file
 
 
 if __name__ == "__main__":
-    # For testing:
-
     message_body = ""
     message_body = "1234"
     message_body = "Crud far in far oh immoral and more caribou hiccupped tyrannically tortoise rode sheepishly where gorilla metric radical the badger a and gosh smugly manatee devilishly that."
@@ -20,58 +19,31 @@ if __name__ == "__main__":
     message_body = "This is a test of our new messaging system. We hope that it's secure from attacks. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 
     test_receiver__animecoin_id_private_key_b16_encoded, test_receiver__animecoin_id_public_key_b16_encoded = animecoin_id_keypair_generation_func()
-    receiver_id = test_receiver__animecoin_id_public_key_b16_encoded
+    target_pubkey = test_receiver__animecoin_id_public_key_b16_encoded
 
     use_require_otp = 0
-    animecoin_id_public_key_b16_encoded, animecoin_id_private_key_b16_encoded = import_animecoin_public_and_private_keys_from_pem_files_func(use_require_otp)
+    pubkey, privkey = import_animecoin_public_and_private_keys_from_pem_files_func(use_require_otp)
 
-    if animecoin_id_public_key_b16_encoded == '':
-        animecoin_id_private_key_b16_encoded, animecoin_id_public_key_b16_encoded = animecoin_id_keypair_generation_func()
-        write_animecoin_public_and_private_key_to_file_func(animecoin_id_public_key_b16_encoded,
-                                                            animecoin_id_private_key_b16_encoded)
+    if pubkey == '':
+        privkey, pubkey = animecoin_id_keypair_generation_func()
+        write_animecoin_public_and_private_key_to_file_func(pubkey, privkey)
 
-    messenger_object = messengerObject(receiver_id, message_body, animecoin_id_public_key_b16_encoded, animecoin_id_private_key_b16_encoded)
-    messenger_object = messenger_object.generate_message_func()
+    raw_msg, signed_msg, signature = generate_message_func(privkey, pubkey, target_pubkey, message_body)
 
-    path_of_most_recent_raw_message_file = max(glob.glob('Raw_Message__ID__*.txt'), key=os.path.getctime)
-    path_of_most_recent_compressed_file = max(glob.glob('Compressed_Message__ID__*.bin'), key=os.path.getctime)
-    path_of_most_recent_signature_file = max(glob.glob('Signature_for_Compressed_Message__ID__*.txt'), key=os.path.getctime)
-
-    print('Now verifying raw message data...')
-    with open(path_of_most_recent_raw_message_file, 'r') as f:
-        try:
-            print('Now reading raw message file: ' + path_of_most_recent_raw_message_file)
-            raw_message_contents = f.read()
-        except Exception as e:
-            print('Error: ' + str(e))
-    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, message_contents, signature_line = messenger_object.verify_raw_message_file(
-        raw_message_contents)
+    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, message_contents, signature_line = verify_raw_message_file(
+        raw_msg)
 
     if verified:
         print('Done! Message has been validated by confirming the digital signature matches the combined message hash.')
     else:
         print('Error! Message is NOT valid!')
 
-    print('Now verifying compressed message data...')
-    with open(path_of_most_recent_compressed_file, 'rb') as f:
-        try:
-            print('Now reading compressed message file: ' + path_of_most_recent_compressed_file)
-            compressed_message_contents = f.read()
-        except Exception as e:
-            print('Error: ' + str(e))
-    with open(path_of_most_recent_signature_file, 'r') as f:
-        try:
-            print('Now reading compressed signature file: ' + path_of_most_recent_signature_file)
-            compressed_signature = f.read()
-        except Exception as e:
-            print('Error: ' + str(e))
-
     use_require_otp = 0
     senders_animecoin_id, _ = import_animecoin_public_and_private_keys_from_pem_files_func(use_require_otp)
-    decompressed_message_data = messenger_object.verify_compressed_message_file(senders_animecoin_id,
-                                                                                compressed_message_contents,
-                                                                                compressed_signature)
-    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, message_contents, signature_line = messenger_object.verify_raw_message_file(
+    decompressed_message_data = verify_compressed_message_file(senders_animecoin_id,
+                                                                                signed_msg,
+                                                                                signature)
+    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, message_contents, signature_line = verify_raw_message_file(
         decompressed_message_data)
     if verified:
         print(
@@ -80,7 +52,7 @@ if __name__ == "__main__":
         print('Error! Message is NOT valid!')
 
     print('Now testing unverified compressed file read functionality...')
-    decompressed_message_data = messenger_object.read_unverified_compressed_message_file(compressed_message_contents)
+    decompressed_message_data = read_unverified_compressed_message_file(signed_msg)
     if isinstance(decompressed_message_data, str):
         print('Successfully read unverified compressed file!')
     else:
