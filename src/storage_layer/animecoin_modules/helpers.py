@@ -22,6 +22,7 @@ def sleep_rand():
 
 
 def get_sha3_512_func(input_data_or_string):
+    # TODO: harden this to require bytes or str ONLY
     if isinstance(input_data_or_string, str):
         input_data_or_string = input_data_or_string.encode('utf-8')
     hash_of_input_data = hashlib.sha3_512(input_data_or_string).hexdigest()
