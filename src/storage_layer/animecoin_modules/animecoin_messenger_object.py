@@ -3,7 +3,7 @@ import sys
 import base64
 import random
 import time
-import json
+import msgpack
 
 from animecoin_modules.animecoin_signatures import animecoin_id_write_signature_on_data_func, \
     animecoin_id_verify_signature_with_public_key_func
@@ -18,19 +18,30 @@ MAX_NONCE_LENGTH = 1200
 MAX_MESSAGE_SIZE = 1000
 NONCE_LENGTH = random.randint(MIN_NONCE_LENGTH, MAX_NONCE_LENGTH)
 
+VALID_CONTAINER_KEYS = {"data", "digital_signature"}
+VALID_DATA_KEYS = {"sender_id", "receiver_id", "timestamp", "message_format_version",
+                   "message_body", "random_nonce"}
+
 
 def verify_raw_message_file(raw_message_contents):
-    if isinstance(raw_message_contents, str):
+    if isinstance(raw_message_contents, bytes):
         if len(raw_message_contents) < 4000:
-            hash_of_combined_message_string = get_sha3_512_func(raw_message_contents)
+            # raw=False makes this unpack to utf-8 strings
+            container = msgpack.unpackb(raw_message_contents, raw=False)
+            if set(container.keys()) != VALID_CONTAINER_KEYS:
+                raise ValueError("Container contains invalid keys!")
 
-            msg = json.loads(raw_message_contents)
-            VALID_KEYS = {"sender_id", "receiver_id", "timestamp", "message_format_version",
-                          "message_body", "random_nonce", "digital_signature"}
+            data = container["data"]
+            signature = container["digital_signature"]
 
-            a, b = set(msg.keys()), VALID_KEYS
+            hash_of_combined_message_string = get_sha3_512_func(data)
+
+            # raw=False makes this unpack to utf-8 strings
+            msg = msgpack.unpackb(data, raw=False)
+
+            a, b = set(msg.keys()), VALID_DATA_KEYS
             if len(a-b) + len(b-a) > 0:
-                raise KeyError("Keys don't match")
+                raise KeyError("Keys don't match %s != %s" % (a, b))
 
             id_character_set = 'ABCDEF1234567890'
             nonce_character_set = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
@@ -58,12 +69,11 @@ def verify_raw_message_file(raw_message_contents):
             assert ([(x in nonce_character_set) for x in random_nonce])
 
             sleep_rand()
-            signature_line = msg["digital_signature"]
             verified = animecoin_id_verify_signature_with_public_key_func(hash_of_combined_message_string,
-                                                                          signature_line, senders_animecoin_id)
+                                                                          signature, senders_animecoin_id)
             sleep_rand()
 
-            return verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, len(message_body), message_body, random_nonce, signature_line
+            return verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, len(message_body), message_body, random_nonce, signature
 
 
 def verify_compressed_message_file(senders_animecoin_id, compressed_binary_data,
@@ -120,6 +130,11 @@ def generate_message_func(privkey, pubkey, target_pubkey, message_body):
     else:
         raise TypeError("Message body is not str!")
 
+    container = {
+        "data": None,
+        "digital_signature": None,
+    }
+
     msg = {
         "sender_id":               pubkey,
         "receiver_id":             target_pubkey,
@@ -127,24 +142,16 @@ def generate_message_func(privkey, pubkey, target_pubkey, message_body):
         "message_format_version":  message_format_version,
         "message_body":            message_body,
         "random_nonce":            random_nonce,
-        "digital_signature":       None,
     }
 
-    # TODO: use HMAC for signing!
+    # use_bin_type=False makes it use the newer encoding scheme
+    serialized_data = msgpack.packb(msg, use_bin_type=True)
+    serialized_data_hash = get_sha3_512_func(serialized_data)
 
-    msg_serialized = json.dumps(msg)
-    hash_of_combined_message_string = get_sha3_512_func(msg_serialized)
+    container["data"] = serialized_data
+    container["digital_signature"] = animecoin_id_write_signature_on_data_func(serialized_data_hash, privkey, pubkey)
 
-    # sign and append signature to the combined message
-    signature_on_raw_message = animecoin_id_write_signature_on_data_func(hash_of_combined_message_string, privkey, pubkey)
-    msg["digital_signature"] = signature_on_raw_message
-    msg_serialized_with_signature = json.dumps(msg)
-
-    # compress and generate signature
-    compressed_signed_combined_message = compress_data_with_zstd_func(msg_serialized_with_signature)
-    hash_of_compressed_signed_combined_message = get_sha3_512_func(compressed_signed_combined_message)
-    signature_on_compressed_message = animecoin_id_write_signature_on_data_func(hash_of_compressed_signed_combined_message, privkey, pubkey)
+    container_serialized = msgpack.packb(container, use_bin_type=True)
 
     sleep_rand()
-
-    return msg_serialized_with_signature, compressed_signed_combined_message, signature_on_compressed_message
+    return container_serialized
