@@ -28,7 +28,7 @@ if __name__ == "__main__":
         privkey, pubkey = animecoin_id_keypair_generation_func()
         write_animecoin_public_and_private_key_to_file_func(pubkey, privkey)
 
-    raw_msg, signed_msg, signature = generate_message_func(privkey, pubkey, target_pubkey, message_body)
+    raw_msg = generate_message_func(privkey, pubkey, target_pubkey, message_body)
 
     verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, signature_line = verify_raw_message_file(
         raw_msg)
@@ -37,23 +37,3 @@ if __name__ == "__main__":
         print('Done! Message has been validated by confirming the digital signature matches the combined message hash.')
     else:
         print('Error! Message is NOT valid!')
-
-    use_require_otp = 0
-    senders_animecoin_id, _ = import_animecoin_public_and_private_keys_from_pem_files_func(use_require_otp)
-    decompressed_message_data = verify_compressed_message_file(senders_animecoin_id,
-                                                                                signed_msg,
-                                                                                signature)
-    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, signature_line = verify_raw_message_file(
-        decompressed_message_data)
-    if verified:
-        print(
-            'Done! Compressed message has been validated by confirming the digital signature matches the combined message hash.')
-    else:
-        print('Error! Message is NOT valid!')
-
-    print('Now testing unverified compressed file read functionality...')
-    decompressed_message_data = read_unverified_compressed_message_file(signed_msg)
-    if isinstance(decompressed_message_data, str):
-        print('Successfully read unverified compressed file!')
-    else:
-        print('Error!')
