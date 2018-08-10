@@ -27,62 +27,98 @@ def verify_raw_message_file(raw_message_contents):
             id_character_set = 'ABCDEF1234567890'
             nonce_character_set = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
             version_character_set = '1234567890.'
+
+            # start with \n
             assert (raw_message_contents[0] == '\n')
+
+            # start with '\n______________________\n\nSTART_OF_MESSAGE'
             assert (raw_message_contents.split(start_string)[0] == '\n______________________\n\n')
+
+            # has exactly 42 \n
+            print("DBG: Number of \n: %s" % len(raw_message_contents.split('\n')))
             assert (len(raw_message_contents.split('\n')) == 42)
+
+            # contains '\n\ndigital_signature: \n' exactly once
             assert (len(raw_message_contents.split(signature_string)) == 2)
+
+            # message_contents is everything before '\n\ndigital_signature: \n'
             message_contents = raw_message_contents.split(signature_string)[0]
+
+            # message_contents has: END_OF_MESSAGE\n\n______________________\n'
             assert (message_contents.split(end_string)[-1] == '\n\n______________________\n')
+
+            # message_contents replaces all \n with ''
+            # message_contents ends with '______________________'
             assert (message_contents.replace('\n', '')[-22:] == '______________________')
+
+            # hashes message_contents
             hash_of_combined_message_string = get_sha3_512_func(message_contents)
+
+            # signature_line everything after '\n\ndigital_signature: \n', \n replaced
             signature_line = raw_message_contents.split(signature_string)[-1].replace('\n', '')
+            # signature is str, 264 long, contains ABCDEF1234567890 characters
             assert (isinstance(signature_line, str))
             assert (len(signature_line) == 264)
             assert ([(x in id_character_set) for x in signature_line])
+
+            # split message_contents by fields
             message_contents_fields = message_contents.split('______________________')
+
+            # there has to be 11 fields
             assert (len(message_contents_fields) == 11)
+
+            # ignore first and last field (which are \n)
             for current_field in message_contents_fields[1:-1]:
                 sender_string = '\n\nsender_id:\n'
+                receiver_string = '\n\nreceiver_id:\n'
+                timestamp_string = '\n\ntimestamp:\n'
+                message_format_version_string = '\n\nmessage_format_version:\n'
+                message_size_string = '\n\nmessage_size:\n'
+                message_body_string = '\n\nmessage_body:\n'
+                random_nonce_string = '\n\nrandom_nonce:\n'
+
+                print("DBG2", current_field)
                 assert (len(message_contents.split(sender_string)) == 2)
+                assert (len(message_contents.split(receiver_string)) == 2)
+                assert (len(message_contents.split(timestamp_string)) == 2)
+                assert (len(message_contents.split(message_format_version_string)) == 2)
+                assert (len(message_contents.split(message_size_string)) == 2)
+                assert (len(message_contents.split(message_body_string)) == 2)
+                assert (len(message_contents.split(random_nonce_string)) == 2)
+
                 if current_field[:len(sender_string)] == sender_string:
                     senders_animecoin_id = current_field.replace(sender_string, '').replace('\n', '')
                     assert (len(senders_animecoin_id) == 132)
                     assert ([(x in id_character_set) for x in senders_animecoin_id])
-                receiver_string = '\n\nreceiver_id:\n'
-                assert (len(message_contents.split(receiver_string)) == 2)
+
                 if current_field[:len(receiver_string)] == receiver_string:
                     receivers_animecoin_id = current_field.replace(receiver_string, '').replace('\n', '')
                     assert (len(receivers_animecoin_id) == 132)
                     assert ([(x in id_character_set) for x in receivers_animecoin_id])
                     assert (senders_animecoin_id != receivers_animecoin_id)
-                timestamp_string = '\n\ntimestamp:\n'
-                assert (len(message_contents.split(timestamp_string)) == 2)
+
                 if current_field[:len(timestamp_string)] == timestamp_string:
                     timestamp_of_message = float(current_field.replace(timestamp_string, '').replace('\n', ''))
                     assert (timestamp_of_message > time.time() - 60)
                     assert (timestamp_of_message < time.time() + 60)
-                message_format_version_string = '\n\nmessage_format_version:\n'
-                assert (len(message_contents.split(message_format_version_string)) == 2)
+
                 if current_field[:len(message_format_version_string)] == message_format_version_string:
-                    message_format_version = current_field.replace(message_format_version_string, '').replace('\n',
-                                                                                                              '')
+                    message_format_version = current_field.replace(message_format_version_string, '').replace('\n', '')
                     assert (len(message_format_version) < 6)
                     assert ([(x in version_character_set) for x in message_format_version])
                     assert ('.' in message_format_version)
-                message_size_string = '\n\nmessage_size:\n'
-                assert (len(message_contents.split(message_size_string)) == 2)
+
                 if current_field[:len(message_size_string)] == message_size_string:
                     message_size = int(current_field.replace(message_size_string, '').replace('\n', ''))
                     assert (message_size >= 10)
                     assert (message_size <= 1000)
-                message_body_string = '\n\nmessage_body:\n'
-                assert (len(message_contents.split(message_body_string)) == 2)
+
                 if current_field[:len(message_body_string)] == message_body_string:
                     message_body = current_field.replace(message_body_string, '').replace('\n', '')
+                    print("DBG message_body len != message_size -> %s != %s" % (len(message_body), message_size))
                     assert (len(message_body) == message_size)
                     assert (message_body == message_body.encode('utf-8', 'strict').decode('utf-8', 'strict'))
-                random_nonce_string = '\n\nrandom_nonce:\n'
-                assert (len(message_contents.split(random_nonce_string)) == 2)
+
                 if current_field[:len(random_nonce_string)] == random_nonce_string:
                     random_nonce = current_field.replace(random_nonce_string, '').replace('\n', '')
                     assert (len(random_nonce) >= 500)
@@ -151,14 +187,18 @@ def generate_message_func(privkey, pubkey, target_pubkey, message_body):
         raise TypeError("Message body is not str!")
 
     linebreak = '\n______________________\n'
+
+    message_body = '\ntimestamp:\n' + linebreak
+    message_size = len(message_body)
+
     combined_message = linebreak + '\nSTART_OF_MESSAGE:\n'
     combined_message += linebreak + '\nsender_id:\n' + pubkey + linebreak
     combined_message += '\nreceiver_id:\n' + target_pubkey + linebreak
-    combined_message += '\ntimestamp:\n' + str(timestamp) + linebreak
+    # combined_message += '\ntimestamp:\n' + str(timestamp) + linebreak
     combined_message += '\nmessage_format_version:\n' + message_format_version + linebreak
-    combined_message += '\nmessage_size:\n' + str(message_size) + linebreak
-    combined_message += '\nmessage_body:\n' + message_body + linebreak
-    combined_message += '\nrandom_nonce:\n' + random_nonce + linebreak
+    combined_message += '\nmessage_size:\n' + str(10) + linebreak
+    combined_message += '\nmessage_body:\n' + message_body
+    combined_message += '\nrandom_nonce:\n' + random_nonce + linebreak + linebreak
     combined_message += '\nEND_OF_MESSAGE\n' + linebreak
     hash_of_combined_message_string = get_sha3_512_func(combined_message)
 
