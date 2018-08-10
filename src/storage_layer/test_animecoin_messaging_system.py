@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     raw_msg, signed_msg, signature = generate_message_func(privkey, pubkey, target_pubkey, message_body)
 
-    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, message_contents, signature_line = verify_raw_message_file(
+    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, signature_line = verify_raw_message_file(
         raw_msg)
 
     if verified:
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     decompressed_message_data = verify_compressed_message_file(senders_animecoin_id,
                                                                                 signed_msg,
                                                                                 signature)
-    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, message_contents, signature_line = verify_raw_message_file(
+    verified, senders_animecoin_id, receivers_animecoin_id, timestamp_of_message, message_size, message_body, random_nonce, signature_line = verify_raw_message_file(
         decompressed_message_data)
     if verified:
         print(
