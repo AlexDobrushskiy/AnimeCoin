@@ -21,7 +21,8 @@ if __name__ == "__main__":
     receiver_privkey, receiver_pubkey = animecoin_id_keypair_generation_func()
 
     use_require_otp = 0
-    pubkey, privkey = import_animecoin_public_and_private_keys_from_pem_files_func(use_require_otp)
+    # pubkey, privkey = import_animecoin_public_and_private_keys_from_pem_files_func(use_require_otp)
+    privkey, pubkey = animecoin_id_keypair_generation_func()
 
     if pubkey == '':
         privkey, pubkey = animecoin_id_keypair_generation_func()
