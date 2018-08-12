@@ -1,11 +1,6 @@
-import glob
-import os
+from dht_prototype.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func, write_animecoin_public_and_private_key_to_file_func
 
-
-from animecoin_modules.animecoin_keys import import_animecoin_public_and_private_keys_from_pem_files_func, \
-    animecoin_id_keypair_generation_func, write_animecoin_public_and_private_key_to_file_func
-
-from animecoin_modules.animecoin_rpc import pack_and_sign, verify_and_unpack
+from dht_prototype.animecoin_modules.animecoin_rpc import pack_and_sign, verify_and_unpack
 
 
 if __name__ == "__main__":
