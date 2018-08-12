@@ -9,7 +9,8 @@ from datetime import datetime as dt
 
 from masternode_modules.chunk_manager import ChunkManager
 from masternode_modules.settings import MasterNodeSettings
-from masternode_modules.helpers import generate_chunks, generate_masternodes, int_to_hex
+from masternode_modules.helpers import get_hexdigest, getrandbytes
+from masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
 
 
 BASEDIR = "/home/synapse/tmp/animecoin/tmpstorage"
@@ -48,10 +49,20 @@ async def send_rpc_to_random_mn(masternode_list, myid):
         print("%s Received reply: %s from %s in %ss, sleeping for %ss" % (myid, msg, nodeid, elapsed, SLEEPTIME))
         await asyncio.sleep(SLEEPTIME)
 
+
+def generate_masternodes(num_mn, ip, port):
+    ret = []
+    for i in range(num_mn):
+        privkey, pubkey = animecoin_id_keypair_generation_func()
+        mn = (get_hexdigest(getrandbytes(1024)), ip, port+i, privkey, pubkey)
+        ret.append(mn)
+    return ret
+
+
 if __name__ == "__main__":
     NUM_MN = 2
 
-    masternode_list = generate_masternodes(NUM_MN, "127.0.0.1", 86752, None)
+    masternode_list = generate_masternodes(NUM_MN, "127.0.0.1", 86752)
 
     # we can use this to generate chunks, but right now we use the pregenerated test chunks
     # NUM_CHUNKS = 1000
@@ -71,9 +82,10 @@ if __name__ == "__main__":
         name = "mn_%s" % i
         chunkdir = os.path.join(BASEDIR, name)
         os.makedirs(chunkdir, exist_ok=True)
-        masternode_settings = MasterNodeSettings(basedir=chunkdir)
 
-        nodeid, ip, port, pubkey = config
+        nodeid, ip, port, privkey, pubkey = config
+        masternode_settings = MasterNodeSettings(basedir=chunkdir, privkey=privkey, pubkey=pubkey)
+
         mn = ChunkManager(name, nodeid, masternode_settings, masternode_list)
         masternodes.append(mn)
 
