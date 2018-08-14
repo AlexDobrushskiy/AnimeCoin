@@ -86,14 +86,12 @@ if __name__ == "__main__":
         nodeid, ip, port, privkey, pubkey = config
         masternode_settings = MasterNodeSettings(basedir=chunkdir, privkey=privkey, pubkey=pubkey)
 
-        mn = MasterNode(name, nodeid, masternode_settings, masternode_list)
+        mn = MasterNode(name, nodeid, masternode_settings, masternode_list, [x[0] for x in chunks])
 
         masternodes.append(mn)
 
     # load full chunks only on the first masternode
     masternodes[0].load_full_chunks(chunks)
-    for mn in masternodes[1:]:
-        mn.load_chunks([x[0] for x in chunks])
 
     # start async loops
     loop = asyncio.get_event_loop()
@@ -103,7 +101,7 @@ if __name__ == "__main__":
     loop.create_task(heartbeat())
 
     for mn in masternodes:
-        # loop.create_task(mn.issue_random_tests_forever(1))
+        loop.create_task(mn.issue_random_tests_forever(1))
         loop.create_task(mn.run_workers_forever())
 
     loop.run_forever()
