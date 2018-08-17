@@ -1,7 +1,7 @@
 import json
 import zstd
 
-from dht_prototype.masternode_modules.animecoin_modules.animecoin_art_model import ArtTicket
+from dht_prototype.masternode_modules.models import ArtTicket
 from dht_prototype.masternode_modules.animecoin_modules.animecoin_compression import compress
 
 
