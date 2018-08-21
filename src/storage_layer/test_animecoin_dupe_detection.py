@@ -6,7 +6,8 @@ import hashlib
 import keras
 import pandas as pd
 
-from dht_prototype.masternode_modules.animecoin_modules.animecoin_dupe_detection import DupeDetector, measure_similarity
+from dht_prototype.masternode_modules.animecoin_modules.animecoin_dupe_detection import DupeDetector,\
+    measure_similarity, combine_fingerprint_vectors
 
 
 def get_sha256_hash_of_input_data_func(input_data_or_string):
@@ -18,7 +19,7 @@ def get_sha256_hash_of_input_data_func(input_data_or_string):
 
 def list_files(basedir):
     files = []
-    for i in sorted(os.listdir(basedir)):
+    for i in sorted(os.listdir(basedir))[:10]:
         if i.split(".")[-1] in ["jpg", "jpeg", "bmp", "gif", "png"]:
             files.append(os.path.join(basedir, i))
     return files
@@ -36,16 +37,6 @@ def get_fingerprint_for_file(current_image_file_path, dupedetector, target_size)
 
     fingerprints = dupedetector.compute_deep_learning_features(image)
     return imghash, fingerprints
-
-
-def combine_fingerprint_vectors(fingerprint_collection):
-    # concatenate fingerprints from various models and append it to rows
-    combined = []
-    for modelname, fingerprints in fingerprint_collection.items():
-        fingerprint_vector = [x[0] for x in fingerprints]
-
-        combined += fingerprint_vector
-    return pd.DataFrame(combined).T
 
 
 def assemble_fingerprints_for_pandas(db):
@@ -97,7 +88,7 @@ def compute_fingerprint_for_single_image(filepath, dupedetector):
 def test_files_for_duplicates(dupe_images, pandas_table, dupedetector):
     filelist = list_files(dupe_images)
 
-    ret = []
+    dupes = []
     for filename in filelist:
         print('Testing file: ' + filename)
 
@@ -107,15 +98,15 @@ def test_files_for_duplicates(dupe_images, pandas_table, dupedetector):
 
         if is_likely_dupe:
             print("Art file (%s) appears to be a DUPLICATE!" % filename)
+            dupes.append(filename)
         else:
             print("Art file (%s) appears to be an ORIGINAL!" % filename)
 
         print('Parameters for current image:')
         print(params_df)
-        ret.append(is_likely_dupe)
 
-    accuracy = sum(ret) / len(ret)
-    return accuracy
+    dupe_percentage = len(dupes) / len(filelist)
+    return dupe_percentage
 
 
 def main(target_size):
@@ -154,12 +145,12 @@ def main(target_size):
 
     # tests
     print('Now testing duplicate-detection scheme on known near-duplicate images')
-    accuracy = test_files_for_duplicates(dupe_images, pandas_table, dupedetector)
-    print('\nAccuracy Percentage in Detecting Near-Duplicate Images: ' + str(round(100 * accuracy, 2)) + '%')
+    dupe_percentage = test_files_for_duplicates(dupe_images, pandas_table, dupedetector)
+    print('\nAccuracy Percentage in Detecting Duplicate Images: %.2f%%' % (dupe_percentage*100))
 
     print('Now testing duplicate-detection scheme on known non-duplicate images')
-    accuracy = test_files_for_duplicates(nondupe_images, pandas_table, dupedetector)
-    print('\nAccuracy Percentage in Detecting Near-Duplicate Images: ' + str(round(100 * accuracy, 2)) + '%')
+    dupe_percentage = test_files_for_duplicates(nondupe_images, pandas_table, dupedetector)
+    print('\nAccuracy Percentage in Detecting Non-Duplicate Images: %.2f%%' % ((1-dupe_percentage)*100))
 
 
 if __name__ == "__main__":
