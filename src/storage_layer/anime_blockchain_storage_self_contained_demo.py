@@ -20,7 +20,8 @@ path_where_animecoin_html_ticket_templates_are_stored = './'
 #Pay to fake multi-sig params:
 rpc_user = 'test' 
 rpc_password ='testpw'
-rpc_port = '18443' #mainnet: 8332; testnet: 18332; regtest: 18443
+# rpc_port = '18443' #mainnet: 8332; testnet: 18332; regtest: 18443
+rpc_port = '18443'
 rpc_connection_string = 'http://'+rpc_user+':'+rpc_password+'@127.0.0.1:'+rpc_port
 base_transaction_amount = 0.000001
 COIN = 100000000 #satoshis in 1 btc
@@ -242,6 +243,7 @@ def store_data_in_animecoin_blockchain_UTXO_func(input_data, animecoin_zstd_comp
     signed_tx = rpc_connection.signrawtransaction(hexlify(final_tx).decode('utf-8'))
     assert signed_tx['complete']
     hex_signed_transaction = signed_tx['hex']
+    print("DBG", hex_signed_transaction)
     print('Sending data transaction to address: ' + receiving_animecoin_blockchain_address)
     print('Size: %d  Fee: %2.8f' % (len(hex_signed_transaction)/2, fee), file=sys.stderr)
     send_raw_transaction_result = rpc_connection.sendrawtransaction(hex_signed_transaction)
@@ -256,6 +258,8 @@ def retrieve_data_from_animecoin_blockchain_UTXO_func(blockchain_transaction_id)
     rpc_connection = AuthServiceProxy(rpc_connection_string)
     raw = rpc_connection.getrawtransaction(blockchain_transaction_id)
     outputs = raw.split('0100000000000000')
+    for idx, output in enumerate(outputs):
+        print(idx, output)
     encoded_hex_data = ''
     for output in outputs[1:-2]: # there are 3 65-byte parts in this that we need
         cur = 6
@@ -311,20 +315,20 @@ def retrieve_data_from_animecoin_blockchain_UTXO_func(blockchain_transaction_id)
     
 use_demonstrate_blockchain_UTXO_storage = 1
 
-if use_demonstrate_blockchain_UTXO_storage: 
+if use_demonstrate_blockchain_UTXO_storage:
+    filename = sys.argv[1]
     
-    if 0: #Start up bitcoind using the regtest network and generate some coins to use:
-        rpc_auth_command_string = '-rpcuser=' + rpc_user + ' -rpcpassword=' + rpc_password
-        bitcoind_launch_string = 'bitcoind ' + rpc_auth_command_string + ' -regtest -server -addresstype=legacy' #Without -addresstype=legacy the current bitcoind will default to using segwit addresses, which suck (you can't sign messages with them)
-        proc = subprocess.Popen(bitcoind_launch_string, shell=True)
-        sleep(5)
-        rpc_connection = AuthServiceProxy(rpc_connection_string)
-        block_generation_output = rpc_connection.generate(101) #Generate some coins to work with
-    
-    #Sample file to store in blockchain-- example html trade ticket:
-    link_to_blockchain_storage_example_file = 'http://149.28.34.59/Animecoin_Trade_Ticket__TradeID__1502588M__DateTime_Submitted__2018_05_06_02_41_03_571550.html' 
-    response = urllib.request.urlopen(link_to_blockchain_storage_example_file)
-    response_html_string = response.read()
+    # if 0: #Start up bitcoind using the regtest network and generate some coins to use:
+    #     rpc_auth_command_string = '-rpcuser=' + rpc_user + ' -rpcpassword=' + rpc_password
+    #     bitcoind_launch_string = 'bitcoind ' + rpc_auth_command_string + ' -regtest -server -addresstype=legacy' #Without -addresstype=legacy the current bitcoind will default to using segwit addresses, which suck (you can't sign messages with them)
+    #     proc = subprocess.Popen(bitcoind_launch_string, shell=True)
+    #     sleep(5)
+    #     rpc_connection = AuthServiceProxy(rpc_connection_string)
+    #     block_generation_output = rpc_connection.generate(101) #Generate some coins to work with
+
+    # bitcoind cmdline: bitcoind -rpcuser=test -rpcpassword=testpw -regtest -server -addresstype=legacy
+    # mine coins: bitcoin-cli -rpcuser=test -rpcpassword=testpw -regtest generate 100
+
 
     list_of_available_compression_dictionary_files = glob.glob(path_to_zstd_compression_dictionaries + '*.dict')
     if len(list_of_available_compression_dictionary_files) == 0:
@@ -346,12 +350,12 @@ if use_demonstrate_blockchain_UTXO_storage:
         animecoin_zstd_compression_dictionary = get_corresponding_zstd_compression_dictionary_func(most_recently_modified_dictionary_file_hash)
         
     rpc_connection = AuthServiceProxy(rpc_connection_string)
-    input_data = response_html_string
+    input_data = open(filename, "rb").read()
     blockchain_transaction_id = store_data_in_animecoin_blockchain_UTXO_func(input_data, animecoin_zstd_compression_dictionary)
     
     reconstructed_animecoin_zstd_uncompressed_data = retrieve_data_from_animecoin_blockchain_UTXO_func(blockchain_transaction_id)
-    reconstructed_animecoin_zstd_uncompressed_data_decoded = reconstructed_animecoin_zstd_uncompressed_data.decode('utf-8')
-    assert(reconstructed_animecoin_zstd_uncompressed_data_decoded == input_data.decode('utf-8'))
+    # reconstructed_animecoin_zstd_uncompressed_data_decoded = reconstructed_animecoin_zstd_uncompressed_data.decode('utf-8')
+    # assert(reconstructed_animecoin_zstd_uncompressed_data_decoded == input_data.decode('utf-8'))
     
     #_______________________________________
     
@@ -361,5 +365,8 @@ if use_demonstrate_blockchain_UTXO_storage:
     second_response_html_string = second_response.read()
     second_blockchain_transaction_id = store_data_in_animecoin_blockchain_UTXO_func(second_response_html_string, animecoin_zstd_compression_dictionary)
     second_reconstructed_animecoin_zstd_uncompressed_data = retrieve_data_from_animecoin_blockchain_UTXO_func(second_blockchain_transaction_id)
+    print("???")
     second_reconstructed_animecoin_zstd_uncompressed_data_decoded = second_reconstructed_animecoin_zstd_uncompressed_data.decode('utf-8')
+    print("?")
     assert(second_reconstructed_animecoin_zstd_uncompressed_data_decoded == second_response_html_string.decode('utf-8'))
+    print("DONE?")
