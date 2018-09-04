@@ -37,7 +37,7 @@ def main():
         datalen = random.randint(0, 100)
         killerdata = os.urandom(random.randint(0, 10))
         print("len: %s, killerdata: %s" % (datalen, killerdata))
-        original = b'A' * datalen + killerdata
+        original = b'X' * datalen + killerdata
         try:
             test(blockchain, original)
         except Exception as exc:

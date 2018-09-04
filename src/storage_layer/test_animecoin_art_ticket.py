@@ -127,7 +127,7 @@ class RegistrationClient:
 
             # is the data the same and the signature valid?
             assert (mn_signature.pubkey == mn_pub)
-            mn_signature.validate(actticket)
+            mn_signature.validate(ticket)
 
             # add signature to collected signatures
             signatures.append(mn_signature)
@@ -137,9 +137,9 @@ class RegistrationClient:
         mn = self.__chainwrapper.get_masternode(mn_pubkey)
         return mn.masternode_place_ticket_on_blockchain(ticket)
 
-    def rpc_mn_store_image(self, image, mn_pubkey):
+    def rpc_mn_store_image(self, regticket_txid, image, mn_pubkey):
         mn = self.__chainwrapper.get_masternode(mn_pubkey)
-        mn.masternode_place_image_data_in_chunkstorage(image.serialize())
+        mn.masternode_place_image_data_in_chunkstorage(regticket_txid, image.serialize())
 
     def wait_for_ticket_on_blockchain(self, regticket_txid):
         serialized = self.__blockchain.retrieve_data_from_utxo(regticket_txid)
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     signature_actticket = artreg.generate_signed_ticket(actticket)
 
     # place image in chunkstorage
-    artreg.rpc_mn_store_image(image, masternode_ordering[0])
+    artreg.rpc_mn_store_image(regticket_txid, image, masternode_ordering[0])
 
     # have masternodes sign the ticket
     mn_signatures = artreg.collect_mn_actticket_signatures(signature_actticket, actticket, image, masternode_ordering)
