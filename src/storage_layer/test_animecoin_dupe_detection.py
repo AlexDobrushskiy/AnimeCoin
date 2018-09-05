@@ -3,7 +3,6 @@ import pickle
 import sys
 import hashlib
 
-import keras
 import pandas as pd
 
 from dht_prototype.masternode_modules.animecoin_modules.animecoin_dupe_detection import DupeDetector,\
@@ -25,17 +24,14 @@ def list_files(basedir):
     return files
 
 
-def get_fingerprint_for_file(current_image_file_path, dupedetector, target_size):
+def get_fingerprint_for_file(current_image_file_path):
     # read the actual image file
     data = open(current_image_file_path, 'rb').read()
 
     # compute hash
     imghash = get_sha256_hash_of_input_data_func(data)
 
-    # read the actual image file
-    image = keras.preprocessing.image.load_img(current_image_file_path, target_size=target_size)
-
-    fingerprints = dupedetector.compute_deep_learning_features(image)
+    fingerprints = DupeDetector.compute_deep_learning_features(data)
     return imghash, fingerprints
 
 
@@ -58,7 +54,7 @@ def assemble_fingerprints_for_pandas(db):
     return final_pandas_table
 
 
-def populate_fingerprint_db(basedir, dupedetector, target_size):
+def populate_fingerprint_db(basedir):
     files = list_files(basedir)
     db = {}
     counter = 0
@@ -66,7 +62,7 @@ def populate_fingerprint_db(basedir, dupedetector, target_size):
         print('Now adding image file %s to image fingerprint database: %s/%s' % (current_image_file_path,
                                                                                  counter, len(files)))
 
-        imghash, fingerprints = get_fingerprint_for_file(current_image_file_path, dupedetector, target_size)
+        imghash, fingerprints = get_fingerprint_for_file(current_image_file_path)
 
         # add to the database
         db[imghash] = (current_image_file_path, fingerprints)
@@ -74,8 +70,8 @@ def populate_fingerprint_db(basedir, dupedetector, target_size):
     return db
 
 
-def compute_fingerprint_for_single_image(filepath, dupedetector):
-    imagehash, fingerprints = get_fingerprint_for_file(filepath, dupedetector, TARGET_SIZE)
+def compute_fingerprint_for_single_image(filepath):
+    imagehash, fingerprints = get_fingerprint_for_file(filepath)
     combined = combine_fingerprint_vectors(fingerprints)
 
     A = pd.DataFrame([imagehash, filepath]).T
@@ -85,7 +81,7 @@ def compute_fingerprint_for_single_image(filepath, dupedetector):
     return fingerprint
 
 
-def test_files_for_duplicates(dupe_images, pandas_table, dupedetector):
+def test_files_for_duplicates(dupe_images, pandas_table):
     filelist = list_files(dupe_images)
 
     dupes = []
@@ -93,7 +89,7 @@ def test_files_for_duplicates(dupe_images, pandas_table, dupedetector):
         print('Testing file: ' + filename)
 
         # compute fingerprint
-        prepared_fingerprint = compute_fingerprint_for_single_image(filename, dupedetector)
+        prepared_fingerprint = compute_fingerprint_for_single_image(filename)
         is_likely_dupe, params_df = measure_similarity(prepared_fingerprint, pandas_table)
 
         if is_likely_dupe:
@@ -109,7 +105,7 @@ def test_files_for_duplicates(dupe_images, pandas_table, dupedetector):
     return dupe_percentage
 
 
-def main(target_size):
+if __name__ == "__main__":
     # parse parameters
     image_root = sys.argv[1]
     database_filename = sys.argv[2]
@@ -122,19 +118,16 @@ def main(target_size):
     dupe_images = os.path.join(image_root, 'dupes')
     nondupe_images = os.path.join(image_root, 'nondupes')
 
-    # initializing keras (might take long)
-    dupedetector = DupeDetector()
-
     # do we need to regenerate the DB?
     if regenerate:
         print("Regenerate is True, generating fingerprint database")
         key = input("Would you like to overwrite %s (y/n): " % database_filename)
         if key == "y":
             with open(database_filename, "wb") as f:
-                fingerprint_db = populate_fingerprint_db(all_works, dupedetector, target_size=target_size)
+                fingerprint_db = populate_fingerprint_db(all_works)
                 f.write(pickle.dumps(fingerprint_db))
         print("Done")
-        return
+        exit()
     else:
         print("Regenerate is False, loading from disk: %s" % database_filename)
         fingerprint_db = pickle.load(open(database_filename, "rb"))
@@ -145,15 +138,9 @@ def main(target_size):
 
     # tests
     print('Now testing duplicate-detection scheme on known near-duplicate images')
-    dupe_percentage = test_files_for_duplicates(dupe_images, pandas_table, dupedetector)
+    dupe_percentage = test_files_for_duplicates(dupe_images, pandas_table)
     print('\nAccuracy Percentage in Detecting Duplicate Images: %.2f%%' % (dupe_percentage*100))
 
     print('Now testing duplicate-detection scheme on known non-duplicate images')
-    dupe_percentage = test_files_for_duplicates(nondupe_images, pandas_table, dupedetector)
+    dupe_percentage = test_files_for_duplicates(nondupe_images, pandas_table)
     print('\nAccuracy Percentage in Detecting Non-Duplicate Images: %.2f%%' % ((1-dupe_percentage)*100))
-
-
-if __name__ == "__main__":
-    # TODO: This was set by Jeff, do NOT change yet!
-    TARGET_SIZE = (224, 224)
-    main(TARGET_SIZE)

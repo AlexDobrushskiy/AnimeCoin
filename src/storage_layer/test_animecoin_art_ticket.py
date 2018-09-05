@@ -51,7 +51,7 @@ class RegistrationClient:
             "artwork_keyword_set": artwork_keyword_set,
             "total_copies": total_copies,
 
-            "fingerprints": image.generate_fingerprints(image),
+            "fingerprints": image.generate_fingerprints(),
             "lubyhashes": image.get_luby_hashes(),
             "thumbnailhash": image.get_thumbnail_hash(),
 
@@ -177,7 +177,7 @@ def get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage):
 
     thumbnail = chunkstorage.get(regticket.thumbnailhash)
     print("Fetched thumbnail:", len(thumbnail))
-    print("Thumbnail:", thumbnail)
+    print("Thumbnail:", len(thumbnail))
 
 
 if __name__ == "__main__":
@@ -187,8 +187,6 @@ if __name__ == "__main__":
 
     # TODO: transition from base64 to binary keys to save space
     privkey, pubkey = animecoin_id_keypair_generation_func()
-    # TODO: mock fingerprints
-    fingerprint_floats = json.load(open(fingerprint_file))
 
     # START MOCK STUFF
     # TODO: remove mock stuff
