@@ -171,7 +171,6 @@ def get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage):
     print("Regticket received from chain:")
     print("author", regticket.author)
     print("artwork_title", regticket.artwork_title)
-    print("lubyhashes", regticket.lubyhashes)
     print("thumbnailhash", regticket.thumbnailhash)
     print("imagedata_hash", regticket.imagedata_hash)
 
