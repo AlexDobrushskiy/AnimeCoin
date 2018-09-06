@@ -6,7 +6,7 @@ import hashlib
 import pandas as pd
 
 from dht_prototype.masternode_modules.animecoin_modules.animecoin_dupe_detection import DupeDetector,\
-    measure_similarity, combine_fingerprint_vectors
+    measure_similarity, combine_fingerprint_vectors, assemble_fingerprints_for_pandas
 
 
 def get_sha256_hash_of_input_data_func(input_data_or_string):
@@ -18,7 +18,7 @@ def get_sha256_hash_of_input_data_func(input_data_or_string):
 
 def list_files(basedir):
     files = []
-    for i in sorted(os.listdir(basedir))[:10]:
+    for i in sorted(os.listdir(basedir)):
         if i.split(".")[-1] in ["jpg", "jpeg", "bmp", "gif", "png"]:
             files.append(os.path.join(basedir, i))
     return files
@@ -35,25 +35,6 @@ def get_fingerprint_for_file(current_image_file_path):
     return imghash, fingerprints
 
 
-def assemble_fingerprints_for_pandas(db):
-    df_vectors = pd.DataFrame()
-    pandas_fingerprint_table = pd.DataFrame()
-
-    for current_image_file_hash, data in db:
-        file_path, fingerprint_collection = data
-
-        combined = combine_fingerprint_vectors(fingerprint_collection)
-        df_vectors = df_vectors.append(combined)
-
-        # create dataframe rows for every image
-        df_row = pd.DataFrame([current_image_file_hash, file_path]).T
-        pandas_fingerprint_table = pandas_fingerprint_table.append(df_row)
-
-    final_pandas_table = pd.concat([pandas_fingerprint_table, df_vectors], axis=1,
-                                   join_axes=[pandas_fingerprint_table.index])
-    return final_pandas_table
-
-
 def populate_fingerprint_db(basedir):
     files = list_files(basedir)
     db = {}
@@ -63,9 +44,10 @@ def populate_fingerprint_db(basedir):
                                                                                  counter, len(files)))
 
         imghash, fingerprints = get_fingerprint_for_file(current_image_file_path)
+        combined = combine_fingerprint_vectors(fingerprints)
 
         # add to the database
-        db[imghash] = (current_image_file_path, fingerprints)
+        db[imghash] = (current_image_file_path, combined)
         counter += 1
     return db
 
@@ -89,8 +71,9 @@ def test_files_for_duplicates(dupe_images, pandas_table):
         print('Testing file: ' + filename)
 
         # compute fingerprint
-        prepared_fingerprint = compute_fingerprint_for_single_image(filename)
-        is_likely_dupe, params_df = measure_similarity(prepared_fingerprint, pandas_table)
+        _, fingerprints = get_fingerprint_for_file(filename)
+        combinged_fingerprints = combine_fingerprint_vectors(fingerprints)
+        is_likely_dupe, params_df = measure_similarity(combinged_fingerprints, pandas_table)
 
         if is_likely_dupe:
             print("Art file (%s) appears to be a DUPLICATE!" % filename)
