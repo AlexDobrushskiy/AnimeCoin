@@ -25,16 +25,16 @@ def test(blockchain, original):
 
 def main():
     blockchain = BlockChain("test", "testpw", "127.0.0.1", PORT)
-    print(blockchain.getbestblockhash())
+    # print(blockchain.getbestblockhash())
 
     # print(blockchain.listtransactions())
 
-    filename = sys.argv[1]
-    original = open(filename, "rb").read()
+    # filename = sys.argv[1]
+    # original = open(filename, "rb").read()
     # test(blockchain, original)
 
-    for i in range(0, 1000):
-        datalen = random.randint(0, 100)
+    for datalen in range(0, 100):
+        # datalen = random.randint(0, 100)
         killerdata = os.urandom(random.randint(0, 10))
         print("len: %s, killerdata: %s" % (datalen, killerdata))
         original = b'X' * datalen + killerdata
