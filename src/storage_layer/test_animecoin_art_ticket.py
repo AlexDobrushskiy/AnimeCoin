@@ -125,6 +125,7 @@ class RegistrationClient:
 
             "fingerprints": image.generate_fingerprints(),
             "lubyhashes": image.get_luby_hashes(),
+            "lubyseeds": image.get_luby_seeds(),
             "thumbnailhash": image.get_thumbnail_hash(),
 
             "author": pubkey,
@@ -185,6 +186,7 @@ class RegistrationClient:
 def get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage):
     # find final activation ticket and validate signatures
     final_actticket_serialized = chainwrapper.retrieve_ticket(actticket_txid)
+    print("FINAL ACT TICKET SERIALIZED SIZE:", len(final_actticket_serialized))
     final_actticket = FinalActivationTicket(serialized=final_actticket_serialized)
 
     # validate signatures by MNs
@@ -192,6 +194,7 @@ def get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage):
 
     # get final registration ticket
     final_regticket_serialized = chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
+    print("FINAL REGTICKET SERIALIZED SIZE:", len(final_regticket_serialized))
     final_regticket = FinalRegistrationTicket(serialized=final_regticket_serialized)
 
     # validate signatures by MNs
