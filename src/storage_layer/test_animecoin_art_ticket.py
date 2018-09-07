@@ -219,8 +219,7 @@ def get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage):
 
 if __name__ == "__main__":
     # parse parameters and generate stuff
-    fingerprint_file = sys.argv[1]
-    image_files = sys.argv[2:]
+    image_files = sys.argv[1:]
 
     # TODO: transition from base64 to binary keys to save space
     privkey, pubkey = animecoin_id_keypair_generation_func()
@@ -228,7 +227,6 @@ if __name__ == "__main__":
     # START MOCK STUFF
     # TODO: remove mock stuff
     # our mockchain and mockstorage
-    blockchain = BlockChain("", "", "", "")
     blockchain = MockChain()
     chainwrapper = ChainWrapper(blockchain)
     chunkstorage = ChunkStorage()
