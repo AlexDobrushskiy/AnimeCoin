@@ -8,7 +8,8 @@ from dht_prototype.masternode_modules.animecoin_modules.animecoin_signatures imp
 from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
 from dht_prototype.masternode_modules.models_new import ImageData, RegistrationTicket, ActivationTicket, \
     Signature, FinalRegistrationTicket, FinalActivationTicket
-from dht_prototype.masternode_modules.mockchain import BlockChain, ChainWrapper
+from dht_prototype.masternode_modules.blockchain import BlockChain
+from dht_prototype.masternode_modules.blockchain_wrapper import MockChain, ChainWrapper
 from dht_prototype.masternode_modules.mockstorage import ChunkStorage
 from dht_prototype.masternode_modules.masternode_ticketing import RegistrationServer
 
@@ -227,7 +228,8 @@ if __name__ == "__main__":
     # START MOCK STUFF
     # TODO: remove mock stuff
     # our mockchain and mockstorage
-    blockchain = BlockChain()
+    blockchain = BlockChain("", "", "", "")
+    blockchain = MockChain()
     chainwrapper = ChainWrapper(blockchain)
     chunkstorage = ChunkStorage()
 
