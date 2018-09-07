@@ -1,10 +1,13 @@
 import sys
 import os
+import shutil
 
 from dht_prototype.masternode_daemon import MasterNode
 
 
-def test_store_and_retrieve_image(image):
+def test_store_and_retrieve_data(nodes):
+    testdata = b'THIS IS TEST DATA'
+
     # nodes[0].chainwrapper.generate(100)
     txid = nodes[0].chainwrapper.store_ticket(testdata)
 
@@ -15,12 +18,34 @@ def test_store_and_retrieve_image(image):
     assert(testdata == resp)
 
 
+def prepare_node_directory(node_dir, example_config):
+    blockchaindir = os.path.join(node_dir, "blockchain")
+
+    print("Creating blockchain directory")
+    os.makedirs(blockchaindir, exist_ok=True)
+
+    print("Copying over example config file")
+    try:
+        open(os.path.join(blockchaindir, "animecoin.conf"))
+    except FileNotFoundError:
+        shutil.copy(example_config, blockchaindir)
+
+
 if __name__ == "__main__":
     basedir = sys.argv[1]
+    daemon_binary = sys.argv[2]
+    example_config = sys.argv[3]
+
+    # TODO: clean up and prepare basedirs
+    #  o create folder structure
+    #  o place default animecoin.conf
 
     masternodes = []
-    for i in range(0, 2):
-        mn = MasterNode(os.path.join(basedir, "node%s" % i))
+    for i in range(0, 1):
+        node_dir = os.path.join(basedir, "node%s" % i)
+        prepare_node_directory(node_dir, example_config)
+
+        mn = MasterNode(node_dir, daemon_binary)
         masternodes.append(mn)
 
     for node in masternodes:
