@@ -1,11 +1,5 @@
-import os
-import subprocess
-import time
-
-import bitcoinrpc
-
 from .masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from .masternode_modules.blockchain import BlockChain, NetWorkSettings
+from .masternode_modules.blockchain import BlockChain
 from .masternode_modules.blockchain_wrapper import ChainWrapper
 from .masternode_modules.masternode_logic import MasterNodeLogic
 
