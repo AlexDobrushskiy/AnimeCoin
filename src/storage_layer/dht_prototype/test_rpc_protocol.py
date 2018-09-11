@@ -1,4 +1,4 @@
-from masternode_modules.rpcprotocol import serialize, deserialize
+from .masternode_modules.rpc import serialize, deserialize
 
 
 RPCNAME = "SPOTCHECK"
