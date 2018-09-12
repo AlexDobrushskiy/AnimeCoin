@@ -21,5 +21,12 @@ from core import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    url(r'^walletinfo/$', views.walletinfo, name='walletinfo'),
+    url(r'^portfolio/$', views.portfolio, name='portfolio'),
+    url(r'^exchange/$', views.exchange, name='exchange'),
+    url(r'^trending/$', views.trending, name='trending'),
+    url(r'^browse/$', views.browse, name='browse'),
+    url(r'^register/$', views.register, name='register'),
+    url(r'^explorer/$', views.explorer, name='explorer'),
     url(r'^$', views.index, name='index'),
 ]

@@ -6,7 +6,7 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-12 mt-3">
-        <h1>Welcome to artex</h1>
+        <h1>Portfolio: {{ resp }}</h1>
     </div>
 </div>
 {% endblock %}
