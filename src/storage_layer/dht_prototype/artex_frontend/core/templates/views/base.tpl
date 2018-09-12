@@ -101,7 +101,7 @@
             <span>Dashboard</span>
           </a>
         </li>
-        <!--<li class="nav-item dropdown">-->
+          <!--<li class="nav-item dropdown">-->
           <!--<a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">-->
             <!--<i class="fas fa-fw fa-folder"></i>-->
             <!--<span>Pages</span>-->
@@ -135,8 +135,22 @@
         <li class="nav-item">
           <a class="nav-link" href="/register"><i class="fas fa-fw fa-plus"></i>&nbsp;<span>Register Art</span></a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/explorer"><i class="fas fa-fw fa-database"></i>&nbsp;<span>Block Explorer</span></a>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-fw fa-folder"></i>
+            <span>Block Explorer</span>
+          </a>
+            <div class="dropdown-menu" aria-labelledby="pagesDropdown">
+                <h6 class="dropdown-header">Block Explorer</h6>
+                <a class="dropdown-item" href="/explorer/chaininfo">Chaininfo</a>
+                <a class="dropdown-item" href="/explorer/block">Blocks</a>
+                <a class="dropdown-item" href="/explorer/transaction">Transactions</a>
+                <a class="dropdown-item" href="/explorer/address">Addresses</a>
+                <!--<div class="dropdown-divider"></div>-->
+                <!--<h6 class="dropdown-header">Other Pages:</h6>-->
+                <!--<a class="dropdown-item" href="404.html">404 Page</a>-->
+                <!--<a class="dropdown-item" href="blank.html">Blank Page</a>-->
+              </div>
         </li>
       </ul>
 

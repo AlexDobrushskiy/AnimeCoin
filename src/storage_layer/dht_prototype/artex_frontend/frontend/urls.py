@@ -27,6 +27,6 @@ urlpatterns = [
     url(r'^trending/$', views.trending, name='trending'),
     url(r'^browse/$', views.browse, name='browse'),
     url(r'^register/$', views.register, name='register'),
-    url(r'^explorer/$', views.explorer, name='explorer'),
+    url(r'^explorer/(?P<functionality>(chaininfo|block|transaction|address))/?(?P<id>.*)?$', views.explorer, name='explorer'),
     url(r'^$', views.index, name='index'),
 ]

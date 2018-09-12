@@ -6,7 +6,7 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-12 mt-3">
-        <h1>Explorer: {{ resp }}</h1>
+        <pre>{{ chaininfo|pprint }}</pre>
     </div>
 </div>
 {% endblock %}

@@ -28,12 +28,12 @@
                 <tbody>
                     {% for transaction in transactions %}
                         <tr>
-                            <td>{{ transaction["address"] }}</td>
+                            <td>{{ macros.render_address_link(transaction["address"]) }}</td>
                             <td>{{ transaction["category"] }}</td>
                             <td>{{ transaction["amount"] }}</td>
                             <td>{{ transaction["confirmations"] }}</td>
                             <td>{{ transaction["blocktime"] }}</td>
-                            <td>{{ transaction["txid"] }}</td>
+                            <td>{{ macros.render_transaction_link(transaction["txid"]) }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
