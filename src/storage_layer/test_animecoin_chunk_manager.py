@@ -7,10 +7,9 @@ import zmq.asyncio
 
 from datetime import datetime as dt
 
-from .masternode_modules.masternode_logic import MasterNodeLogic
-from .masternode_modules.settings import MasterNodeSettings
-from .masternode_modules.helpers import get_hexdigest, getrandbytes
-from .masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
+from dht_prototype.masternode_modules.masternode_logic import MasterNodeLogic
+from dht_prototype.masternode_modules.helpers import get_hexdigest, getrandbytes
+from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
 
 
 BASEDIR = "/home/synapse/tmp/animecoin/tmpstorage"
@@ -84,9 +83,15 @@ if __name__ == "__main__":
         os.makedirs(chunkdir, exist_ok=True)
 
         nodeid, ip, port, privkey, pubkey = config
-        masternode_settings = MasterNodeSettings(basedir=chunkdir, privkey=privkey, pubkey=pubkey)
 
-        mn = MasterNodeLogic(name, nodeid, masternode_settings, masternode_list, [x[0] for x in chunks])
+        mn = MasterNodeLogic(name=name,
+                        nodeid=nodeid,
+                        basedir=chunkdir,
+                        privkey=privkey,
+                        pubkey=pubkey,
+                        ip=ip,
+                        port=port,
+                        chunks=[x[0] for x in chunks])
 
         masternodes.append(mn)
 
