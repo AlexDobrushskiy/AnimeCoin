@@ -3,12 +3,13 @@ from bitcoinrpc.authproxy import JSONRPCException
 
 from django.shortcuts import render, redirect, Http404
 from django.http import HttpResponse, HttpResponseRedirect
+from core.models import nodemanager
 
 from dht_prototype.masternode_modules.blockchain import BlockChain
 
 
 def index(request):
-    return render(request, "views/index.tpl", {})
+    return render(request, "views/index.tpl", {"nodemanager": nodemanager})
 
 
 def walletinfo(request):

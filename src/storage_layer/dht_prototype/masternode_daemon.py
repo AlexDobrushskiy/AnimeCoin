@@ -11,9 +11,9 @@ from .masternode_modules.masternode_logic import MasterNodeLogic
 
 
 class MasterNodeDaemon:
-    def __init__(self, nodeid, settings):
-        self.__nodeid = nodeid
+    def __init__(self, settings):
         self.__settings = settings
+        self.__nodeid = settings["nodeid"]
         self.__cmnprocess = None
 
         # start actual blockchain daemon process

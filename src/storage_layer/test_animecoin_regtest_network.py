@@ -1,12 +1,11 @@
 import asyncio
-import time
 import sys
 import os
-import shutil
 
 from datetime import datetime as dt, timedelta as td
 
 from dht_prototype.masternode_daemon import MasterNodeDaemon
+from dht_prototype.masternode_modules.masternode_discovery import discover_nodes
 
 
 async def heartbeat():
@@ -28,32 +27,17 @@ def test_store_and_retrieve_data(srcnode, dstnode):
     assert(testdata == resp)
 
 
-def parse_regtest_dir(daemon_binary, regtestdir):
+def start_masternodes(settings_list):
     masternodes = {}
-    for dir in sorted(os.listdir(regtestdir)):
-        settingsfile = os.path.join(regtestdir, dir, "animecoin.conf")
-
-        settings = {}
-        for line in open(settingsfile):
-            line = line.strip().split("=")
-            settings[line[0]] = line[1]
-
-        # set our settings
-        # TODO: cofidy these settings in a concrete model and validate that everything we need is set
-        settings["daemon_binary"] = daemon_binary
-        settings["datadir"] = os.path.join(regtestdir, dir)
-        settings["basedir"] = os.path.join(regtestdir, dir, "pymn")
-        settings["ip"] = "127.0.0.1"
-        settings["pyrpcport"] = int(settings["rpcport"]) + 1000
+    for settings in settings_list:
         os.makedirs(settings["basedir"], exist_ok=True)
         os.makedirs(os.path.join(settings["basedir"], "config"), exist_ok=True)
 
-        nodeid = int(dir.lstrip("node"))
+        mn = MasterNodeDaemon(settings=settings)
 
-        mn = MasterNodeDaemon(nodeid=nodeid, settings=settings)
-
-        masternodes[dir] = mn
-        print("Found masternode %s!" % dir)
+        nodename = settings["nodename"]
+        masternodes[nodename] = mn
+        print("Found masternode %s!" % nodename)
 
         if len(masternodes) > 1:
             print("ABORTING EARLY")
@@ -66,7 +50,8 @@ if __name__ == "__main__":
     path_to_daemon_binary = sys.argv[1]
     regtestdir = sys.argv[2]
 
-    masternodes = parse_regtest_dir(path_to_daemon_binary, regtestdir)
+    settings_list = discover_nodes(path_to_daemon_binary, regtestdir)
+    masternodes = start_masternodes(settings_list)
 
     for nodeid, mn in masternodes.items():
         for othernodeid, othermn in masternodes.items():
