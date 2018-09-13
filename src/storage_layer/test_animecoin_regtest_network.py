@@ -39,9 +39,9 @@ def start_masternodes(settings_list):
         masternodes[nodename] = mn
         print("Found masternode %s!" % nodename)
 
-        if len(masternodes) > 1:
-            print("ABORTING EARLY")
-            break
+        # if len(masternodes) > 1:
+        #     print("ABORTING EARLY")
+        #     break
 
     return masternodes
 
@@ -75,14 +75,13 @@ if __name__ == "__main__":
 
     # start async loops
     loop = asyncio.get_event_loop()
-    for nodeid, mn in masternodes.items():
-        loop.create_task(mn.logic.zmq_run_forever())
 
     loop.create_task(heartbeat())
 
     for nodeid, mn in masternodes.items():
-        loop.create_task(mn.logic.run_heartbeat_forever())
-        loop.create_task(mn.logic.issue_random_tests_forever(1))
+        loop.create_task(mn.logic.zmq_run_forever())
+        # loop.create_task(mn.logic.run_heartbeat_forever())
+        # loop.create_task(mn.logic.issue_random_tests_forever(1))
         loop.create_task(mn.logic.run_workers_forever())
 
     try:

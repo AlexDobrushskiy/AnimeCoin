@@ -1,3 +1,4 @@
+import asyncio
 import pprint
 from bitcoinrpc.authproxy import JSONRPCException
 
@@ -9,7 +10,18 @@ from dht_prototype.masternode_modules.blockchain import BlockChain
 
 
 def index(request):
-    return render(request, "views/index.tpl", {"nodemanager": nodemanager})
+    masternodes = nodemanager.get_all()
+
+    new_loop = asyncio.new_event_loop()
+
+    results = []
+    for mn in masternodes:
+        result = new_loop.run_until_complete(mn.send_rpc_ping(b'PING'))
+        results.append((str(mn), result))
+
+    new_loop.stop()
+
+    return render(request, "views/index.tpl", {"results": results})
 
 
 def walletinfo(request):
