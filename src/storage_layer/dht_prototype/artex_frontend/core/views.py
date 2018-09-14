@@ -10,16 +10,17 @@ from dht_prototype.masternode_modules.blockchain import BlockChain
 
 
 def index(request):
-    masternodes = nodemanager.get_all()
-
-    new_loop = asyncio.new_event_loop()
-
-    results = []
-    for mn in masternodes:
-        result = new_loop.run_until_complete(mn.send_rpc_ping(b'PING'))
-        results.append((str(mn), result))
-
-    new_loop.stop()
+    # masternodes = nodemanager.get_all()
+    #
+    # new_loop = asyncio.new_event_loop()
+    #
+    # results = []
+    # for mn in masternodes:
+    #     result = new_loop.run_until_complete(mn.send_rpc_ping(b'PING'))
+    #     results.append((str(mn), result))
+    #
+    # new_loop.stop()
+    results = ["N/A"]
 
     return render(request, "views/index.tpl", {"results": results})
 

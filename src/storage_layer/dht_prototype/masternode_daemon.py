@@ -1,9 +1,11 @@
+import logging
 import time
 import os
 import subprocess
 
 import bitcoinrpc
 
+from .masternode_modules.settings import MNDeamonSettings
 from .masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
 from .masternode_modules.blockchain import BlockChain
 from .masternode_modules.blockchain_wrapper import ChainWrapper
@@ -12,7 +14,11 @@ from .masternode_modules.masternode_logic import MasterNodeLogic
 
 class MasterNodeDaemon:
     def __init__(self, settings):
-        self.__settings = settings
+        # initialize logging
+        self.__initlogging(settings["nodename"])
+        self.__logger.debug("Started logger")
+
+        self.__settings = MNDeamonSettings(settings)
         self.__nodeid = settings["nodeid"]
         self.__cmnprocess = None
 
@@ -29,28 +35,38 @@ class MasterNodeDaemon:
         # TODO: do we need the cMN pub/privkey at all?
         # mn_address = self.blockchain.jsonrpc.getaccountaddress("")
         # mn_privkey = self.blockchain.jsonrpc.dumpprivkey(mn_address)
-        # print("loaded address %s with privkey %s" % (mn_address, mn_privkey))
+        # self.__logger.debug("loaded address %s with privkey %s" % (mn_address, mn_privkey))
 
         # load or generate keys
         self.__load_keys()
 
         # spawn logic
         self.logic = MasterNodeLogic(name="node%s" % self.__nodeid,
+                                     logger=self.__logger,
                                      nodeid=str(self.__nodeid),
-                                     basedir=self.__settings["basedir"],
+                                     basedir=self.__settings.basedir,
                                      privkey=self.__privkey,
                                      pubkey=self.__pubkey,
-                                     ip=self.__settings["ip"],
-                                     port=self.__settings["pyrpcport"],
+                                     ip=self.__settings.ip,
+                                     port=self.__settings.pyrpcport,
                                      chunks=[])
+
+    def __initlogging(self, name):
+        self.__logger = logging.getLogger(name)
+        self.__logger.setLevel(logging.DEBUG)
+
+        formatter = logging.Formatter(' %(asctime)s - ' + name + ' - %(levelname)s - %(message)s')
+        consolehandler = logging.StreamHandler()
+        consolehandler.setFormatter(formatter)
+        self.__logger.addHandler(consolehandler)
 
     def __load_keys(self):
         # TODO: rethink key generation and audit storage process
-        privkeypath = os.path.join(self.__settings["basedir"], "config", "private.key")
-        pubkeypath = os.path.join(self.__settings["basedir"], "config", "public.key")
+        privkeypath = os.path.join(self.__settings.basedir, "config", "private.key")
+        pubkeypath = os.path.join(self.__settings.basedir, "config", "public.key")
 
         if not os.path.isfile(privkeypath) or not os.path.isfile(pubkeypath):
-            print("It seems that public and private keys are not generated, creating them now...")
+            self.__logger.debug("It seems that public and private keys are not generated, creating them now...")
             self.__privkey, self.__pubkey = animecoin_id_keypair_generation_func()
             with open(privkeypath, "wt") as f:
                 f.write(self.__privkey)
@@ -65,13 +81,13 @@ class MasterNodeDaemon:
                 self.__pubkey = f.read()
 
     def get_masternode_details(self):
-        return self.__nodeid, "127.0.0.1", self.__settings["pyrpcport"], self.__pubkey
+        return self.__nodeid, "127.0.0.1", self.__settings.pyrpcport, self.__pubkey
 
     def start_cmn(self):
-        print("Starting bitcoing daemon on rpcport %s" % self.__settings["rpcport"])
-        self.__cmnprocess = subprocess.Popen([self.__settings["daemon_binary"],
-                                              "-rpcuser=%s" % self.__settings["rpcuser"],
-                                              "-rpcpassword=%s" % self.__settings["rpcpassword"],
+        self.__logger.debug("Starting bitcoing daemon on rpcport %s" % self.__settings.rpcport)
+        self.__cmnprocess = subprocess.Popen([self.__settings.daemon_binary,
+                                              "-rpcuser=%s" % self.__settings.rpcuser,
+                                              "-rpcpassword=%s" % self.__settings.rpcpassword,
                                               "-regtest=1",
                                               "-gen=1",
                                               "-genproclimit=1",
@@ -79,14 +95,14 @@ class MasterNodeDaemon:
                                               "-showmetrics=0",
                                               "-listenonion=0",
                                               "-txindex",
-                                              "-rpcport=%s" % self.__settings["rpcport"],
-                                              "-port=%s" % self.__settings["port"],
+                                              "-rpcport=%s" % self.__settings.rpcport,
+                                              "-port=%s" % self.__settings.port,
                                               "-server",
                                               "-addresstype=legacy",
                                               "-discover=0",
-                                              "-datadir=%s" % self.__settings["datadir"]])
+                                              "-datadir=%s" % self.__settings.datadir])
 
-        # print("Connecting to %s" % NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
+        # self.__logger.debug("Connecting to %s" % NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
         # self.blockchain.bootstrap(NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
 
     def stop_cmn(self):
@@ -95,16 +111,16 @@ class MasterNodeDaemon:
 
     def connect_to_daemon(self):
         while True:
-            blockchain = BlockChain(user=self.__settings["rpcuser"],
-                                    password=self.__settings["rpcpassword"],
-                                    ip=self.__settings["ip"],
-                                    rpcport=self.__settings["rpcport"])
+            blockchain = BlockChain(user=self.__settings.rpcuser,
+                                    password=self.__settings.rpcpassword,
+                                    ip=self.__settings.ip,
+                                    rpcport=self.__settings.rpcport)
             try:
                 blockchain.jsonrpc.getwalletinfo()
             except (ConnectionRefusedError, bitcoinrpc.authproxy.JSONRPCException) as exc:
-                print("Exception while getting wallet info, retrying...", exc)
+                self.__logger.debug("Exception %s while getting wallet info, retrying..." % exc)
                 time.sleep(0.5)
             else:
-                print("Successfully connected to daemon!")
+                self.__logger.debug("Successfully connected to daemon!")
                 break
         return blockchain
