@@ -1,45 +1,57 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import sys
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5 import QtWebEngineWidgets
+from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
+from dht_prototype.masternode_modules.masternode_communication import NodeManager
+from dht_prototype.masternode_modules.masternode_discovery import discover_nodes
+
+from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtCore import QUrl, Qt
+from PyQt5.QtQuick import QQuickItem
+from PyQt5.QtQml import QQmlApplicationEngine, QQmlComponent
 
 
-class Ui_MainWindow(object):
-    def setupUi(self, MainWindow, resolution, url):
-        MainWindow.setObjectName("MainWindow")
-        # MainWindow.showMaximized()
-        MainWindow.resize(*resolution)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-        self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
-        self.gridLayout.setObjectName("gridLayout")
-        self.gridLayout.setSpacing(0)
-        self.gridLayout.setContentsMargins(0, 0, 0, 0)
-        self.webView = QtWebEngineWidgets.QWebEngineView(self.centralwidget)
-        self.webView.setUrl(QtCore.QUrl(url))
-        self.webView.setObjectName("webView")
-        self.gridLayout.addWidget(self.webView, 0, 0, 1, 1)
-        MainWindow.setCentralWidget(self.centralwidget)
-        # self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        # self.statusbar.setObjectName("statusbar")
-        # MainWindow.setStatusBar(self.statusbar)
+def initlogging():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
 
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("Artex", "Artex"))
+    formatter = logging.Formatter(' %(asctime)s - ' + __name__ + ' - %(levelname)s - %(message)s')
+    consolehandler = logging.StreamHandler()
+    consolehandler.setFormatter(formatter)
+    logger.addHandler(consolehandler)
+    return logger
 
 
 if __name__ == "__main__":
-    url = sys.argv[1]
-    app = QtWidgets.QApplication([])
-    # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling) - doesn't work
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow, resolution=(1280, 768), url=url)
-    MainWindow.show()
+    animecoind_path = sys.argv[1]
+    basedir = sys.argv[2]
+
+    # discover animecoin nodes
+    logger = initlogging()
+
+    privkey, pubkey = animecoin_id_keypair_generation_func()
+    nodemanager = NodeManager(logger, privkey, pubkey)
+    for settings in discover_nodes(animecoind_path, basedir):
+        nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"])
+
+    # start GUI
+    app = QGuiApplication(sys.argv)
+    engine = QQmlApplicationEngine('app.qml')
+
+    window = engine.rootObjects()[0]
+
+    tabs = window.findChildren(QQuickItem, "tabs", Qt.FindChildrenRecursively)[0]
+
+    # perpare component to be added to tabs
+    component = QQmlComponent(engine, None)
+    component.loadUrl(QUrl("component.qml"))
+
+    # load tabs for masternodes
+    for settings in discover_nodes(animecoind_path, basedir):
+        url = "http://%s:%s@%s:%s" % (settings["rpcuser"], settings["rpcpassword"], settings["ip"], settings["pyhttpadmin"])
+        print(url)
+        tabs.addTab(settings["nodename"], component)
+
     sys.exit(app.exec_())
