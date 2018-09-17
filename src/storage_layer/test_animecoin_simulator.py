@@ -29,10 +29,9 @@ def test_store_and_retrieve_data(srcnode, dstnode):
 
 
 class Simulator:
-    def __init__(self, daemon_binary, configdir):
+    def __init__(self, configdir):
         self.__name = "spawner"
         self.__logger = self.__initlogging()
-        self.__daemon_binary = daemon_binary
         self.__configdir = configdir
 
         # generate our keys for RPC
@@ -52,27 +51,9 @@ class Simulator:
         return logger
 
     def spawn_masternode(self, settings):
+        self.__logger.debug("Starting masternode: %s" % settings["nodeid"])
         mn = MasterNodeDaemon(settings=settings)
-
-        # start async loops
-        loop = asyncio.get_event_loop()
-
-        # set signal handlers
-        loop.add_signal_handler(signal.SIGTERM, loop.stop)
-
-        loop.create_task(mn.logic.zmq_run_forever())
-        # loop.create_task(mn.logic.run_heartbeat_forever())
-        # loop.create_task(mn.logic.run_ping_test_forever())
-        # loop.create_task(mn.logic.issue_random_tests_forever(1))
-        loop.create_task(mn.logic.run_workers_forever())
-
-        try:
-            loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            loop.stop()
-        mn.stop_cmn()
+        mn.run_event_loop()
         self.__logger.debug("Stopped spawned masternode: %s" % settings["nodeid"])
 
     def start_masternode_in_new_process(self, settings_list):
@@ -121,11 +102,11 @@ class Simulator:
 
     def main(self):
         # spawn MasterNode Daemons
-        settings_list = discover_nodes(path_to_daemon_binary, regtestdir)
+        settings_list = discover_nodes(regtestdir)
         masternodes = self.start_masternode_in_new_process(settings_list)
 
         # connect to animecoinds spawned by daemons
-        for settings in discover_nodes(self.__daemon_binary, self.__configdir):
+        for settings in discover_nodes(self.__configdir):
             self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"])
 
         # start our event loop
@@ -156,8 +137,7 @@ class Simulator:
 
 
 if __name__ == "__main__":
-    path_to_daemon_binary = sys.argv[1]
-    regtestdir = sys.argv[2]
+    regtestdir = sys.argv[1]
 
-    simulator = Simulator(daemon_binary=path_to_daemon_binary, configdir=regtestdir)
+    simulator = Simulator(configdir=regtestdir)
     simulator.main()

@@ -1,5 +1,8 @@
 .idea/
 
+src/storage_layer/gui_client/cefpython/blob_storage/
+src/storage_layer/gui_client/cefpython/webrtc_event_logs/
+
 *.tar.gz
 *.deb
 *.exe

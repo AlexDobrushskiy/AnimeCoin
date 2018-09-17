@@ -1,3 +1,5 @@
+import asyncio
+import signal
 import logging
 import time
 import os
@@ -5,7 +7,7 @@ import subprocess
 
 import bitcoinrpc
 
-from .masternode_modules.settings import MNDeamonSettings
+from .masternode_modules.settings import MNDeamonSettings, NetWorkSettings
 from .masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
 from .masternode_modules.blockchain import BlockChain
 from .masternode_modules.blockchain_wrapper import ChainWrapper
@@ -20,13 +22,19 @@ class MasterNodeDaemon:
 
         self.__settings = MNDeamonSettings(settings)
         self.__nodeid = settings["nodeid"]
+
+        # processes
         self.__cmnprocess = None
+        self.__djangoprocess = None
 
         # start actual blockchain daemon process
-        self.start_cmn()
+        self.__start_cmn()
+
+        # start the django process
+        self.__start_django()
 
         # set up BlockChain object
-        self.blockchain = self.connect_to_daemon()
+        self.blockchain = self.__connect_to_daemon()
 
         # set up ChainWrapper
         self.chainwrapper = ChainWrapper(self.blockchain)
@@ -80,12 +88,20 @@ class MasterNodeDaemon:
             with open(pubkeypath) as f:
                 self.__pubkey = f.read()
 
-    def get_masternode_details(self):
-        return self.__nodeid, "127.0.0.1", self.__settings.pyrpcport, self.__pubkey
+    def __start_django(self):
+        self.__djangoprocess = subprocess.Popen([NetWorkSettings.PYTHONPATH,
+                                                 "manage.py",
+                                                 "runserver",
+                                                 str(self.__settings.pyhttpadmin)],
+                                                cwd=NetWorkSettings.DJANGO_ROOT)
 
-    def start_cmn(self):
+    def __stop_django(self):
+        self.__djangoprocess.terminate()
+        self.__djangoprocess.wait()
+
+    def __start_cmn(self):
         self.__logger.debug("Starting bitcoing daemon on rpcport %s" % self.__settings.rpcport)
-        self.__cmnprocess = subprocess.Popen([self.__settings.daemon_binary,
+        self.__cmnprocess = subprocess.Popen([NetWorkSettings.ANIMECOIND_BINARY,
                                               "-rpcuser=%s" % self.__settings.rpcuser,
                                               "-rpcpassword=%s" % self.__settings.rpcpassword,
                                               "-regtest=1",
@@ -100,16 +116,17 @@ class MasterNodeDaemon:
                                               "-server",
                                               "-addresstype=legacy",
                                               "-discover=0",
-                                              "-datadir=%s" % self.__settings.datadir])
+                                              "-datadir=%s" % self.__settings.datadir],
+                                             cwd=NetWorkSettings.BASEDIR)
 
         # self.__logger.debug("Connecting to %s" % NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
         # self.blockchain.bootstrap(NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
 
-    def stop_cmn(self):
+    def __stop_cmn(self):
         self.__cmnprocess.terminate()
         self.__cmnprocess.wait()
 
-    def connect_to_daemon(self):
+    def __connect_to_daemon(self):
         while True:
             blockchain = BlockChain(user=self.__settings.rpcuser,
                                     password=self.__settings.rpcpassword,
@@ -124,3 +141,25 @@ class MasterNodeDaemon:
                 self.__logger.debug("Successfully connected to daemon!")
                 break
         return blockchain
+
+    def run_event_loop(self):
+        # start async loops
+        loop = asyncio.get_event_loop()
+
+        # set signal handlers
+        loop.add_signal_handler(signal.SIGTERM, loop.stop)
+
+        loop.create_task(self.logic.zmq_run_forever())
+        # loop.create_task(mn.logic.run_heartbeat_forever())
+        # loop.create_task(mn.logic.run_ping_test_forever())
+        # loop.create_task(mn.logic.issue_random_tests_forever(1))
+        loop.create_task(self.logic.run_workers_forever())
+
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            loop.stop()
+        self.__stop_cmn()
+        self.__stop_django()

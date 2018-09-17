@@ -24,5 +24,5 @@ logger = initlogging()
 
 privkey, pubkey = animecoin_id_keypair_generation_func()
 nodemanager = NodeManager(logger, privkey, pubkey)
-for settings in discover_nodes(settings.ANIMECOIN_BINARY_PATH, settings.ANIMECOIN_NODES_PATH):
+for settings in discover_nodes(settings.ANIMECOIN_NODES_PATH):
     nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"])
