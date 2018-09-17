@@ -89,11 +89,15 @@ class MasterNodeDaemon:
                 self.__pubkey = f.read()
 
     def __start_django(self):
+        env = os.environ.copy()
+        env["ANIMECOIN_BASEDIR"] = self.__settings.datadir
+
         self.__djangoprocess = subprocess.Popen([NetWorkSettings.PYTHONPATH,
                                                  "manage.py",
                                                  "runserver",
                                                  str(self.__settings.pyhttpadmin)],
-                                                cwd=NetWorkSettings.DJANGO_ROOT)
+                                                cwd=NetWorkSettings.DJANGO_ROOT,
+                                                env=env)
 
     def __stop_django(self):
         self.__djangoprocess.terminate()

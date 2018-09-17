@@ -138,5 +138,5 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
 # we need to add our other modules to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../../../../storage_layer/")
 
-ANIMECOIN_BINARY_PATH = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
-ANIMECOIN_NODES_PATH = "/home/synapse/tmp/animecoin/bitcoin_datadirs/testSpeDbv/"
+# we need this to be filled out
+ANIMECOIN_BASEDIR = os.environ["ANIMECOIN_BASEDIR"]

@@ -75,31 +75,6 @@ class Simulator:
 
         return masternodes
 
-    async def run_heartbeat_forever(self):
-        while True:
-            # await asyncio.sleep(1)
-
-            data = b'PING'
-
-            mn = self.__nodemanager.get_random()
-
-            start = dt.now()
-            try:
-
-                response_data = await mn.send_rpc_ping(data)
-                end = dt.now()
-            except RPCException as exc:
-                self.__logger.info("PING RPC FAILED for node %s with exception %s" % (mn, exc))
-            else:
-                if response_data != data:
-                    self.__logger.warning("PING FAILED for node %s (%s != %s)" % (mn, data, response_data))
-                else:
-                    self.__logger.debug("PING SUCCESS for node %s for chunk: %s" % (mn, data))
-
-                # TODO: track successes/errors
-            elapsed = (dt.now()-start).total_seconds()
-            self.__logger.debug("PING took %.2f seconds" % elapsed)
-
     def main(self):
         # spawn MasterNode Daemons
         settings_list = discover_nodes(regtestdir)
@@ -107,13 +82,13 @@ class Simulator:
 
         # connect to animecoinds spawned by daemons
         for settings in discover_nodes(self.__configdir):
-            self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"])
+            self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
+                                              settings["pubkey"])
 
         # start our event loop
         loop = asyncio.get_event_loop()
         loop.add_signal_handler(signal.SIGTERM, loop.stop)
         loop.add_signal_handler(signal.SIGINT, loop.stop)
-        loop.create_task(self.run_heartbeat_forever())
 
         # run loop until Ctrl-C
         try:

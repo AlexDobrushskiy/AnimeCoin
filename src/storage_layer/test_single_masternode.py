@@ -1,0 +1,13 @@
+import os
+import sys
+
+from dht_prototype.masternode_daemon import MasterNodeDaemon
+from dht_prototype.masternode_modules.masternode_discovery import read_settings_file
+
+if __name__ == "__main__":
+    basedir = sys.argv[1]
+
+    animecoin_conf = os.path.join(basedir, "animcoin.conf")
+    settings = read_settings_file(basedir)
+    mnd = MasterNodeDaemon(settings)
+    mnd.run_event_loop()

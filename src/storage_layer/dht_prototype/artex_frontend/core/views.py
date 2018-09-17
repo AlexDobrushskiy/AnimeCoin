@@ -2,9 +2,11 @@ import asyncio
 import pprint
 from bitcoinrpc.authproxy import JSONRPCException
 
+from django.conf import settings
 from django.shortcuts import render, redirect, Http404
 from django.http import HttpResponse, HttpResponseRedirect
-from core.models import nodemanager
+
+from core.models import blockchainsettings
 
 from dht_prototype.masternode_modules.blockchain import BlockChain
 
@@ -22,11 +24,11 @@ def index(request):
     # new_loop.stop()
     results = ["N/A"]
 
-    return render(request, "views/index.tpl", {"results": results})
+    return render(request, "views/index.tpl", {"results": results, "animecoin_basedir": settings.ANIMECOIN_BASEDIR})
 
 
 def walletinfo(request):
-    blockchain = BlockChain("rt", "rt", "127.0.0.1", 12218)
+    blockchain = BlockChain(*blockchainsettings)
     accounts = {}
     for accountname in blockchain.jsonrpc.listaccounts():
         address = blockchain.jsonrpc.getaccountaddress(accountname)
