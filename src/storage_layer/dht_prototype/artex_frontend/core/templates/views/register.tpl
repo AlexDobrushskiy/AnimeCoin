@@ -6,7 +6,14 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-12 mt-3">
-        <h1>Register: {{ resp }}</h1>
+        <h5>Form:</h5>
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+            <table class="table">
+                {{ form }}
+            </table>
+            <button type="submit" class="btn btn-danger btn-center">Register</button>
+        </form>
     </div>
 </div>
 {% endblock %}

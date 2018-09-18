@@ -90,15 +90,16 @@ class Simulator:
         # connect masternodes to each other
         # TODO: there has to be another way where the testnet can take care of this for us
         for settings in settings_list:
-            blockchain = BlockChain(settings["rpcuser"], settings["rpcpassword"], settings["ip"], settings["rpcport"])
             for tmpsettings in settings_list:
                 if settings["nodeid"] != tmpsettings["nodeid"]:
                     newnode = "%s:%s" % (tmpsettings["ip"], tmpsettings["port"])
                     logging.debug("Adding %s to node %s" % (newnode, settings["nodeid"]))
                     while True:
                         try:
+                            blockchain = BlockChain(settings["rpcuser"], settings["rpcpassword"], settings["ip"],
+                                                    settings["rpcport"])
                             blockchain.jsonrpc.addnode(newnode, "onetry")
-                        except JSONRPCException as exc:
+                        except (JSONRPCException, ConnectionRefusedError) as exc:
                             logging.debug("Waiting for MasterNode to boot up, exception: %s" % exc)
                             time.sleep(0.5)
 

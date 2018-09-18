@@ -22,7 +22,9 @@
             <h4>Send coins:</h4>
             <form method="post">
                 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
-                {{ form }}
+                <table class="table">
+                    {{ form }}
+                </table>
                 <button type="submit" class="btn btn-danger btn-center">Send</button>
             </form>
     </div>

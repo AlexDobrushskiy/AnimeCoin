@@ -90,7 +90,7 @@ class MasterNodeDaemon:
 
     def __start_django(self):
         env = os.environ.copy()
-        env["ANIMECOIN_BASEDIR"] = self.__settings.datadir
+        env["ARTEX_BASEDIR"] = self.__settings.datadir
 
         self.__djangoprocess = subprocess.Popen([NetWorkSettings.PYTHONPATH,
                                                  "manage.py",

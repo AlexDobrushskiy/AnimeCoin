@@ -139,4 +139,6 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../../../../storage_layer/")
 
 # we need this to be filled out
-ANIMECOIN_BASEDIR = os.environ["ANIMECOIN_BASEDIR"]
+ARTEX_BASEDIR = os.environ["ARTEX_BASEDIR"]
+ARTEX_PRIVKEY = os.path.join(ARTEX_BASEDIR, "pymn", "config", "private.key")
+ARTEX_PUBKEY = os.path.join(ARTEX_BASEDIR, "pymn", "config", "public.key")

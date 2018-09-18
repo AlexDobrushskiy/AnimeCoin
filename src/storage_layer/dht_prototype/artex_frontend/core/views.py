@@ -6,8 +6,10 @@ from django.conf import settings
 from django.shortcuts import render, redirect, Http404
 from django.http import HttpResponse, HttpResponseRedirect
 
+from dht_prototype.masternode_modules.masternode_ticketing import RegistrationClient
+
 from core.models import get_blockchain
-from core.forms import SendCoinsForm
+from core.forms import SendCoinsForm, ArtworkRegistrationForm
 
 
 def index(request):
@@ -27,7 +29,7 @@ def index(request):
     networkinfo = blockchain.jsonrpc.getnetworkinfo()
 
     return render(request, "views/index.tpl", {"results": results,
-                                               "animecoin_basedir": settings.ANIMECOIN_BASEDIR,
+                                               "artex_basedir": settings.ARTEX_BASEDIR,
                                                "networkinfo": networkinfo})
 
 
@@ -46,7 +48,7 @@ def walletinfo(request):
 
     form = SendCoinsForm()
     if request.method == "POST":
-        form = SendCoinsForm(data=request.POST)
+        form = SendCoinsForm(request.POST)
         if form.is_valid():
             address = form.cleaned_data["recipient_wallet"]
             amount = form.cleaned_data["amount"]
@@ -83,8 +85,37 @@ def browse(request):
 
 
 def register(request):
-    resp = "TODO"
-    return render(request, "views/register.tpl", {"resp": resp})
+    form = ArtworkRegistrationForm()
+    blockchain = get_blockchain()
+
+    if request.method == "POST":
+        form = ArtworkRegistrationForm(request.POST, request.FILES)
+        if form.is_valid():
+            # get the actual image data from the form field
+            image_field = form.cleaned_data["image_data"]
+            image_data = image_field.read()
+
+            # get the registration object
+            artreg = RegistrationClient(settings.ARTEX_PRIVKEY, settings.ARTEX_PUBKEY, blockchain)
+
+            # register image
+            # TODO: fill these out properly
+            actticket_txid = artreg.register_image(
+                image_data=image_data,
+                artist_name="Example Artist",
+                artist_website="exampleartist.com",
+                artist_written_statement="This is only a test",
+                artwork_title="My Example Art",
+                artwork_series_name="Examples and Tests collection",
+                artwork_creation_video_youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                artwork_keyword_set="example, testing, sample",
+                total_copies=10
+            )
+
+            # get and process ticket as new node
+            # get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage)
+
+    return render(request, "views/register.tpl", {"form": form})
 
 
 def explorer(request, functionality, id=""):

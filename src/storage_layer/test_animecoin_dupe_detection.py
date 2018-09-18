@@ -31,7 +31,7 @@ def get_fingerprint_for_file(current_image_file_path):
     # compute hash
     imghash = get_sha256_hash_of_input_data_func(data)
 
-    fingerprints = DupeDetector.compute_deep_learning_features(data)
+    fingerprints = DupeDetector().compute_deep_learning_features(data)
     return imghash, fingerprints
 
 

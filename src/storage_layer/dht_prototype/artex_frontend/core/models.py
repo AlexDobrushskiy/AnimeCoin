@@ -32,5 +32,5 @@ logger = initlogging()
 #     nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"])
 
 # ["rt", "rt", "127.0.0.1", 12218]
-settings = read_settings_file(settings.ANIMECOIN_BASEDIR)
+settings = read_settings_file(settings.ARTEX_BASEDIR)
 blockchainsettings = [settings["rpcuser"], settings["rpcpassword"], settings["ip"], settings["rpcport"]]
