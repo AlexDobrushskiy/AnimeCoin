@@ -4,6 +4,7 @@ from django.db import models
 from django.conf import settings
 from dht_prototype.masternode_modules.masternode_communication import NodeManager
 from dht_prototype.masternode_modules.masternode_discovery import read_settings_file
+from dht_prototype.masternode_modules.blockchain import BlockChain
 
 from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
 
@@ -18,6 +19,9 @@ def initlogging():
     logger.addHandler(consolehandler)
     return logger
 
+
+def get_blockchain():
+    return BlockChain(*blockchainsettings)
 
 # discover animecoin nodes
 logger = initlogging()

@@ -6,9 +6,8 @@ from django.conf import settings
 from django.shortcuts import render, redirect, Http404
 from django.http import HttpResponse, HttpResponseRedirect
 
-from core.models import blockchainsettings
-
-from dht_prototype.masternode_modules.blockchain import BlockChain
+from core.models import get_blockchain
+from core.forms import SendCoinsForm
 
 
 def index(request):
@@ -24,11 +23,16 @@ def index(request):
     # new_loop.stop()
     results = ["N/A"]
 
-    return render(request, "views/index.tpl", {"results": results, "animecoin_basedir": settings.ANIMECOIN_BASEDIR})
+    blockchain = get_blockchain()
+    networkinfo = blockchain.jsonrpc.getnetworkinfo()
+
+    return render(request, "views/index.tpl", {"results": results,
+                                               "animecoin_basedir": settings.ANIMECOIN_BASEDIR,
+                                               "networkinfo": networkinfo})
 
 
 def walletinfo(request):
-    blockchain = BlockChain(*blockchainsettings)
+    blockchain = get_blockchain()
     accounts = {}
     for accountname in blockchain.jsonrpc.listaccounts():
         address = blockchain.jsonrpc.getaccountaddress(accountname)
@@ -39,8 +43,23 @@ def walletinfo(request):
     balance = int(resp["balance"])
     unconfirmed = int(resp["unconfirmed_balance"])
     immature = int(resp["immature_balance"])
+
+    form = SendCoinsForm()
+    if request.method == "POST":
+        form = SendCoinsForm(data=request.POST)
+        if form.is_valid():
+            address = form.cleaned_data["recipient_wallet"]
+            amount = form.cleaned_data["amount"]
+            try:
+                blockchain.jsonrpc.sendtoaddress(address, amount)
+            except JSONRPCException as exc:
+                form.add_error(None, str(exc))
+            else:
+                return redirect("/walletinfo/")
+
     return render(request, "views/walletinfo.tpl", {"accounts": accounts, "balance": balance,
-                                                    "unconfirmed": unconfirmed, "immature": immature})
+                                                    "unconfirmed": unconfirmed, "immature": immature,
+                                                    "form": form})
 
 
 def portfolio(request):
@@ -69,7 +88,7 @@ def register(request):
 
 
 def explorer(request, functionality, id=""):
-    blockchain = BlockChain("rt", "rt", "127.0.0.1", 12218)
+    blockchain = get_blockchain()
     if functionality == "chaininfo":
         chaininfo = blockchain.jsonrpc.getblockchaininfo()
         return render(request, "views/explorer_chaininfo.tpl", {"chaininfo": chaininfo})

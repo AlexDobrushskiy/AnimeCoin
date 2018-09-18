@@ -7,12 +7,14 @@ import os
 import multiprocessing
 
 from datetime import datetime as dt, timedelta as td
+from bitcoinrpc.authproxy import JSONRPCException
 
 from dht_prototype.masternode_modules.zmq_rpc import RPCException
 from dht_prototype.masternode_daemon import MasterNodeDaemon
 from dht_prototype.masternode_modules.masternode_communication import NodeManager
 from dht_prototype.masternode_modules.masternode_discovery import discover_nodes
 from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
+from dht_prototype.masternode_modules.blockchain import BlockChain
 
 
 def test_store_and_retrieve_data(srcnode, dstnode):
@@ -77,11 +79,29 @@ class Simulator:
 
     def main(self):
         # spawn MasterNode Daemons
-        settings_list = discover_nodes(regtestdir)
+        settings_list = discover_nodes(self.__configdir)
         masternodes = self.start_masternode_in_new_process(settings_list)
 
         # connect to animecoinds spawned by daemons
-        for settings in discover_nodes(self.__configdir):
+        for settings in settings_list:
+            self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
+                                              settings["pubkey"])
+
+        # connect masternodes to each other
+        # TODO: there has to be another way where the testnet can take care of this for us
+        for settings in settings_list:
+            blockchain = BlockChain(settings["rpcuser"], settings["rpcpassword"], settings["ip"], settings["rpcport"])
+            for tmpsettings in settings_list:
+                if settings["nodeid"] != tmpsettings["nodeid"]:
+                    newnode = "%s:%s" % (tmpsettings["ip"], tmpsettings["port"])
+                    logging.debug("Adding %s to node %s" % (newnode, settings["nodeid"]))
+                    while True:
+                        try:
+                            blockchain.jsonrpc.addnode(newnode, "onetry")
+                        except JSONRPCException as exc:
+                            logging.debug("Waiting for MasterNode to boot up, exception: %s" % exc)
+                            time.sleep(0.5)
+
             self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
                                               settings["pubkey"])
 

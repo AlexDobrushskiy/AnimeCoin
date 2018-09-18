@@ -13,7 +13,24 @@
 
             <h2 class="text-info">Address: {{ address }} </h2>
             <h3 class="text-info">Confirmed Balance: {{ balance }}</h3>
-            Transactions:
+
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-12 mt-3">
+            <h4>Send coins:</h4>
+            <form method="post">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+                {{ form }}
+                <button type="submit" class="btn btn-danger btn-center">Send</button>
+            </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-12 mt-3">
+            <h4>Transactions:</h4>
             <table class="table">
                 <thead>
                     <tr>
