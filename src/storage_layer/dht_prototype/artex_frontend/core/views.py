@@ -1,3 +1,4 @@
+import time
 import asyncio
 import pprint
 from bitcoinrpc.authproxy import JSONRPCException
@@ -6,10 +7,13 @@ from django.conf import settings
 from django.shortcuts import render, redirect, Http404
 from django.http import HttpResponse, HttpResponseRedirect
 
-from dht_prototype.masternode_modules.masternode_ticketing import RegistrationClient
+from dht_prototype.masternode_modules.animecoin_modules.animecoin_signatures import\
+    animecoin_id_write_signature_on_data_func
+from dht_prototype.masternode_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
+from dht_prototype.masternode_modules.models_new import IDTicket, FinalIDTicket, Signature
 
-from core.models import get_blockchain
-from core.forms import SendCoinsForm, ArtworkRegistrationForm
+from core.models import get_blockchain, get_chainwrapper, pubkey, privkey
+from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
 
 
 def index(request):
@@ -26,25 +30,15 @@ def index(request):
     results = ["N/A"]
 
     blockchain = get_blockchain()
-    networkinfo = blockchain.jsonrpc.getnetworkinfo()
 
     return render(request, "views/index.tpl", {"results": results,
-                                               "artex_basedir": settings.ARTEX_BASEDIR,
-                                               "networkinfo": networkinfo})
+                                               "artex_basedir": settings.ARTEX_BASEDIR})
 
 
 def walletinfo(request):
     blockchain = get_blockchain()
-    accounts = {}
-    for accountname in blockchain.jsonrpc.listaccounts():
-        address = blockchain.jsonrpc.getaccountaddress(accountname)
-        balance = blockchain.jsonrpc.getbalance(accountname)
-        transactions = blockchain.jsonrpc.listtransactions(accountname)
-        accounts[accountname] = address, balance, transactions
-    resp = blockchain.jsonrpc.getwalletinfo()
-    balance = int(resp["balance"])
-    unconfirmed = int(resp["unconfirmed_balance"])
-    immature = int(resp["immature_balance"])
+
+    listunspent = blockchain.jsonrpc.listunspent()
 
     form = SendCoinsForm()
     if request.method == "POST":
@@ -59,9 +53,34 @@ def walletinfo(request):
             else:
                 return redirect("/walletinfo/")
 
-    return render(request, "views/walletinfo.tpl", {"accounts": accounts, "balance": balance,
-                                                    "unconfirmed": unconfirmed, "immature": immature,
+    return render(request, "views/walletinfo.tpl", {"listunspent": listunspent,
                                                     "form": form})
+
+
+def identity(request):
+    blockchain = get_blockchain()
+    chainwrapper = get_chainwrapper(blockchain)
+
+    addresses = []
+    for unspent  in blockchain.jsonrpc.listunspent():
+        if unspent["address"] not in addresses:
+            addresses.append(unspent["address"])
+
+    identity = chainwrapper.get_identity_ticket(pubkey)
+
+    form = IdentityRegistrationForm()
+    if request.method == "POST":
+        form = IdentityRegistrationForm(request.POST)
+        if form.is_valid():
+            address = form.cleaned_data["address"]
+            if address not in addresses:
+                form.add_error(None, "Addess does not belong to us!")
+            else:
+                regclient = IDRegistrationClient(privkey, pubkey, chainwrapper)
+                regclient.register_id(address)
+                return redirect("/identity")
+
+    return render(request, "views/identity.tpl", {"addresses": addresses, "identity": identity, "form": form})
 
 
 def portfolio(request):
@@ -96,7 +115,7 @@ def register(request):
             image_data = image_field.read()
 
             # get the registration object
-            artreg = RegistrationClient(settings.ARTEX_PRIVKEY, settings.ARTEX_PUBKEY, blockchain)
+            artreg = ArtRegistrationClient(settings.ARTEX_PRIVKEY, settings.ARTEX_PUBKEY, blockchain)
 
             # register image
             # TODO: fill these out properly
@@ -116,6 +135,25 @@ def register(request):
             # get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage)
 
     return render(request, "views/register.tpl", {"form": form})
+
+
+def console(request):
+    blockchain = get_blockchain()
+    form = ConsoleCommandForm()
+    output = ""
+    if request.method == "POST":
+        form = ConsoleCommandForm(request.POST)
+        if form.is_valid():
+            command = form.cleaned_data["command"].split(" ")
+            commandname, args = command[0], command[1:]
+            command_rpc = getattr(blockchain.jsonrpc, commandname)
+            try:
+                result = command_rpc(*args)
+            except JSONRPCException as exc:
+                output = "EXCEPTION: %s" % exc
+            else:
+                output = result
+    return render(request, "views/console.tpl", {"form": form, "output": output})
 
 
 def explorer(request, functionality, id=""):

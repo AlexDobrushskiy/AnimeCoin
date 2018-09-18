@@ -5,20 +5,7 @@
 
 {% block body %}
 <div class="row">
-    <div class="col-sm-12 mt-3">
-        {% for account, info in accounts.items() %}
-            {% set address = info[0] %}
-            {% set balance = info[1] %}
-            {% set transactions = info[2] %}
-
-            <h2 class="text-info">Address: {{ address }} </h2>
-            <h3 class="text-info">Confirmed Balance: {{ balance }}</h3>
-
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-sm-12 mt-3">
+    <div class="col-sm-3 mt-3">
             <h4>Send coins:</h4>
             <form method="post">
                 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
@@ -28,37 +15,37 @@
                 <button type="submit" class="btn btn-danger btn-center">Send</button>
             </form>
     </div>
-</div>
 
-<div class="row">
     <div class="col-sm-12 mt-3">
-            <h4>Transactions:</h4>
-            <table class="table">
-                <thead>
+        <h4>Unspent Transactions:</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>txid</th>
+                    <th>vout</th>
+                    <th>generated</th>
+                    <th>address</th>
+                    <th>scriptPubKey</th>
+                    <th>amount</th>
+                    <th>confirmations</th>
+                    <th>spendable</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in listunspent %}
                     <tr>
-                        <th>address</th>
-                        <th>category</th>
-                        <th>amount</th>
-                        <th>confirmations</th>
-                        <th>blocktime</th>
-                        <th>txid</th>
+                        <td>{{ macros.render_transaction_link(transaction["txid"]) }}</td>
+                        <td>{{ transaction["vout"] }}</td>
+                        <td>{{ transaction["generated"] }}</td>
+                        <td>{{ macros.render_address_link(transaction["address"]) }}</td>
+                        <td>{{ transaction["scriptPubKey"] }}</td>
+                        <td>{{ transaction["amount"] }}</td>
+                        <td>{{ transaction["confirmations"] }}</td>
+                        <td>{{ transaction["spendable"] }}</td>
                     </tr>
-                </thead>
-                <tbody>
-                    {% for transaction in transactions %}
-                        <tr>
-                            <td>{{ macros.render_address_link(transaction["address"]) }}</td>
-                            <td>{{ transaction["category"] }}</td>
-                            <td>{{ transaction["amount"] }}</td>
-                            <td>{{ transaction["confirmations"] }}</td>
-                            <td>{{ transaction["blocktime"] }}</td>
-                            <td>{{ macros.render_transaction_link(transaction["txid"]) }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% endfor %}
-        </p>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

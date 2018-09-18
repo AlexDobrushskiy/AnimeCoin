@@ -2,7 +2,7 @@ import logging
 
 from django.db import models
 from django.conf import settings
-from dht_prototype.masternode_modules.masternode_communication import NodeManager
+from dht_prototype.masternode_modules.blockchain_wrapper import ChainWrapper
 from dht_prototype.masternode_modules.masternode_discovery import read_settings_file
 from dht_prototype.masternode_modules.blockchain import BlockChain
 
@@ -21,7 +21,13 @@ def initlogging():
 
 
 def get_blockchain():
+    x = read_settings_file(settings.ARTEX_BASEDIR)
+    blockchainsettings = [x["rpcuser"], x["rpcpassword"], x["ip"], x["rpcport"]]
     return BlockChain(*blockchainsettings)
+
+
+def get_chainwrapper(blockchain):
+    return ChainWrapper(blockchain)
 
 # discover animecoin nodes
 logger = initlogging()
@@ -32,5 +38,5 @@ logger = initlogging()
 #     nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"])
 
 # ["rt", "rt", "127.0.0.1", 12218]
-settings = read_settings_file(settings.ARTEX_BASEDIR)
-blockchainsettings = [settings["rpcuser"], settings["rpcpassword"], settings["ip"], settings["rpcport"]]
+privkey = open(settings.ARTEX_PRIVKEY).read()
+pubkey = open(settings.ARTEX_PUBKEY).read()

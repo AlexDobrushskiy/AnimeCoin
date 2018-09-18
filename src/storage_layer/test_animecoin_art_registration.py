@@ -5,7 +5,7 @@ from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import an
 from dht_prototype.masternode_modules.models_new import FinalRegistrationTicket, FinalActivationTicket
 from dht_prototype.masternode_modules.blockchain_wrapper import MockChain, ChainWrapper
 from dht_prototype.masternode_modules.mockstorage import ChunkStorage
-from dht_prototype.masternode_modules.masternode_ticketing import RegistrationServer, RegistrationClient
+from dht_prototype.masternode_modules.masternode_ticketing import ArtRegistrationServer, ArtRegistrationClient
 
 
 def get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage):
@@ -64,12 +64,12 @@ if __name__ == "__main__":
     # register mock MNs
     masternodes = []
     for i in range(10):
-        masternode = RegistrationServer(blockchain, chunkstorage)
+        masternode = ArtRegistrationServer(blockchain, chunkstorage)
         masternodes.append(masternode)
     # END MOCK STUFF
 
     # get the selfistration object
-    artreg = RegistrationClient(privkey, pubkey, blockchain)
+    artreg = ArtRegistrationClient(privkey, pubkey, blockchain)
 
     for image_file in image_files:
         print("Registering image: %s" % image_file)

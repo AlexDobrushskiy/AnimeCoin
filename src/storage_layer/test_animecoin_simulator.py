@@ -85,7 +85,7 @@ class Simulator:
         # connect to animecoinds spawned by daemons
         for settings in settings_list:
             self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
-                                              settings["pubkey"])
+                                              settings["pubkey"], keytype="file")
 
         # connect masternodes to each other
         # TODO: there has to be another way where the testnet can take care of this for us
@@ -104,7 +104,7 @@ class Simulator:
                             time.sleep(0.5)
 
             self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
-                                              settings["pubkey"])
+                                              settings["pubkey"], keytype="file")
 
         # start our event loop
         loop = asyncio.get_event_loop()

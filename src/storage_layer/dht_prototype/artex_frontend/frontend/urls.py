@@ -22,11 +22,13 @@ from core import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     url(r'^walletinfo/$', views.walletinfo, name='walletinfo'),
+    url(r'^identity/$', views.identity, name='identity'),
     url(r'^portfolio/$', views.portfolio, name='portfolio'),
     url(r'^exchange/$', views.exchange, name='exchange'),
     url(r'^trending/$', views.trending, name='trending'),
     url(r'^browse/$', views.browse, name='browse'),
     url(r'^register/$', views.register, name='register'),
+    url(r'^console/$', views.console, name='console'),
     url(r'^explorer/(?P<functionality>(chaininfo|block|transaction|address))/?(?P<id>.*)?$', views.explorer, name='explorer'),
     url(r'^$', views.index, name='index'),
 ]

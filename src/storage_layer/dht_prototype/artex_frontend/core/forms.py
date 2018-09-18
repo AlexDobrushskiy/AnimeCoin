@@ -1,9 +1,17 @@
 from django import forms
 
 
+class ConsoleCommandForm(forms.Form):
+    command = forms.CharField(label='command', max_length=100)
+
+
 class SendCoinsForm(forms.Form):
     recipient_wallet = forms.CharField(label='Wallet Address', max_length=100)
     amount = forms.FloatField(label='amount')
+
+
+class IdentityRegistrationForm(forms.Form):
+    address = forms.CharField(label='address', min_length=26, max_length=35)
 
 
 class ArtworkRegistrationForm(forms.Form):

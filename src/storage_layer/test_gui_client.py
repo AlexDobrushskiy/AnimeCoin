@@ -31,7 +31,8 @@ if __name__ == "__main__":
     privkey, pubkey = animecoin_id_keypair_generation_func()
     nodemanager = NodeManager(logger, privkey, pubkey)
     for settings in discover_nodes(basedir):
-        nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"])
+        nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"],
+                                   keytype="file")
 
     # load tabs for masternodes
     browsers = []

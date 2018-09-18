@@ -9,10 +9,6 @@ from dht_prototype.masternode_modules.blockchain import BlockChain
 # mine coins:
 #   bitcoin-cli -rpcuser=test -rpcpassword=testpw -regtest generate 100
 
-MAINNET_BTC = "18443"
-MAINNET_ANIME = "19932"
-PORT = MAINNET_BTC
-
 
 def test(blockchain, original):
     # print("ORIGINAL DATA LENGTH:", len(original))
@@ -24,25 +20,25 @@ def test(blockchain, original):
 
 
 def main():
-    blockchain = BlockChain("test", "testpw", "127.0.0.1", PORT)
-    # print(blockchain.getbestblockhash())
+    blockchain = BlockChain("rt", "rt", "127.0.0.1", 12253)
+    origdata = b'THIS IS SOME TEST DATA'
+    txid = blockchain.store_data_in_utxo(origdata)
+    retdata = blockchain.retrieve_data_from_utxo(txid)
+    assert(origdata == retdata)
+    print("Data matches, returned: %s" % retdata)
+    exit()
 
-    # print(blockchain.listtransactions())
-
-    # filename = sys.argv[1]
-    # original = open(filename, "rb").read()
-    # test(blockchain, original)
-
-    for datalen in range(0, 100):
-        # datalen = random.randint(0, 100)
-        killerdata = os.urandom(random.randint(0, 10))
-        print("len: %s, killerdata: %s" % (datalen, killerdata))
-        original = b'X' * datalen + killerdata
-        try:
-            test(blockchain, original)
-        except Exception as exc:
-            print("FOUND EXCEPTION %s for input: %s" % (exc, original))
-            raise
+    # fuzzer
+    # for datalen in range(0, 100):
+    #     # datalen = random.randint(0, 100)
+    #     killerdata = os.urandom(random.randint(0, 10))
+    #     print("len: %s, killerdata: %s" % (datalen, killerdata))
+    #     original = b'X' * datalen + killerdata
+    #     try:
+    #         test(blockchain, original)
+    #     except Exception as exc:
+    #         print("FOUND EXCEPTION %s for input: %s" % (exc, original))
+    #         raise
 
 
 if __name__ == "__main__":

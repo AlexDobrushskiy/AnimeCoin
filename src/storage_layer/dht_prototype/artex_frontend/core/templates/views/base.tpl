@@ -118,7 +118,10 @@
           <!--</div>-->
         <!--</li>-->
         <li class="nav-item">
-          <a class="nav-link" href="/walletinfo"><i class="fas fa-fw fa-address-card"></i>&nbsp;<span>Wallet</span></a>
+          <a class="nav-link" href="/walletinfo"><i class="fas fa-fw fa-wallet"></i>&nbsp;<span>Wallet</span></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/identity"><i class="fas fa-fw fa-address-card"></i>&nbsp;<span>Identity</span></a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/portfolio"><i class="fas fa-fw fa-briefcase"></i>&nbsp;<span>Portfolio</span></a>
@@ -134,6 +137,9 @@
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/register"><i class="fas fa-fw fa-plus"></i>&nbsp;<span>Register Art</span></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/console"><i class="fas fa-fw fa-terminal"></i>&nbsp;<span>Console</span></a>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
