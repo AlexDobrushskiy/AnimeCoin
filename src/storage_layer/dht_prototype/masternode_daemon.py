@@ -108,7 +108,7 @@ class MasterNodeDaemon:
         self.__cmnprocess = subprocess.Popen([NetWorkSettings.ANIMECOIND_BINARY,
                                               "-rpcuser=%s" % self.__settings.rpcuser,
                                               "-rpcpassword=%s" % self.__settings.rpcpassword,
-                                              "-regtest=1",
+                                              "-testnet=1",
                                               "-gen=1",
                                               "-genproclimit=1",
                                               "-equihashsolver=tromp",

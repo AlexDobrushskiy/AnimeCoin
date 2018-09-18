@@ -17,21 +17,13 @@ from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrat
 
 
 def index(request):
-    # masternodes = nodemanager.get_all()
-    #
-    # new_loop = asyncio.new_event_loop()
-    #
-    # results = []
-    # for mn in masternodes:
-    #     result = new_loop.run_until_complete(mn.send_rpc_ping(b'PING'))
-    #     results.append((str(mn), result))
-    #
-    # new_loop.stop()
-    results = ["N/A"]
-
     blockchain = get_blockchain()
+    infos = {}
+    for name in ["getblockchaininfo", "getmempoolinfo", "gettxoutsetinfo", "getmininginfo",
+                 "getnetworkinfo", "getpeerinfo", "getwalletinfo"]:
+        infos[name] = getattr(blockchain.jsonrpc, name)()
 
-    return render(request, "views/index.tpl", {"results": results,
+    return render(request, "views/index.tpl", {"infos": infos,
                                                "artex_basedir": settings.ARTEX_BASEDIR})
 
 
@@ -99,8 +91,10 @@ def trending(request):
 
 
 def browse(request):
-    resp = "TODO"
-    return render(request, "views/browse.tpl", {"resp": resp})
+    blockchain = get_blockchain()
+    chainwrapper = get_chainwrapper(blockchain)
+    identities = chainwrapper.get_tickets_by_type("identity")
+    return render(request, "views/browse.tpl", {"identities": identities})
 
 
 def register(request):

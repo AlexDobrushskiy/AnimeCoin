@@ -93,15 +93,18 @@ class Simulator:
             for tmpsettings in settings_list:
                 if settings["nodeid"] != tmpsettings["nodeid"]:
                     newnode = "%s:%s" % (tmpsettings["ip"], tmpsettings["port"])
-                    logging.debug("Adding %s to node %s" % (newnode, settings["nodeid"]))
+                    self.__logger.debug("Adding %s to node %s" % (newnode, settings["nodeid"]))
                     while True:
                         try:
                             blockchain = BlockChain(settings["rpcuser"], settings["rpcpassword"], settings["ip"],
                                                     settings["rpcport"])
                             blockchain.jsonrpc.addnode(newnode, "onetry")
                         except (JSONRPCException, ConnectionRefusedError) as exc:
-                            logging.debug("Waiting for MasterNode to boot up, exception: %s" % exc)
+                            self.__logger.debug("Waiting for MasterNode to boot up, exception: %s" % exc)
                             time.sleep(0.5)
+                        else:
+                            self.__logger.debug("Successfully added %s to node %s" % (newnode, settings["nodeid"]))
+                            break
 
             self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
                                               settings["pubkey"], keytype="file")

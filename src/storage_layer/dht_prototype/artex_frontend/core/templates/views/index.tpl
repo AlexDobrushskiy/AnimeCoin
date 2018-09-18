@@ -6,12 +6,14 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-12 mt-3">
-        <h1>Welcome to artex, basedir: {{ artex_basedir }}</h1>
-        <h5>Network info:</h5>
-        <pre>{{ networkinfo|pprint }}</pre>
-        {% for result in results %}
-            {{ result }}<br />
-        {% endfor %}
+        <h1>Welcome to artex</h1>
+        <h3>basedir: {{ artex_basedir }}</h3>
     </div>
+    {% for name, info in infos.items() %}
+        <div class="col-sm-3 mt-3">
+            <h5>{{ name }} info:</h5>
+            <pre>{{ info|pprint }}</pre>
+        </div>
+    {% endfor %}
 </div>
 {% endblock %}
