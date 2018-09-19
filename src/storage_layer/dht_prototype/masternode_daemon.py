@@ -110,6 +110,7 @@ class MasterNodeDaemon:
                                               "-rpcpassword=%s" % self.__settings.rpcpassword,
                                               "-testnet=1",
                                               "-gen=1",
+                                              "-debug=1",
                                               "-genproclimit=1",
                                               "-equihashsolver=tromp",
                                               "-showmetrics=0",
