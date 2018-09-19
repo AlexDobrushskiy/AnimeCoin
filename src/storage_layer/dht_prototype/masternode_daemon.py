@@ -105,16 +105,18 @@ class MasterNodeDaemon:
 
     def __start_cmn(self):
         self.__logger.debug("Starting bitcoing daemon on rpcport %s" % self.__settings.rpcport)
-        self.__cmnprocess = subprocess.Popen([NetWorkSettings.ANIMECOIND_BINARY,
+        self.__cmnprocess = subprocess.Popen([NetWorkSettings.BLOCKCHAIN_BINARY,
                                               "-rpcuser=%s" % self.__settings.rpcuser,
                                               "-rpcpassword=%s" % self.__settings.rpcpassword,
                                               "-testnet=1",
+                                              "-dnsseed=0",
                                               "-gen=1",
                                               "-debug=1",
                                               "-genproclimit=1",
                                               "-equihashsolver=tromp",
                                               "-showmetrics=0",
                                               "-listenonion=0",
+                                              "-onlynet=ipv4",
                                               "-txindex",
                                               "-rpcport=%s" % self.__settings.rpcport,
                                               "-port=%s" % self.__settings.port,

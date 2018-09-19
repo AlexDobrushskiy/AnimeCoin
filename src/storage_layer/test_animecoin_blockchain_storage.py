@@ -20,7 +20,7 @@ def test(blockchain, original):
 
 
 def main():
-    blockchain = BlockChain("rt", "rt", "127.0.0.1", 12253)
+    blockchain = BlockChain("rt", "rt", "127.0.0.1", 10001)
     origdata = b'THIS IS SOME TEST DATA'
     txid = blockchain.store_data_in_utxo(origdata)
     retdata = blockchain.retrieve_data_from_utxo(txid)
