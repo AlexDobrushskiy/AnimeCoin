@@ -1,3 +1,4 @@
+import itertools
 import time
 import logging
 import signal
@@ -52,19 +53,19 @@ class Simulator:
         logger.addHandler(consolehandler)
         return logger
 
-    def spawn_masternode(self, settings):
+    def spawn_masternode(self, settings, addnodes):
         self.__logger.debug("Starting masternode: %s" % settings["nodeid"])
-        mn = MasterNodeDaemon(settings=settings)
+        mn = MasterNodeDaemon(settings=settings, addnodes=addnodes)
         mn.run_event_loop()
         self.__logger.debug("Stopped spawned masternode: %s" % settings["nodeid"])
 
-    def start_masternode_in_new_process(self, settings_list):
+    def start_masternode_in_new_process(self, settings_list, addnodes):
         masternodes = {}
         for settings in settings_list:
             os.makedirs(settings["basedir"], exist_ok=True)
             os.makedirs(os.path.join(settings["basedir"], "config"), exist_ok=True)
 
-            p = multiprocessing.Process(target=self.spawn_masternode, args=(settings,))
+            p = multiprocessing.Process(target=self.spawn_masternode, args=(settings, addnodes))
             p.start()
 
             nodename = settings["nodename"]
@@ -77,35 +78,39 @@ class Simulator:
 
         return masternodes
 
+    def __reconnect_masternodes(self, settings_list, waitforboot=True):
+        # connect masternodes to each other
+        # TODO: there has to be another way where the testnet can take care of this for us
+        for nodea, nodeb in itertools.combinations(settings_list, 2):
+            newnode = "%s:%s" % (nodeb["ip"], nodeb["port"])
+            self.__logger.debug("Adding %s to node %s" % (newnode, nodea["nodeid"]))
+            while True:
+                try:
+                    blockchain = BlockChain(nodea["rpcuser"], nodea["rpcpassword"], nodea["ip"],
+                                            nodea["rpcport"])
+                    blockchain.jsonrpc.addnode(newnode, "onetry")
+                except (JSONRPCException, ConnectionRefusedError) as exc:
+                    if waitforboot:
+                        self.__logger.debug("Waiting for MasterNode to boot up, exception: %s" % exc)
+                        time.sleep(0.5)
+                    else:
+                        self.__logger.debug("Node went away with exception: %s" % exc)
+                        break
+                else:
+                    self.__logger.debug("Successfully added %s to node %s" % (newnode, nodea["nodeid"]))
+                    break
+
+            self.__nodemanager.add_masternode(nodea["nodeid"], nodea["ip"], nodea["pyrpcport"],
+                                              nodea["pubkey"], keytype="file")
+
     def main(self):
         # spawn MasterNode Daemons
         settings_list = discover_nodes(self.__configdir)
-        masternodes = self.start_masternode_in_new_process(settings_list)
+        addnodes = ["%s:%s" % (x["ip"], x["port"]) for x in settings_list]
+        masternodes = self.start_masternode_in_new_process(settings_list, addnodes)
 
         # connect to animecoinds spawned by daemons
         for settings in settings_list:
-            self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
-                                              settings["pubkey"], keytype="file")
-
-        # connect masternodes to each other
-        # TODO: there has to be another way where the testnet can take care of this for us
-        for settings in settings_list:
-            for tmpsettings in settings_list:
-                if settings["nodeid"] != tmpsettings["nodeid"]:
-                    newnode = "%s:%s" % (tmpsettings["ip"], tmpsettings["port"])
-                    self.__logger.debug("Adding %s to node %s" % (newnode, settings["nodeid"]))
-                    while True:
-                        try:
-                            blockchain = BlockChain(settings["rpcuser"], settings["rpcpassword"], settings["ip"],
-                                                    settings["rpcport"])
-                            blockchain.jsonrpc.addnode(newnode, "onetry")
-                        except (JSONRPCException, ConnectionRefusedError) as exc:
-                            self.__logger.debug("Waiting for MasterNode to boot up, exception: %s" % exc)
-                            time.sleep(0.5)
-                        else:
-                            self.__logger.debug("Successfully added %s to node %s" % (newnode, settings["nodeid"]))
-                            break
-
             self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
                                               settings["pubkey"], keytype="file")
 

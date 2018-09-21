@@ -59,6 +59,7 @@ def identity(request):
             addresses.append(unspent["address"])
 
     identity = chainwrapper.get_identity_ticket(pubkey)
+    all_identities = chainwrapper.get_tickets_by_type("identity")
 
     form = IdentityRegistrationForm()
     if request.method == "POST":
@@ -72,7 +73,8 @@ def identity(request):
                 regclient.register_id(address)
                 return redirect("/identity")
 
-    return render(request, "views/identity.tpl", {"addresses": addresses, "identity": identity, "form": form})
+    return render(request, "views/identity.tpl", {"addresses": addresses, "identity": identity, "form": form,
+                                                  "all_identities": all_identities})
 
 
 def portfolio(request):

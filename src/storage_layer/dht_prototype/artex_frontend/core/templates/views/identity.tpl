@@ -16,6 +16,17 @@
                 </table>
             {% endfor %}
 
+            <h4>ALL Artex Identities</h4>
+            {% for txid, ticket in all_identities %}
+                <table class="table">
+                    <tr>
+                        <td>Blockchain address:</td>
+                        <td>{{ txid }}</td>
+                        <td>{{ ticket.ticket.public_key }}</td>
+                    </tr>
+                </table>
+            {% endfor %}
+
             {% if identity == none %}
                 Your identity is not yet established!
                 <form method="post">

@@ -15,12 +15,13 @@ from .masternode_modules.masternode_logic import MasterNodeLogic
 
 
 class MasterNodeDaemon:
-    def __init__(self, settings):
+    def __init__(self, settings, addnodes=None):
         # initialize logging
         self.__initlogging(settings["nodename"])
         self.__logger.debug("Started logger")
 
         self.__settings = MNDeamonSettings(settings)
+        self.__addnodes = addnodes
         self.__nodeid = settings["nodeid"]
 
         # processes
@@ -92,12 +93,14 @@ class MasterNodeDaemon:
         env = os.environ.copy()
         env["ARTEX_BASEDIR"] = self.__settings.datadir
 
-        self.__djangoprocess = subprocess.Popen([NetWorkSettings.PYTHONPATH,
-                                                 "manage.py",
-                                                 "runserver",
-                                                 str(self.__settings.pyhttpadmin)],
-                                                cwd=NetWorkSettings.DJANGO_ROOT,
-                                                env=env)
+        cmdline = [
+            NetWorkSettings.PYTHONPATH,
+            "manage.py",
+            "runserver",
+            str(self.__settings.pyhttpadmin)
+        ]
+
+        self.__djangoprocess = subprocess.Popen(cmdline, cwd=NetWorkSettings.DJANGO_ROOT, env=env)
 
     def __stop_django(self):
         self.__djangoprocess.terminate()
@@ -105,26 +108,35 @@ class MasterNodeDaemon:
 
     def __start_cmn(self):
         self.__logger.debug("Starting bitcoing daemon on rpcport %s" % self.__settings.rpcport)
-        self.__cmnprocess = subprocess.Popen([NetWorkSettings.BLOCKCHAIN_BINARY,
-                                              "-rpcuser=%s" % self.__settings.rpcuser,
-                                              "-rpcpassword=%s" % self.__settings.rpcpassword,
-                                              "-testnet=1",
-                                              "-dnsseed=0",
-                                              "-gen=1",
-                                              "-debug=1",
-                                              "-genproclimit=1",
-                                              "-equihashsolver=tromp",
-                                              "-showmetrics=0",
-                                              "-listenonion=0",
-                                              "-onlynet=ipv4",
-                                              "-txindex",
-                                              "-rpcport=%s" % self.__settings.rpcport,
-                                              "-port=%s" % self.__settings.port,
-                                              "-server",
-                                              "-addresstype=legacy",
-                                              "-discover=0",
-                                              "-datadir=%s" % self.__settings.datadir],
-                                             cwd=NetWorkSettings.BASEDIR)
+        cmdline = [
+            NetWorkSettings.BLOCKCHAIN_BINARY,
+            "-rpcuser=%s" % self.__settings.rpcuser,
+            "-rpcpassword=%s" % self.__settings.rpcpassword,
+            "-testnet=1",
+            # "-regtest=1",
+            "-dnsseed=0",
+            "-gen=1",
+            "-debug=1",
+            "-genproclimit=1",
+            "-equihashsolver=tromp",
+            "-showmetrics=0",
+            "-listenonion=0",
+            "-onlynet=ipv4",
+            "-txindex",
+            "-rpcport=%s" % self.__settings.rpcport,
+            "-port=%s" % self.__settings.port,
+            "-server",
+            "-addresstype=legacy",
+            "-discover=0",
+            "-datadir=%s" % self.__settings.datadir
+        ]
+
+        if self.__addnodes is not None:
+            for nodeaddress in self.__addnodes:
+                self.__logger.debug("Adding extra node %s to cmdline with -addnode" % nodeaddress)
+                cmdline.append("-addnode=%s" % nodeaddress)
+
+        self.__cmnprocess = subprocess.Popen(cmdline, cwd=NetWorkSettings.BASEDIR)
 
         # self.__logger.debug("Connecting to %s" % NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
         # self.blockchain.bootstrap(NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
@@ -158,7 +170,7 @@ class MasterNodeDaemon:
 
         loop.create_task(self.logic.zmq_run_forever())
         # loop.create_task(mn.logic.run_heartbeat_forever())
-        # loop.create_task(mn.logic.run_ping_test_forever())
+        # loop.create_task(self.logic.run_ping_test_forever())
         # loop.create_task(mn.logic.issue_random_tests_forever(1))
         loop.create_task(self.logic.run_workers_forever())
 
