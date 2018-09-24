@@ -2,7 +2,7 @@ import sys
 
 
 from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from dht_prototype.masternode_modules.models_new import FinalRegistrationTicket, FinalActivationTicket
+from dht_prototype.masternode_modules.ticket_models import FinalRegistrationTicket, FinalActivationTicket
 from dht_prototype.masternode_modules.blockchain_wrapper import MockChain, ChainWrapper
 from dht_prototype.masternode_modules.mockstorage import ChunkStorage
 from dht_prototype.masternode_modules.masternode_ticketing import ArtRegistrationServer, ArtRegistrationClient
