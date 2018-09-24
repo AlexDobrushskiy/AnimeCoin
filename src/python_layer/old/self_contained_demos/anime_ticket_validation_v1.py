@@ -1,19 +1,14 @@
-import os.path, glob, hashlib, os, sqlite3, base64, shutil
+import os.path, os
 import lxml, lxml.html
-from zipfile import ZipFile
-from shutil import copyfile
 from datetime import datetime, timedelta
-from PIL import Image
-import pandas as pd
 from bs4 import BeautifulSoup
-from anime_utility_functions_v1 import get_sha256_hash_of_input_data_func, sign_data_with_private_key_func, verify_signature_on_data_func, generate_and_save_example_rsa_keypair_files_func, clean_up_art_folder_after_registration_func, \
-    get_local_masternode_animecoin_id_keypair_func, get_all_valid_image_file_paths_in_folder_func, check_current_bitcoin_blockchain_stats_func, get_my_local_ip_func, remove_existing_remaining_zip_files_func, get_all_animecoin_parameters_func, \
-    get_all_animecoin_directories_func, get_pem_format_of_rsa_key_func, get_example_keypair_of_rsa_public_and_private_keys_func, get_example_keypair_of_rsa_public_and_private_keys_pem_format_func, get_current_anime_mining_difficulty_func, \
-    get_avg_anime_mining_difficulty_rate_first_20k_blocks_func, get_image_hash_from_image_file_path_func, concatenate_list_of_strings_func, get_metadata_file_path_from_art_folder_func, get_current_datetime_string_func, parse_datetime_string_func, \
-    validate_list_of_text_fields_for_html_metadata_table_func, check_if_anime_blockchain_address_is_valid_func, validate_list_of_anime_blockchain_addresses, validate_url_func, check_if_ip_address_responds_to_pings_func, \
-    calculate_artwork_registration_fee_func, generate_fake_artwork_title_func, generate_new_animecoin_blockchain_address_func, fake_artwork_metadata_class, \
-    get_concatenated_art_image_file_hashes_and_total_size_in_mb_func, get_image_deep_learning_features_func, parse_html_table_func, get_animecoin_html_ticket_template_string_func
-from anime_fountain_coding_v1 import encode_final_art_zipfile_into_luby_transform_blocks_func
+from old.self_contained_demos.anime_utility_functions_v1 import verify_signature_on_data_func, check_current_bitcoin_blockchain_stats_func, \
+    get_all_animecoin_parameters_func, \
+    get_all_animecoin_directories_func, get_metadata_file_path_from_art_folder_func, \
+    validate_list_of_text_fields_for_html_metadata_table_func, validate_list_of_anime_blockchain_addresses, validate_url_func, check_if_ip_address_responds_to_pings_func, \
+    calculate_artwork_registration_fee_func, get_concatenated_art_image_file_hashes_and_total_size_in_mb_func, \
+    parse_html_table_func, get_animecoin_html_ticket_template_string_func
+
 #Get various settings:
 anime_metadata_format_version_number, minimum_total_number_of_unique_copies_of_artwork, maximum_total_number_of_unique_copies_of_artwork, target_number_of_nodes_per_unique_block_hash, target_block_redundancy_factor, desired_block_size_in_bytes, \
 remote_node_chunkdb_refresh_time_in_minutes, remote_node_image_fingerprintdb_refresh_time_in_minutes, percentage_of_block_files_to_randomly_delete, percentage_of_block_files_to_randomly_corrupt, percentage_of_each_selected_file_to_be_randomly_corrupted, \
@@ -317,4 +312,3 @@ if 0: #Old code to replace:
             x = x.replace('ANIME_CONFIRMING_MN_2_COLLATERAL_SIGNATURE_ON_HASH_OF_HASHES', confirming_masternode_2_collateral_address_digital_signature_on_the_hash_of_the_concatenated_hashes_base64_encoded)
             x = x.replace('ANIME_CONFIRMING_MN_2_ANIMECOIN_ID_SIGNATURE_ON_HASH_OF_HASHES', confirming_masternode_2_animecoin_public_id_digital_signature_on_the_hash_of_the_concatenated_hashes_base64_encoded)
             x = x.replace('ANIME_DATE_TIME_CONFIRMING_MN_2_ATTESTED_TO_ARTWORK', date_time_confirming_masternode_2_attested_to_artwork)
-       

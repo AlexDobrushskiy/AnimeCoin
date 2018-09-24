@@ -1,11 +1,9 @@
-import subprocess, json, os.path, binascii, struct, re, hashlib, sys, io, os, random, base64, glob
+import os.path, binascii, struct, hashlib, sys, io, os, random, glob
 import zstd
-from math import ceil, floor, sqrt
 from decimal import Decimal
-from time import sleep
-from binascii import crc32, hexlify, unhexlify
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
-from anime_utility_functions_v1 import generate_zstd_dictionary_from_folder_path_and_file_matching_string_func, compress_data_with_animecoin_zstd_func, \
+from binascii import hexlify, unhexlify
+from bitcoinrpc.authproxy import AuthServiceProxy
+from old.self_contained_demos.anime_utility_functions_v1 import generate_zstd_dictionary_from_folder_path_and_file_matching_string_func, compress_data_with_animecoin_zstd_func, \
         decompress_data_with_animecoin_zstd_func, get_all_animecoin_directories_func, get_all_animecoin_parameters_func
 # pip install jsonrpc
 #Get various settings:

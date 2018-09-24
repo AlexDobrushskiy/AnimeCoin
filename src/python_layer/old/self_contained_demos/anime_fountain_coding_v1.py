@@ -10,7 +10,7 @@ from math import ceil, floor, sqrt, log
 from collections import defaultdict
 from tqdm import tqdm
 from time import time
-from anime_utility_functions_v1 import regenerate_sqlite_chunk_database_func
+from old.self_contained_demos.anime_utility_functions_v1 import regenerate_sqlite_chunk_database_func
 #Requirements: pip install tqdm, fs, numpy
  
 ###############################################################################################################

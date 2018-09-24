@@ -1,18 +1,18 @@
-import os, os.path, glob, warnings
-from datetime import datetime
+import os.path, glob, warnings
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.filterwarnings('ignore',category=DeprecationWarning)
-from anime_utility_functions_v1 import get_sha256_hash_of_input_data_func, get_all_animecoin_directories_func, get_all_animecoin_parameters_func, get_example_keypair_of_rsa_public_and_private_keys_func, get_example_keypair_of_rsa_public_and_private_keys_pem_format_func, \
-    generate_required_directories_func, regenerate_sqlite_chunk_database_func, get_local_masternode_animecoin_id_keypair_func, get_my_local_ip_func, generate_and_save_local_masternode_identification_keypair_func, get_various_directories_for_testing_func, \
+from old.self_contained_demos.anime_utility_functions_v1 import get_all_animecoin_directories_func, get_all_animecoin_parameters_func, get_example_keypair_of_rsa_public_and_private_keys_func, get_example_keypair_of_rsa_public_and_private_keys_pem_format_func, \
+    generate_required_directories_func, regenerate_sqlite_chunk_database_func, get_my_local_ip_func, generate_and_save_local_masternode_identification_keypair_func, get_various_directories_for_testing_func, \
     delete_all_blocks_and_zip_files_to_reset_system_func, get_image_hash_from_image_file_path_func, generate_example_artwork_metadata_func, sign_data_with_private_key_func, generate_and_save_example_rsa_keypair_files_func, \
-    get_avg_anime_mining_difficulty_rate_first_20k_blocks_func, get_current_datetime_string_func, parse_datetime_string_func, generate_recent_random_datetime_string_func, get_image_deep_learning_features_func
+    get_current_datetime_string_func
 from anime_image_processing_v1 import check_if_image_is_likely_dupe_func, add_all_images_in_folder_to_image_fingerprint_database_func, apply_tsne_to_image_fingerprint_database_func, \
     find_most_similar_images_to_given_image_from_fingerprint_data_func, get_tsne_coordinates_for_desired_image_file_hash_func, regenerate_dupe_detection_image_fingerprint_database_func
-from anime_fountain_coding_v1 import refresh_block_storage_folder_and_check_block_integrity_func, decode_block_files_into_art_zipfile_func, randomly_delete_percentage_of_local_block_files_func, \
+from old.self_contained_demos.anime_fountain_coding_v1 import refresh_block_storage_folder_and_check_block_integrity_func, decode_block_files_into_art_zipfile_func, randomly_delete_percentage_of_local_block_files_func, \
     randomly_corrupt_a_percentage_of_bytes_in_a_random_sample_of_block_files_func
 from anime_art_registration_v1 import register_new_artwork_folder_func, generate_combined_image_and_metadata_hash_func, get_concatenated_art_image_file_hashes_and_total_size_in_mb_func, create_metadata_html_table_for_given_art_folder_func, \
     perform_superficial_validation_of_html_metadata_table_func, validate_folder_for_nsfw_and_dupe_content_func
-from anime_trading_v1 import sign_trade_ticket_hash_func, verify_trade_ticket_hash_signature_func, generate_trade_ticket_func
+from old.self_contained_demos.anime_trading_v1 import sign_trade_ticket_hash_func, verify_trade_ticket_hash_signature_func, generate_trade_ticket_func
 ###############################################################################################################
 # Parameters:
 ###############################################################################################################

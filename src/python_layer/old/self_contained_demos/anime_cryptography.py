@@ -1,4 +1,4 @@
-import itertools, os, time, base64, hashlib, glob, random, sys, binascii, io, struct, subprocess
+import itertools, os, time, base64, hashlib, glob, random, sys, io, struct, subprocess
 from math import ceil, floor, log, log2, sqrt
 from time import sleep
 from binascii import hexlify
@@ -9,15 +9,14 @@ import pyqrcode
 import zstd
 import nacl.encoding
 import nacl.signing
-import moviepy.editor as mpy
 import numpy as np
 import pygame
 import cv2
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from tqdm import tqdm
-from anime_utility_functions_v1 import get_sha256_hash_of_input_data_func
-from anime_fountain_coding_v1 import PRNG, BlockGraph\
+from old.self_contained_demos.anime_utility_functions_v1 import get_sha256_hash_of_input_data_func
+from old.self_contained_demos.anime_fountain_coding_v1 import PRNG, BlockGraph\
 
 sys.setrecursionlimit(10000)
 sigma = "expand 32-byte k"

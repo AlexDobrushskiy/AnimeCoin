@@ -4,8 +4,8 @@ warnings.filterwarnings('ignore',category=DeprecationWarning)
 import lxml.html
 import shortuuid
 import rsa
-from anime_utility_functions_v1 import download_remote_file_func, get_all_remote_node_ips_func, get_my_local_ip_func, get_local_masternode_identification_keypair_func
-from anime_file_transfer_v1 import get_list_of_available_files_on_remote_node_file_server_func
+from old.self_contained_demos.anime_utility_functions_v1 import download_remote_file_func, get_all_remote_node_ips_func, get_my_local_ip_func, get_local_masternode_identification_keypair_func
+from old.self_contained_demos.anime_file_transfer_v1 import get_list_of_available_files_on_remote_node_file_server_func
 from datetime import datetime
 #Requirements: pip install lxml, shortuuid, rsa
 
