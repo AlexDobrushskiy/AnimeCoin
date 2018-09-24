@@ -7,10 +7,10 @@ from django.conf import settings
 from django.shortcuts import render, redirect, Http404
 from django.http import HttpResponse, HttpResponseRedirect
 
-from dht_prototype.masternode_modules.animecoin_modules.animecoin_signatures import\
+from masternode_protype.masternode_modules.animecoin_modules.animecoin_signatures import\
     animecoin_id_write_signature_on_data_func
-from dht_prototype.masternode_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
-from dht_prototype.masternode_modules.ticket_models import IDTicket, FinalIDTicket, Signature
+from masternode_protype.masternode_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
+from masternode_protype.masternode_modules.ticket_models import IDTicket, FinalIDTicket, Signature
 
 from core.models import get_blockchain, get_chainwrapper, pubkey, privkey
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm

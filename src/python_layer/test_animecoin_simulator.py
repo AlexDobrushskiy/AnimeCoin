@@ -10,12 +10,12 @@ import multiprocessing
 from datetime import datetime as dt, timedelta as td
 from bitcoinrpc.authproxy import JSONRPCException
 
-from dht_prototype.masternode_modules.zmq_rpc import RPCException
-from dht_prototype.masternode_daemon import MasterNodeDaemon
-from dht_prototype.masternode_modules.masternode_communication import NodeManager
-from dht_prototype.masternode_modules.masternode_discovery import discover_nodes
-from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from dht_prototype.masternode_modules.blockchain import BlockChain
+from masternode_protype.masternode_modules.zmq_rpc import RPCException
+from masternode_protype.masternode_daemon import MasterNodeDaemon
+from masternode_protype.masternode_modules.masternode_communication import NodeManager
+from masternode_protype.masternode_modules.masternode_discovery import discover_nodes
+from masternode_protype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
+from masternode_protype.masternode_modules.blockchain import BlockChain
 
 
 def test_store_and_retrieve_data(srcnode, dstnode):

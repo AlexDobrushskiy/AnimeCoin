@@ -6,7 +6,7 @@ import urllib
 from file_storage_module.helpers import get_sha256_hash_of_input_data_func
 from file_storage_module.stress_testing import *
 from file_storage_module.compression import decompress_data_with_zstd_func
-from dht_prototype.masternode_modules.animecoin_modules.luby import encode_file_into_luby_blocks_func, reconstruct_data_from_luby_blocks
+from masternode_protype.masternode_modules.animecoin_modules.luby import encode_file_into_luby_blocks_func, reconstruct_data_from_luby_blocks
 
 
 # Note: Code is based on the Python LT implementation by Anson Rosenthal, found here: https://github.com/anrosent/LT-code

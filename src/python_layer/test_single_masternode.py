@@ -1,8 +1,8 @@
 import os
 import sys
 
-from dht_prototype.masternode_daemon import MasterNodeDaemon
-from dht_prototype.masternode_modules.masternode_discovery import read_settings_file
+from masternode_protype.masternode_daemon import MasterNodeDaemon
+from masternode_protype.masternode_modules.masternode_discovery import read_settings_file
 
 if __name__ == "__main__":
     basedir = sys.argv[1]

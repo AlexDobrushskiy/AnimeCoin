@@ -2,11 +2,11 @@ import logging
 
 from django.db import models
 from django.conf import settings
-from dht_prototype.masternode_modules.blockchain_wrapper import ChainWrapper
-from dht_prototype.masternode_modules.masternode_discovery import read_settings_file
-from dht_prototype.masternode_modules.blockchain import BlockChain
+from masternode_protype.masternode_modules.blockchain_wrapper import ChainWrapper
+from masternode_protype.masternode_modules.masternode_discovery import read_settings_file
+from masternode_protype.masternode_modules.blockchain import BlockChain
 
-from dht_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
+from masternode_protype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
 
 
 def initlogging():

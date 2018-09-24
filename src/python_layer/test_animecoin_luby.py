@@ -1,7 +1,7 @@
 import math
 import random
 
-from dht_prototype.masternode_modules.animecoin_modules import animecoin_luby as luby
+from masternode_protype.masternode_modules.animecoin_modules import animecoin_luby as luby
 
 
 if __name__ == "__main__":
