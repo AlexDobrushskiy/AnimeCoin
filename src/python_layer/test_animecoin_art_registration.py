@@ -1,11 +1,11 @@
 import sys
 
 
-from masternode_protype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from masternode_protype.masternode_modules.ticket_models import FinalRegistrationTicket, FinalActivationTicket
-from masternode_protype.masternode_modules.blockchain_wrapper import MockChain, ChainWrapper
-from masternode_protype.masternode_modules.mockstorage import ChunkStorage
-from masternode_protype.masternode_modules.masternode_ticketing import ArtRegistrationServer, ArtRegistrationClient
+from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
+from masternode_prototype.masternode_modules.ticket_models import FinalRegistrationTicket, FinalActivationTicket
+from masternode_prototype.masternode_modules.blockchain_wrapper import MockChain, ChainWrapper
+from masternode_prototype.masternode_modules.mockstorage import ChunkStorage
+from masternode_prototype.masternode_modules.masternode_ticketing import ArtRegistrationServer, ArtRegistrationClient
 
 
 def get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage):

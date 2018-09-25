@@ -4,11 +4,11 @@ import multiprocessing
 import logging
 import sys
 
-from masternode_protype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from masternode_protype.masternode_modules.masternode_communication import NodeManager
-from masternode_protype.masternode_modules.masternode_discovery import discover_nodes
+from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
+from masternode_prototype.masternode_modules.masternode_communication import NodeManager
+from masternode_prototype.masternode_modules.masternode_discovery import discover_nodes
 
-from gui_client.cefpython.cefpython import start_cefpython
+from client_prototype.cefpython.cefpython import start_cefpython
 
 
 def initlogging():

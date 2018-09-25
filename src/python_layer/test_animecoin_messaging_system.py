@@ -1,6 +1,6 @@
-from masternode_protype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func, write_animecoin_public_and_private_key_to_file_func
+from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func, write_animecoin_public_and_private_key_to_file_func
 
-from masternode_protype.masternode_modules.rpc import pack_and_sign, verify_and_unpack
+from masternode_prototype.masternode_modules.rpc import pack_and_sign, verify_and_unpack
 
 
 if __name__ == "__main__":

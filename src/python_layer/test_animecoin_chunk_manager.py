@@ -7,9 +7,9 @@ import zmq.asyncio
 
 from datetime import datetime as dt
 
-from masternode_protype.masternode_modules.masternode_logic import MasterNodeLogic
-from masternode_protype.masternode_modules.helpers import get_hexdigest, getrandbytes
-from masternode_protype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
+from masternode_prototype.masternode_modules.masternode_logic import MasterNodeLogic
+from masternode_prototype.masternode_modules.helpers import get_hexdigest, getrandbytes
+from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
 
 
 BASEDIR = "/home/synapse/tmp/animecoin/tmpstorage"

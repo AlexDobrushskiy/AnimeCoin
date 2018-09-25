@@ -2,7 +2,7 @@ import random
 import os
 import sys
 
-from masternode_protype.masternode_modules.blockchain import BlockChain
+from masternode_prototype.masternode_modules.blockchain import BlockChain
 
 # bitcoind cmdline:
 #   bitcoind -rpcuser=test -rpcpassword=testpw -regtest -server -addresstype=legacy
