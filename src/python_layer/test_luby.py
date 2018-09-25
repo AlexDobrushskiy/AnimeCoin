@@ -1,8 +1,7 @@
 import math
 import random
 
-from masternode_prototype.masternode_modules.animecoin_modules import animecoin_luby as luby
-
+from core_modules.blackbox_modules import luby
 
 if __name__ == "__main__":
     # SETTINGS

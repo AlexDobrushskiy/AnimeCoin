@@ -1,13 +1,15 @@
-from masternode_modules.chunk_storage import ChunkStorage
-from masternode_modules.helpers import get_intdigest, getrandbytes, generate_chunks
+import sys
+
+from core_modules.chunk_storage import ChunkStorage
+from core_modules.helpers import get_intdigest, generate_chunks
 
 
 if __name__ == "__main__":
-    BASEDIR = "/home/synapse/tmp/animecoin/tmpstorage/"
+    basedir = sys.argv[1]
     NUM_CHUNKS = 100
     CHUNK_SIZE = 1024*1024
 
-    x = ChunkStorage(BASEDIR + "/chunkdata", mode=0o0700)
+    x = ChunkStorage(basedir + "/chunkdata", mode=0o0700)
 
     print("[+] Generating %s chunks of size %s" % (NUM_CHUNKS, CHUNK_SIZE))
     chunks = generate_chunks(NUM_CHUNKS, CHUNK_SIZE)

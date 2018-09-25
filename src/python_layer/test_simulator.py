@@ -7,15 +7,13 @@ import sys
 import os
 import multiprocessing
 
-from datetime import datetime as dt, timedelta as td
 from bitcoinrpc.authproxy import JSONRPCException
 
-from masternode_prototype.masternode_modules.zmq_rpc import RPCException
 from masternode_prototype.masternode_daemon import MasterNodeDaemon
-from masternode_prototype.masternode_modules.masternode_communication import NodeManager
-from masternode_prototype.masternode_modules.masternode_discovery import discover_nodes
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from masternode_prototype.masternode_modules.blockchain import BlockChain
+from core_modules.masternode_communication import NodeManager
+from core_modules.masternode_discovery import discover_nodes
+from core_modules.blackbox_modules.keys import id_keypair_generation_func
+from core_modules.blockchain import BlockChain
 
 
 def test_store_and_retrieve_data(srcnode, dstnode):
@@ -38,7 +36,7 @@ class Simulator:
         self.__configdir = configdir
 
         # generate our keys for RPC
-        self.__privkey, self.__pubkey = animecoin_id_keypair_generation_func()
+        self.__privkey, self.__pubkey = id_keypair_generation_func()
 
         # get node manager
         self.__nodemanager = NodeManager(self.__logger, self.__privkey, self.__pubkey)
@@ -109,7 +107,7 @@ class Simulator:
         addnodes = ["%s:%s" % (x["ip"], x["port"]) for x in settings_list]
         masternodes = self.start_masternode_in_new_process(settings_list, addnodes)
 
-        # connect to animecoinds spawned by daemons
+        # connect to blockchain spawned by daemons
         for settings in settings_list:
             self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
                                               settings["pubkey"], keytype="file")

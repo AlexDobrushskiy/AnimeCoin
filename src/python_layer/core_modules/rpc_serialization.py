@@ -2,11 +2,10 @@ import nacl
 import time
 import msgpack
 
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_signatures import animecoin_id_write_signature_on_data_func,\
-    animecoin_id_verify_signature_with_public_key_func
-from masternode_prototype.masternode_modules.animecoin_modules.helpers import sleep_rand, get_sha3_512_func
-from masternode_prototype.masternode_modules.helpers import get_hexdigest, hex_to_int, int_to_hex
-from masternode_prototype.masternode_modules.helpers_type import ensure_type, ensure_type_of_field
+from core_modules.blackbox_modules.signatures import pastel_id_write_signature_on_data_func,\
+    pastel_id_verify_signature_with_public_key_func
+from core_modules.blackbox_modules.helpers import sleep_rand, get_sha3_512_func
+from core_modules.helpers_type import ensure_type, ensure_type_of_field
 
 MAX_SUPPORTED_VERSION = 1
 NONCE_LENGTH = 32
@@ -66,7 +65,7 @@ def verify_and_unpack(raw_message_contents, expected_receiver_id):
         tmp["signature"] = ""
         sleep_rand()
         raw_hash = get_sha3_512_func(msgpack.packb(tmp, use_bin_type=True))
-        verified = animecoin_id_verify_signature_with_public_key_func(raw_hash, signature, sender_id)
+        verified = pastel_id_verify_signature_with_public_key_func(raw_hash, signature, sender_id)
         sleep_rand()
 
         if not verified:
@@ -102,7 +101,7 @@ def pack_and_sign(privkey, pubkey, receiver_id, message_body, version=MAX_SUPPOR
         # serialize container, calculate hash and sign with private key
         # signature is None as this point as we can't know the signature without calculating it
         container_serialized = msgpack.packb(container, use_bin_type=True)
-        signature = animecoin_id_write_signature_on_data_func(get_sha3_512_func(container_serialized), privkey, pubkey)
+        signature = pastel_id_write_signature_on_data_func(get_sha3_512_func(container_serialized), privkey, pubkey)
 
         # TODO: serializing twice is not the best solution if we want to work with large messages
 

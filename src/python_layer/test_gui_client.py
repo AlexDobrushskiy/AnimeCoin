@@ -4,9 +4,9 @@ import multiprocessing
 import logging
 import sys
 
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from masternode_prototype.masternode_modules.masternode_communication import NodeManager
-from masternode_prototype.masternode_modules.masternode_discovery import discover_nodes
+from core_modules.blackbox_modules.keys import id_keypair_generation_func
+from core_modules.masternode_communication import NodeManager
+from core_modules.masternode_discovery import discover_nodes
 
 from client_prototype.cefpython.cefpython import start_cefpython
 
@@ -25,10 +25,10 @@ def initlogging():
 if __name__ == "__main__":
     basedir = sys.argv[1]
 
-    # discover animecoin nodes
+    # discover nodes
     logger = initlogging()
 
-    privkey, pubkey = animecoin_id_keypair_generation_func()
+    privkey, pubkey = id_keypair_generation_func()
     nodemanager = NodeManager(logger, privkey, pubkey)
     for settings in discover_nodes(basedir):
         nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"], settings["pubkey"],

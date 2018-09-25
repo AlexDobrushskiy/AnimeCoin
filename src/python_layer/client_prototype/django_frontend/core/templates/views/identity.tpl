@@ -6,7 +6,7 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-3 mt-3">
-            <h4>My Artex Identities</h4>
+            <h4>My Pastel Identities</h4>
             {% for address in addresses %}
                 <table class="table">
                     <tr>
@@ -16,7 +16,7 @@
                 </table>
             {% endfor %}
 
-            <h4>ALL Artex Identities</h4>
+            <h4>ALL Pastel Identities</h4>
             {% for txid, ticket in all_identities %}
                 <table class="table">
                     <tr>

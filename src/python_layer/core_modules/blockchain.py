@@ -1,6 +1,6 @@
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
+from bitcoinrpc.authproxy import AuthServiceProxy
 
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_blockchain import store_data_in_utxo,\
+from core_modules.blackbox_modules.blockchain import store_data_in_utxo,\
     retrieve_data_from_utxo
 
 

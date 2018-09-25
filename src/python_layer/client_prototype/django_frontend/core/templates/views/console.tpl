@@ -6,7 +6,7 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-12 mt-3">
-        <h1>Artex console</h1>
+        <h1>Pastel console</h1>
         <form method="post">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
             <table class="table">

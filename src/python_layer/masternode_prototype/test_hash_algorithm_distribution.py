@@ -3,7 +3,7 @@ import hashlib
 
 from datetime import datetime as dt, timedelta as td
 
-from masternode_modules.helpers import get_digest, getrandbytes
+from core_modules.helpers import get_digest, getrandbytes
 
 NODE_SEED = b'/Q\xe0\xbftE+\xff4YpA\t\x96\xa1`\xc6)\xe2\xad\x0c\xf4\xa9\xf0\xa9_Ir\xc0\x8aw\xb0'
 KEY_SEED = b"\r\xfd\x9a\x84'\x06>\xf8\x0e\xb4[\xcc\x94\xb8\x08m\xfa\xd9\x0fV`\\s*\x87H>d\x95Y^$"

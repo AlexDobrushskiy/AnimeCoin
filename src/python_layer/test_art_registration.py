@@ -1,11 +1,11 @@
 import sys
 
 
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from masternode_prototype.masternode_modules.ticket_models import FinalRegistrationTicket, FinalActivationTicket
-from masternode_prototype.masternode_modules.blockchain_wrapper import MockChain, ChainWrapper
-from masternode_prototype.masternode_modules.mockstorage import ChunkStorage
-from masternode_prototype.masternode_modules.masternode_ticketing import ArtRegistrationServer, ArtRegistrationClient
+from core_modules.blackbox_modules.keys import id_keypair_generation_func
+from core_modules.ticket_models import FinalRegistrationTicket, FinalActivationTicket
+from core_modules.chainwrapper import MockChain, ChainWrapper
+from core_modules.chunk_storage import ChunkStorage
+from core_modules.masternode_ticketing import ArtRegistrationServer, ArtRegistrationClient
 
 
 def get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage):
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     image_files = sys.argv[1:]
 
     # TODO: transition from base64 to binary keys to save space
-    privkey, pubkey = animecoin_id_keypair_generation_func()
+    privkey, pubkey = id_keypair_generation_func()
 
     # START MOCK STUFF
     # TODO: remove mock stuff

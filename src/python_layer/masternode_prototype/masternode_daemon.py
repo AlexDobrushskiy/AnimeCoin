@@ -7,11 +7,11 @@ import subprocess
 
 import bitcoinrpc
 
-from .masternode_modules.settings import MNDeamonSettings, NetWorkSettings
-from .masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from .masternode_modules.blockchain import BlockChain
-from .masternode_modules.blockchain_wrapper import ChainWrapper
-from .masternode_modules.masternode_logic import MasterNodeLogic
+from core_modules.settings import MNDeamonSettings, NetWorkSettings
+from core_modules.blackbox_modules.keys import id_keypair_generation_func
+from core_modules.blockchain import BlockChain
+from core_modules.chainwrapper import ChainWrapper
+from core_modules.masternode_logic import MasterNodeLogic
 
 
 class MasterNodeDaemon:
@@ -76,7 +76,7 @@ class MasterNodeDaemon:
 
         if not os.path.isfile(privkeypath) or not os.path.isfile(pubkeypath):
             self.__logger.debug("It seems that public and private keys are not generated, creating them now...")
-            self.__privkey, self.__pubkey = animecoin_id_keypair_generation_func()
+            self.__privkey, self.__pubkey = id_keypair_generation_func()
             with open(privkeypath, "wt") as f:
                 f.write(self.__privkey)
             os.chmod(privkeypath, 0o0700)

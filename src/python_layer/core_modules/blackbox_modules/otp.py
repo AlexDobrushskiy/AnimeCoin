@@ -4,7 +4,7 @@ import pyotp
 
 def generate_current_otp_string_func():
     try:
-        otp_secret = os.environ['ANIME_OTP_SECRET']
+        otp_secret = os.environ['PASTEL_OTP_SECRET']
     except KeyError:
         with open('otp_secret.txt', 'r') as f:
             otp_secret = f.read()

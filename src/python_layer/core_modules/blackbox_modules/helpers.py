@@ -3,7 +3,7 @@ import random
 import hashlib
 
 
-class AnimeTimer:
+class Timer:
     def __init__(self):
         self.start = time.time()
 

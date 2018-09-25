@@ -1,13 +1,12 @@
 import os
 import hashlib
-import json
 
-from masternode_prototype.masternode_modules.helpers_type import ensure_type_of_field
+from core_modules.helpers_type import ensure_type_of_field
 
 
 class MNDeamonSettings:
     def __init__(self, settings):
-        self.animecoin_conf = ensure_type_of_field(settings, "animecoin_conf", str)
+        self.cdaemon_conf = ensure_type_of_field(settings, "cdaemon_conf", str)
         self.showmetrics = ensure_type_of_field(settings, "showmetrics", str)
         self.rpcuser = ensure_type_of_field(settings, "rpcuser", str)
         self.rpcpassword = ensure_type_of_field(settings, "rpcpassword", str)
@@ -77,13 +76,15 @@ if NetWorkSettings.BLOCKCHAIN == "bitcoind":
     #NetWorkSettings.BLOCKCHAIN_BINARY = "/usr/bin/bitcoind"
     NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/tmp/bitcoind_old/bitcoin/src/bitcoind"
     NetWorkSettings.COIN = 100000000  # satoshis in 1 btc
+    NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
 else:
     # animecoind
     NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
     NetWorkSettings.COIN = 100000
+    NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
 
 NetWorkSettings.PYTHONPATH = "python"
-NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", "..", ".."))
+NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", ".."))
 NetWorkSettings.DJANGO_ROOT = os.path.join(NetWorkSettings.BASEDIR, "client_prototype", "django_frontend")
 
 NetWorkSettings.ALIAS_SEED = b'd\xad`n\xdc\x89\xc2/\xf6\xcd\xd6\xec\xcc\x1c\xc7\xd4\x83B9\x01\xb4\x06\xa2\xc9=\xf8_\x98\xa1p\x01&'

@@ -5,7 +5,7 @@ import zmq.asyncio
 import uuid
 
 from .settings import NetWorkSettings
-from .animecoin_modules.animecoin_rpc import pack_and_sign, verify_and_unpack
+from core_modules.rpc_serialization import pack_and_sign, verify_and_unpack
 from .helpers import get_hexdigest, hex_to_int, int_to_hex
 
 

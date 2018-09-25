@@ -3,16 +3,16 @@ import msgpack
 
 from PIL import Image
 
-from .animecoin_modules.animecoin_nsfw import NSFWDetector
-from .animecoin_modules.helpers import get_sha3_512_func_bytes
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_signatures import\
-    animecoin_id_write_signature_on_data_func, animecoin_id_verify_signature_with_public_key_func
+from .blackbox_modules.nsfw import NSFWDetector
+from .blackbox_modules.helpers import get_sha3_512_func_bytes
+from core_modules.blackbox_modules.signatures import \
+    pastel_id_verify_signature_with_public_key_func
 from .model_validators import FieldValidator, StringField, IntegerField, FingerprintField, SHA3512Field,\
     LubyChunkHashField, LubyChunkField, ImageField, ThumbnailField, TXIDField, SignatureField, PubkeyField,\
     LubySeedField, BlockChainAddressField, UnixTimeField, StringChoiceField
-from .animecoin_modules.animecoin_dupe_detection import DupeDetector, combine_fingerprint_vectors, measure_similarity,\
+from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity,\
     assemble_fingerprints_for_pandas
-from .animecoin_modules import animecoin_luby as luby
+from .blackbox_modules import luby
 from .settings import NetWorkSettings
 
 
@@ -400,7 +400,7 @@ class Signature(TicketModelBase):
     }
 
     def validate(self, ticket):
-        if not animecoin_id_verify_signature_with_public_key_func(ticket.serialize(), self.signature, self.pubkey):
+        if not pastel_id_verify_signature_with_public_key_func(ticket.serialize(), self.signature, self.pubkey):
             raise ValueError("Invalid signature")
 
 

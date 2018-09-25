@@ -1,4 +1,5 @@
 import os
+from .settings import NetWorkSettings
 
 
 def discover_nodes(regtestdir):
@@ -14,7 +15,7 @@ def discover_nodes(regtestdir):
 
 def read_settings_file(basedir):
     nodename = os.path.basename(basedir).rstrip("/").lstrip("node")
-    settingsfile = os.path.join(basedir, "animecoin.conf")
+    settingsfile = os.path.join(basedir, NetWorkSettings.CDAEMON_CONFIG_FILE)
 
     settings = {}
     for line in open(settingsfile):
@@ -27,7 +28,7 @@ def read_settings_file(basedir):
 
     # set our settings
     # TODO: cofidy these settings in a concrete model and validate that everything we need is set
-    settings["animecoin_conf"] = settingsfile
+    settings["cdaemon_conf"] = settingsfile
     settings["nodename"] = nodename
     settings["nodeid"] = int(nodename.lstrip("node"))
     settings["datadir"] = basedir                       # TODO: these names are not great

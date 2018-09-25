@@ -6,7 +6,7 @@ import scipy
 import scipy.stats
 import numpy as np
 
-from .helpers import AnimeTimer
+from .helpers import Timer
 
 
 def __hoeffd_inner_loop_func(i, R, S):
@@ -76,7 +76,7 @@ def bootstrapped_hoeffd(x, y, sample_size, number_of_bootstraps, num_workers):
 
 
 def calculate_spearmans_rho(candidate_fingerprint, fingerprint_table, registered_fingerprints, strictness, threshold):
-    with AnimeTimer():
+    with Timer():
         spearman_vector = []
         for i in range(len(fingerprint_table)):
             part = registered_fingerprints[:, i]
@@ -103,7 +103,7 @@ def calculate_spearmans_rho(candidate_fingerprint, fingerprint_table, registered
 def calculate_kendalls_tau(candidate_fingerprint, filtered_fingerprints, strictness, threshold):
     futher_testing_needed = []
 
-    with AnimeTimer():
+    with Timer():
         kendall_vector = []
         for i in filtered_fingerprints:
             correlation = scipy.stats.kendalltau(candidate_fingerprint, i).correlation
@@ -130,7 +130,7 @@ def calculate_bootstrapped_hoeffdings(candidate_fingerprint,
     sample_size = 80
     number_of_bootstraps = 30
 
-    with AnimeTimer():
+    with Timer():
         print('Sample Size: %s, Number of Bootstraps: %s' % (sample_size, number_of_bootstraps))
         hoeffding_vector = []
         for current_fingerprint in filtered_fingerprints:

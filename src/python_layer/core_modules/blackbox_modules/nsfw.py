@@ -1,5 +1,5 @@
 import tensorflow as tf
-from masternode_prototype.masternode_modules.settings import NetWorkSettings
+from core_modules.settings import NetWorkSettings
 
 
 class __NSFWDetector:

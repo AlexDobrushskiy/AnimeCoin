@@ -2,15 +2,15 @@ import time
 
 from .ticket_models import RegistrationTicket, Signature, FinalRegistrationTicket, ActivationTicket,\
     FinalActivationTicket, ImageData, IDTicket, FinalIDTicket
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_signatures import\
-    animecoin_id_write_signature_on_data_func, animecoin_id_verify_signature_with_public_key_func
-from masternode_prototype.masternode_modules.blockchain_wrapper import ChainWrapper
+from core_modules.blackbox_modules.keys import id_keypair_generation_func
+from core_modules.blackbox_modules.signatures import\
+    pastel_id_write_signature_on_data_func
+from core_modules.chainwrapper import ChainWrapper
 
 
 class ArtRegistrationServer:
     def __init__(self, blockchain, chunkstorage):
-        self.__priv, self.__pub = animecoin_id_keypair_generation_func()
+        self.__priv, self.__pub = id_keypair_generation_func()
         self.__chainwrapper = ChainWrapper(blockchain)
         self.__chunkstorage = chunkstorage
 
@@ -33,7 +33,7 @@ class ArtRegistrationServer:
 
         # sign regticket
         ticket_signed_by_mn = Signature(dictionary={
-            "signature": animecoin_id_write_signature_on_data_func(regticket_serialized, self.__priv, self.__pub),
+            "signature": pastel_id_write_signature_on_data_func(regticket_serialized, self.__priv, self.__pub),
             "pubkey": self.__pub,
         })
         return ticket_signed_by_mn.serialize()
@@ -53,7 +53,7 @@ class ArtRegistrationServer:
 
         # sign activation ticket
         ticket_signed_by_mn = Signature(dictionary={
-            "signature": animecoin_id_write_signature_on_data_func(activationticket_serialized, self.__priv, self.__pub),
+            "signature": pastel_id_write_signature_on_data_func(activationticket_serialized, self.__priv, self.__pub),
             "pubkey": self.__pub,
         })
         return ticket_signed_by_mn.serialize()
@@ -93,7 +93,7 @@ class ArtRegistrationClient:
 
     def __generate_signed_ticket(self, ticket):
         signed_ticket = Signature(dictionary={
-            "signature": animecoin_id_write_signature_on_data_func(ticket.serialize(), self.__privkey, self.__pubkey),
+            "signature": pastel_id_write_signature_on_data_func(ticket.serialize(), self.__privkey, self.__pubkey),
             "pubkey": self.__pubkey,
         })
 
@@ -266,7 +266,7 @@ class IDRegistrationClient:
         idticket.validate()
 
         signature = Signature(dictionary={
-            "signature": animecoin_id_write_signature_on_data_func(idticket.serialize(), self.__privkey, self.__pubkey),
+            "signature": pastel_id_write_signature_on_data_func(idticket.serialize(), self.__privkey, self.__pubkey),
             "pubkey": self.__pubkey,
         })
         signature.validate(idticket)

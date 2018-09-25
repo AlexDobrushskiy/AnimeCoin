@@ -8,7 +8,7 @@ import keras
 from keras.applications.imagenet_utils import preprocess_input
 
 from ..settings import NetWorkSettings
-from .animecoin_statistics import calculate_spearmans_rho, calculate_kendalls_tau, calculate_bootstrapped_hoeffdings
+from .statistics import calculate_spearmans_rho, calculate_kendalls_tau, calculate_bootstrapped_hoeffdings
 
 
 NUM_WORKERS = int(round(multiprocessing.cpu_count() / 2))

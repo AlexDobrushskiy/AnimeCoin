@@ -5,7 +5,7 @@ import hashlib
 
 import pandas as pd
 
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_dupe_detection import DupeDetector,\
+from core_modules.blackbox_modules.dupe_detection import DupeDetector,\
     measure_similarity, combine_fingerprint_vectors, assemble_fingerprints_for_pandas
 
 

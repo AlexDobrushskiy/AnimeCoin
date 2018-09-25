@@ -1,4 +1,5 @@
 import os
+import sys
 import random
 import uuid
 import asyncio
@@ -7,13 +8,9 @@ import zmq.asyncio
 
 from datetime import datetime as dt
 
-from masternode_prototype.masternode_modules.masternode_logic import MasterNodeLogic
-from masternode_prototype.masternode_modules.helpers import get_hexdigest, getrandbytes
-from masternode_prototype.masternode_modules.animecoin_modules.animecoin_keys import animecoin_id_keypair_generation_func
-
-
-BASEDIR = "/home/synapse/tmp/animecoin/tmpstorage"
-TEST_CHUNKS = "/home/synapse/tmp/animecoin/test_chunks/"
+from core_modules.masternode_logic import MasterNodeLogic
+from core_modules.helpers import get_hexdigest, getrandbytes
+from core_modules.blackbox_modules.keys import id_keypair_generation_func
 
 
 async def heartbeat():
@@ -52,7 +49,7 @@ async def send_rpc_to_random_mn(masternode_list, myid):
 def generate_masternodes(num_mn, ip, port):
     ret = []
     for i in range(num_mn):
-        privkey, pubkey = animecoin_id_keypair_generation_func()
+        privkey, pubkey = id_keypair_generation_func()
         mn = (get_hexdigest(getrandbytes(1024)), ip, port+i, privkey, pubkey)
         ret.append(mn)
     return ret
@@ -60,6 +57,9 @@ def generate_masternodes(num_mn, ip, port):
 
 if __name__ == "__main__":
     NUM_MN = 2
+
+    basedir = sys.argv[1]
+    test_chunks = sys.argv[2]
 
     masternode_list = generate_masternodes(NUM_MN, "127.0.0.1", 86752)
 
@@ -70,8 +70,8 @@ if __name__ == "__main__":
 
     # read test chunks from disk
     chunks = []
-    for i in os.listdir(TEST_CHUNKS)[:10]:
-        k, v = i, open(os.path.join(TEST_CHUNKS, i), "rb").read()
+    for i in os.listdir(test_chunks)[:10]:
+        k, v = i, open(os.path.join(test_chunks, i), "rb").read()
         chunks.append((k, v))
     print("Read %s chunks from testdir" % len(chunks))
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     masternodes = []
     for i, config in enumerate(masternode_list):
         name = "mn_%s" % i
-        chunkdir = os.path.join(BASEDIR, name)
+        chunkdir = os.path.join(basedir, name)
         os.makedirs(chunkdir, exist_ok=True)
 
         nodeid, ip, port, privkey, pubkey = config
