@@ -1,5 +1,5 @@
 import os
-from .settings import NetWorkSettings
+from core_modules.settings import NetWorkSettings
 
 
 def discover_nodes(regtestdir):

@@ -10,8 +10,8 @@ import multiprocessing
 from bitcoinrpc.authproxy import JSONRPCException
 
 from masternode_prototype.masternode_daemon import MasterNodeDaemon
-from core_modules.masternode_communication import NodeManager
-from core_modules.masternode_discovery import discover_nodes
+from masternode_prototype.masternode_communication import NodeManager
+from masternode_prototype.masternode_discovery import discover_nodes
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 from core_modules.blockchain import BlockChain
 from core_modules.helpers import require_true

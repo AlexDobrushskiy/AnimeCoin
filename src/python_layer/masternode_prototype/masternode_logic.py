@@ -1,11 +1,10 @@
 import asyncio
 import random
-import logging
 
-from .chunk_manager import ChunkManager
-from .zmq_rpc import RPCException, RPCServer
-from .masternode_communication import NodeManager
-from .helpers import get_hexdigest, hex_to_int, int_to_hex, require_true
+from core_modules.chunk_manager import ChunkManager
+from core_modules.zmq_rpc import RPCException, RPCServer
+from masternode_prototype.masternode_communication import NodeManager
+from core_modules.helpers import get_hexdigest, hex_to_int, int_to_hex, require_true
 
 
 class MasterNodeLogic:

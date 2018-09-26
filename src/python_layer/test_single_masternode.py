@@ -2,7 +2,7 @@ import os
 import sys
 
 from masternode_prototype.masternode_daemon import MasterNodeDaemon
-from core_modules.masternode_discovery import read_settings_file
+from masternode_prototype.masternode_discovery import read_settings_file
 
 if __name__ == "__main__":
     basedir = sys.argv[1]

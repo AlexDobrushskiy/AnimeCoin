@@ -11,7 +11,7 @@ from core_modules.settings import MNDeamonSettings, NetWorkSettings
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 from core_modules.blockchain import BlockChain
 from core_modules.chainwrapper import ChainWrapper
-from core_modules.masternode_logic import MasterNodeLogic
+from masternode_prototype.masternode_logic import MasterNodeLogic
 
 
 class MasterNodeDaemon:

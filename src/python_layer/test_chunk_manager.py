@@ -8,7 +8,7 @@ import zmq.asyncio
 
 from datetime import datetime as dt
 
-from core_modules.masternode_logic import MasterNodeLogic
+from masternode_prototype.masternode_logic import MasterNodeLogic
 from core_modules.helpers import get_hexdigest, getrandbytes
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 

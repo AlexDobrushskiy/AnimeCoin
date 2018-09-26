@@ -1,8 +1,8 @@
 import random
 
 
-from .zmq_rpc import RPCClient
-from .helpers import get_hexdigest, hex_to_int, int_to_hex
+from core_modules.zmq_rpc import RPCClient
+from core_modules.helpers import get_hexdigest, hex_to_int, int_to_hex
 
 
 class NodeManager:

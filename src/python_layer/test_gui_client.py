@@ -5,8 +5,8 @@ import logging
 import sys
 
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
-from core_modules.masternode_communication import NodeManager
-from core_modules.masternode_discovery import discover_nodes
+from masternode_prototype.masternode_communication import NodeManager
+from masternode_prototype.masternode_discovery import discover_nodes
 
 from client_prototype.cefpython.cefpython import start_cefpython
 
