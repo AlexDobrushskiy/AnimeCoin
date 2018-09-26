@@ -5,7 +5,7 @@ import logging
 from .chunk_manager import ChunkManager
 from .zmq_rpc import RPCException, RPCServer
 from .masternode_communication import NodeManager
-from .helpers import get_hexdigest, hex_to_int, int_to_hex
+from .helpers import get_hexdigest, hex_to_int, int_to_hex, require_true
 
 
 class MasterNodeLogic:
@@ -54,7 +54,7 @@ class MasterNodeLogic:
                 data = self.__chunkmanager.get_chunk(chunkid, verify=True)
 
                 # pick a random range
-                assert len(data) > 1024
+                require_true(len(data) > 1024)
                 start = random.randint(0, len(data)-1024)
                 end = start + 1024
 

@@ -2,6 +2,7 @@ import math
 import random
 
 from core_modules.blackbox_modules import luby
+from core_modules.helpers import require_true
 
 if __name__ == "__main__":
     # SETTINGS
@@ -25,5 +26,5 @@ if __name__ == "__main__":
     except luby.NotEnoughChunks:
         print("not enough luby chunks!")
     else:
-        assert(data == decoded)
+        require_true(data == decoded)
         print("Successfully reassembled data!")

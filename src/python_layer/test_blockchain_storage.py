@@ -1,4 +1,5 @@
 from core_modules.blockchain import BlockChain
+from core_modules.helpers import require_true
 
 # bitcoind cmdline:
 #   bitcoind -rpcuser=test -rpcpassword=testpw -regtest -server -addresstype=legacy
@@ -12,7 +13,7 @@ def test(blockchain, original):
     transid = blockchain.store_data_in_utxo(original)
     reconstructed = blockchain.retrieve_data_from_utxo(transid)
     # print("RECONSTRUCTED", reconstructed)
-    assert(original == reconstructed)
+    require_true(original == reconstructed)
 
 
 def main():
@@ -20,7 +21,7 @@ def main():
     origdata = b'THIS IS SOME TEST DATA'
     txid = blockchain.store_data_in_utxo(origdata)
     retdata = blockchain.retrieve_data_from_utxo(txid)
-    assert(origdata == retdata)
+    require_true(origdata == retdata)
     print("Data matches, returned: %s" % retdata)
     exit()
 

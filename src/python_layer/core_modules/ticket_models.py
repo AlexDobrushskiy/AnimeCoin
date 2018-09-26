@@ -14,6 +14,7 @@ from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity,\
     assemble_fingerprints_for_pandas
 from .blackbox_modules import luby
 from .settings import NetWorkSettings
+from .helpers import require_true
 
 
 # ===== SERIALIZERS ===== #
@@ -213,12 +214,12 @@ class ImageData(TicketModelBase):
 
         # assemble image from chunks and check if it matches
         reconstructed = luby.decode(self.lubychunks)
-        assert(reconstructed == self.image)
+        require_true(reconstructed == self.image)
 
         # validate that thumbnail is the same image
         # TODO: we should not regenerate the thumbnail, just look for similarities as this might not be deterministic
         new_thumbnail = self.generate_thumbnail(self.image)
-        assert(self.thumbnail == new_thumbnail)
+        require_true(self.thumbnail == new_thumbnail)
 
 
 class RegistrationTicket(TicketModelBase):
@@ -253,7 +254,7 @@ class RegistrationTicket(TicketModelBase):
         # after these checks are done we know that fingerprints are not dupes and there is no race
 
         # validate that lubyhashes and lubychunks are the same length
-        assert(len(self.lubyhashes) == len(self.lubyseeds))
+        require_true(len(self.lubyhashes) == len(self.lubyseeds))
 
         # validate that order txid is not too old
         block_distance = chainwrapper.get_block_distance(chainwrapper.get_last_block_hash(), self.order_block_txid)
@@ -283,7 +284,7 @@ class RegistrationTicket(TicketModelBase):
             # validate that this art hash does not yet exist on the blockchain
             # TODO: only prohibit registration when this was registered in the past X blocks
             # TODO: if regticket is activated: prohibit registration forever
-            assert (regticket.imagedata_hash != self.imagedata_hash)
+            require_true(regticket.imagedata_hash != self.imagedata_hash)
 
         # validate that fingerprints are not dupes
         if len(fingerprint_db) > 0:
@@ -334,16 +335,16 @@ class ActivationTicket(TicketModelBase):
         regticket = final_regticket.ticket
 
         # validate that imagehash, fingerprints, lubyhashes and thumbnailhash indeed belong to the image
-        assert(regticket.fingerprints == image.generate_fingerprints())  # TODO: is this deterministic?
-        assert(regticket.lubyhashes == image.get_luby_hashes())
-        assert(regticket.lubyseeds == image.get_luby_seeds())
-        assert(regticket.thumbnailhash == image.get_thumbnail_hash())
+        require_true(regticket.fingerprints == image.generate_fingerprints())  # TODO: is this deterministic?
+        require_true(regticket.lubyhashes == image.get_luby_hashes())
+        require_true(regticket.lubyseeds == image.get_luby_seeds())
+        require_true(regticket.thumbnailhash == image.get_thumbnail_hash())
 
         # validate that MN order matches between registration ticket and activation ticket
-        assert(regticket.order_block_txid == self.order_block_txid)
+        require_true(regticket.order_block_txid == self.order_block_txid)
 
         # image hash matches regticket hash
-        assert(regticket.imagedata_hash == image.get_artwork_hash())
+        require_true(regticket.imagedata_hash == image.get_artwork_hash())
 
         # run nsfw check
         if NSFWDetector.is_nsfw(image.image):

@@ -5,12 +5,14 @@ import pyqrcode
 import PIL
 import pyotp
 
+from core_modules.helpers import require_true
+
 
 def regenerate_google_auth_qr_code_from_secret_func():
     otp_secret = input('Enter your Google Authenticator Secret in all upper case and numbers:\n')
     otp_secret_character_set = 'ABCDEF1234567890'
-    assert(len(otp_secret)==16)
-    assert([(x in otp_secret_character_set) for x in otp_secret])
+    require_true(len(otp_secret)==16)
+    require_true([(x in otp_secret_character_set) for x in otp_secret])
     totp = pyotp.totp.TOTP(otp_secret)
     google_auth_uri = totp.provisioning_uri("user@user.com", issuer_name="Pastel")
     qr_error_correcting_level = 'M' # L, M, Q, H

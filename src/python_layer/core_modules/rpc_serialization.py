@@ -6,6 +6,7 @@ from core_modules.blackbox_modules.signatures import pastel_id_write_signature_o
     pastel_id_verify_signature_with_public_key_func
 from core_modules.blackbox_modules.helpers import sleep_rand, get_sha3_512_func
 from core_modules.helpers_type import ensure_type, ensure_type_of_field
+from core_modules.helpers import require_true
 
 MAX_SUPPORTED_VERSION = 1
 NONCE_LENGTH = 32
@@ -55,8 +56,8 @@ def verify_and_unpack(raw_message_contents, expected_receiver_id):
             raise ValueError("receiver_id is not us (%s != %s)" % (receiver_id, expected_receiver_id))
 
         # TODO: validate timestamp - is this enough?
-        assert (timestamp > time.time() - 60)
-        assert (timestamp < time.time() + 60)
+        require_true (timestamp > time.time() - 60)
+        require_true (timestamp < time.time() + 60)
 
         # validate signature:
         #  since signature can't be put into the dict we have to recreate it without the signature field

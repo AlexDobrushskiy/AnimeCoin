@@ -7,6 +7,7 @@ import scipy.stats
 import numpy as np
 
 from .helpers import Timer
+from core_modules.helpers import require_true
 
 
 def __hoeffd_inner_loop_func(i, R, S):
@@ -37,7 +38,7 @@ def __compute_average_and_stdev_of_25th_to_75th_percentile_func(input_vector):
 def __compute_bootstrapped_hoeffdings_d_func(x, y, sample_size):
     x = np.array(x)
     y = np.array(y)
-    assert (x.size == y.size)
+    require_true (x.size == y.size)
     original_length_of_input = x.size
     bootstrap_sample_indices = __generate_bootstrap_sample_func(original_length_of_input - 1, sample_size)
     N = sample_size
@@ -95,7 +96,7 @@ def calculate_spearmans_rho(candidate_fingerprint, fingerprint_table, registered
     futher_testing_needed = [registered_fingerprints[:, current_index].tolist() for current_index in above_threshold]
 
     spearman_scores = [scipy.stats.spearmanr(candidate_fingerprint, x).correlation for x in futher_testing_needed]
-    assert (all(np.array(spearman_scores) >= strictness * threshold))
+    require_true (all(np.array(spearman_scores) >= strictness * threshold))
 
     return spearman_vector, spearman_max, futher_testing_needed
 

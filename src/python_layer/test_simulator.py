@@ -14,6 +14,7 @@ from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_discovery import discover_nodes
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 from core_modules.blockchain import BlockChain
+from core_modules.helpers import require_true
 
 
 def test_store_and_retrieve_data(srcnode, dstnode):
@@ -26,7 +27,7 @@ def test_store_and_retrieve_data(srcnode, dstnode):
     # srcnode.chainwrapper.generate(1)
 
     resp = dstnode.chainwrapper.retrieve_ticket(txid)
-    assert(testdata == resp)
+    require_true(testdata == resp)
 
 
 class Simulator:

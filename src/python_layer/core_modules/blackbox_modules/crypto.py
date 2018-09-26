@@ -1,6 +1,8 @@
 import nacl
 import hashlib
 
+from core_modules.helpers import require_true
+
 
 def __get_raw_blake2b_sha3_512_merged_hash_func(input_data):
     hash_of_input_data = hashlib.sha3_512(input_data).digest() + hashlib.blake2b(input_data).digest()
@@ -223,7 +225,7 @@ class Edwards521Point(EdwardsPoint): #By JE based on https://mojzis.com/software
         z2=z*z
         lhs=(x2+y2)*z2
         rhs=z2*z2+self.d*x2*y2
-        assert(lhs == rhs)
+        require_true(lhs == rhs)
 
 #PureEdDSA scheme. Limitation: Only b mod 8 = 0 is handled.
 class PureEdDSA:
@@ -334,9 +336,9 @@ def Ed521_inthash(data, ctx, hflag):
 #             q.is_valid_point()
 #         p=p.double()
 #         p.is_valid_point()
-#     assert q.encode() == point.encode()
-#     assert q.encode() != p.encode()
-#     assert q.encode() != z.encode()
+#     require_true(q.encode() == point.encode())
+#     require_true(q.encode() != p.encode())
+#     require_true(q.encode() != z.encode())
 #
 # #Simple self-check.
 # def self_check_curves():

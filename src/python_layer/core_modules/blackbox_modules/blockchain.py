@@ -6,7 +6,7 @@ import random
 from binascii import unhexlify, hexlify
 from decimal import Decimal
 
-from core_modules.helpers import get_hexdigest, get_digest
+from core_modules.helpers import get_hexdigest, get_digest, require_true
 from core_modules.settings import NetWorkSettings
 
 base_transaction_amount = 0.000001
@@ -48,7 +48,7 @@ def varint(n):
     elif n < 0xffff:
         return b'\xfd' + struct.pack('<H', n)
     else:
-        assert False
+        raise AssertionError()
 
 
 def packtxin(prevout, scriptSig, seq=0xffffffff):
@@ -73,12 +73,12 @@ def packtx(txins, txouts, locktime=0):
 
 
 def pushdata(data):
-    assert len(data) < OP_PUSHDATA1[0]
+    require_true(len(data) < OP_PUSHDATA1[0])
     return bytes([len(data)]) + data
 
 
 def pushint(n):
-    assert 0 < n <= 16
+    require_true(0 < n <= 16)
     return bytes([0x51 + n - 1])
 
 
@@ -163,7 +163,7 @@ def store_data_in_utxo(jsonrpc, input_data):
     txouts[-1][0] = change
     final_tx = packtx(txins, txouts)
     signed_tx = jsonrpc.signrawtransaction(hexlify(final_tx).decode('utf-8'))
-    assert signed_tx['complete']
+    require_true(signed_tx['complete'])
     hex_signed_transaction = signed_tx['hex']
     print("HEX SIGNED TRANSACTION", hex_signed_transaction)
     # print('Sending data transaction to address: ' + receiving_blockchain_address)
@@ -211,6 +211,6 @@ def retrieve_data_from_utxo(jsonrpc, blockchain_transaction_id):
                                                            0:-calculated_padding_length]
     output_data = unhexstr(reconstructed_encoded_zstd_compressed_data)
     hash_of_output_data = get_hexdigest(output_data)
-    assert (hash_of_output_data == input_data_hash)
+    require_true(hash_of_output_data == input_data_hash)
     # print('Successfully reconstructed and decompressed data!')
     return output_data

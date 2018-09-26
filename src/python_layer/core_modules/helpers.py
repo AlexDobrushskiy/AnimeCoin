@@ -44,6 +44,13 @@ def bytes_to_hex(data):
     return data.hex()
 
 
+def require_true(param, msg=""):
+    # this function replaces the built in assert function so that we can use this in production when ran with
+    # optimizations turned on
+    if not param:
+        raise AssertionError(msg)
+
+
 # TEST FUNCTIONS
 def generate_chunks(num_chunks, chunk_size):
     chunks = {}

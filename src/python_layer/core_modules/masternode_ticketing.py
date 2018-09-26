@@ -6,6 +6,7 @@ from core_modules.blackbox_modules.keys import id_keypair_generation_func
 from core_modules.blackbox_modules.signatures import\
     pastel_id_write_signature_on_data_func
 from core_modules.chainwrapper import ChainWrapper
+from core_modules.helpers import require_true
 
 
 class ArtRegistrationServer:
@@ -25,7 +26,7 @@ class ArtRegistrationServer:
         regticket = RegistrationTicket(serialized=regticket_serialized)
 
         # validate client's signature on the ticket
-        assert(signed_regticket.pubkey == regticket.author)
+        require_true(signed_regticket.pubkey == regticket.author)
         signed_regticket.validate(regticket)
 
         # validate registration ticket
@@ -45,7 +46,7 @@ class ArtRegistrationServer:
         activation_ticket = ActivationTicket(serialized=activationticket_serialized)
 
         # validate client's signature on the ticket - so only original client can activate
-        assert (signed_actticket.pubkey == activation_ticket.author)
+        require_true(signed_actticket.pubkey == activation_ticket.author)
         signed_actticket.validate(activation_ticket)
 
         # validate activation ticket
@@ -125,7 +126,7 @@ class ArtRegistrationClient:
             mn_signature = Signature(serialized=data_from_mn)
 
             # is the data the same and the signature valid?
-            assert (mn_signature.pubkey == mn_pub)
+            require_true(mn_signature.pubkey == mn_pub)
             mn_signature.validate(ticket)
 
             # add signature to collected signatures
@@ -144,7 +145,7 @@ class ArtRegistrationClient:
             mn_signature = Signature(serialized=data_from_mn)
 
             # is the data the same and the signature valid?
-            assert (mn_signature.pubkey == mn_pub)
+            require_true(mn_signature.pubkey == mn_pub)
             mn_signature.validate(ticket)
 
             # add signature to collected signatures

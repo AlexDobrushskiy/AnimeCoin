@@ -4,6 +4,7 @@ import base64
 
 from nacl import utils, secret
 
+from core_modules.helpers import require_true
 from .helpers import Timer
 from .otp import generate_current_otp_string_func, generate_current_otp_string_from_user_input_func
 from .secure_storage import get_nacl_box_key_from_environment_or_file_func, get_nacl_box_key_from_user_input_func
@@ -31,7 +32,7 @@ def import_public_and_private_keys_from_pem_files_func(use_require_otp):
             except:
                 otp_string = generate_current_otp_string_from_user_input_func()
             otp_from_user_input = input('\nPlease Enter your Google Authenticator Code:\n\n')
-            assert (len(otp_from_user_input) == 6)
+            require_true (len(otp_from_user_input) == 6)
             otp_correct = (otp_from_user_input == otp_string)
         else:
             otp_correct = True
