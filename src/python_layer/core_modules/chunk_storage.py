@@ -5,12 +5,12 @@ from .helpers import int_to_hex, hex_to_int, get_intdigest
 class ChunkStorage:
     def __init__(self, basedir, mode):
         self.__basedir = basedir
-        self.__mode = mode
+        self.__basedir_umask = mode
 
         self.__init_basedir()
 
     def __init_basedir(self):
-        os.makedirs(self.__basedir, exist_ok=True)
+        os.makedirs(self.__basedir, mode=self.__basedir_umask, exist_ok=True)
 
     def __derive_fs_file_name(self, chunkname):
         if type(chunkname) != int:
@@ -39,7 +39,7 @@ class ChunkStorage:
     def put(self, chunkname, data):
         dirname, filename = self.__derive_fs_file_name(chunkname)
 
-        os.makedirs(dirname, mode=self.__mode, exist_ok=True)
+        os.makedirs(dirname, mode=self.__basedir_umask, exist_ok=True)
 
         with open(filename, "wb") as f:
             f.write(data)

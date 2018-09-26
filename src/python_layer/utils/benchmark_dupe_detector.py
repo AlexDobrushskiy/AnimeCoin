@@ -5,6 +5,10 @@ import hashlib
 
 import pandas as pd
 
+# PATH HACK
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../")
+
+
 from core_modules.blackbox_modules.dupe_detection import DupeDetector,\
     measure_similarity, combine_fingerprint_vectors, assemble_fingerprints_for_pandas
 

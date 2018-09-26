@@ -1,7 +1,11 @@
-import random
+import sys
+import os
 import hashlib
 
 from datetime import datetime as dt, timedelta as td
+
+# PATH HACK
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../")
 
 from core_modules.helpers import get_digest, getrandbytes
 

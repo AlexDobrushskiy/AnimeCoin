@@ -1,5 +1,7 @@
 .idea/
 
+htmlcov/
+
 python_layer/client_prototype/cefpython/blob_storage/
 python_layer/client_prototype/cefpython/webrtc_event_logs/
 

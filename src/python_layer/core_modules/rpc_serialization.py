@@ -1,4 +1,4 @@
-import nacl
+import nacl.utils
 import time
 import msgpack
 
