@@ -12,7 +12,6 @@ from core_modules.blockchain import BlockChain
 
 
 class TestBlockChain(unittest.TestCase):
-    @unittest.skip("TODO")
     def test_blockchain_storage(self):
         blockchain = BlockChain("rt", "rt", "127.0.0.1", 10001)
         origdata = b'THIS IS SOME TEST DATA'

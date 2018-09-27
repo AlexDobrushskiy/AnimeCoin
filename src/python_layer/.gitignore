@@ -1,5 +1,7 @@
 .idea/
 
+.coverage
+
 htmlcov/
 
 python_layer/client_prototype/cefpython/blob_storage/
