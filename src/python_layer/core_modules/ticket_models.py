@@ -239,7 +239,7 @@ class RegistrationTicket(TicketModelBase):
         "artwork_keyword_set": StringField(minsize=0, maxsize=120),
         "total_copies": IntegerField(minsize=0, maxsize=120),
 
-        "fingerprints": FingerprintField(innertype=float),
+        "fingerprints": FingerprintField(),
         "lubyhashes": LubyChunkHashField(),
         "lubyseeds": LubySeedField(),
         "thumbnailhash": SHA3512Field(),

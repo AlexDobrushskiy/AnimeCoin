@@ -1,3 +1,4 @@
+import math
 import os
 import hashlib
 
@@ -103,6 +104,9 @@ NetWorkSettings.THUMBNAIL_DIMENSIONS = (240, 240)
 NetWorkSettings.THUMBNAIL_MAX_SIZE = 100 * 1024          # 100 kb
 
 NetWorkSettings.LUBY_REDUNDANCY_FACTOR = 10
+
+NetWorkSettings.MAX_LUBY_CHUNKS = math.ceil((NetWorkSettings.IMAGE_MAX_SIZE / NetWorkSettings.CHUNKSIZE) \
+                                  * NetWorkSettings.LUBY_REDUNDANCY_FACTOR)
 
 
 NetWorkSettings.NSFW_MODEL_FILE = "/home/synapse/tmp/animecoin/nsfw/nsfw_trained_model.pb"
