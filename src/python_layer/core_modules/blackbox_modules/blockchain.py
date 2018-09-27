@@ -4,14 +4,13 @@ import sys
 import struct
 import random
 from binascii import unhexlify, hexlify
-from decimal import Decimal
+from decimal import Decimal, getcontext
+getcontext().prec = 16
 
 from core_modules.helpers import get_hexdigest, get_digest, require_true
 from core_modules.settings import NetWorkSettings
 
-base_transaction_amount = 0.000001
 FEEPERKB = Decimal(0.0001)
-COIN = NetWorkSettings.COIN
 
 
 OP_CHECKSIG = b'\xac'
@@ -44,7 +43,7 @@ def select_txins(value, unspent):
 
 def varint(n):
     if n < 0xfd:
-        return bytes([n])
+        return struct.pack('<B', n)
     elif n < 0xffff:
         return b'\xfd' + struct.pack('<H', n)
     else:
@@ -57,7 +56,7 @@ def packtxin(prevout, scriptSig, seq=0xffffffff):
 
 
 def packtxout(value, scriptPubKey):
-    return struct.pack('<Q', int(value * COIN)) + varint(len(scriptPubKey)) + scriptPubKey
+    return struct.pack('<Q', int(value * NetWorkSettings.COIN)) + varint(len(scriptPubKey)) + scriptPubKey
 
 
 def packtx(txins, txouts, locktime=0):
@@ -74,12 +73,12 @@ def packtx(txins, txouts, locktime=0):
 
 def pushdata(data):
     require_true(len(data) < OP_PUSHDATA1[0])
-    return bytes([len(data)]) + data
+    return struct.pack('<B', len(data)) + data
 
 
 def pushint(n):
     require_true(0 < n <= 16)
-    return bytes([0x51 + n - 1])
+    return struct.pack('<B', 0x51 + n - 1)
 
 
 def addr2bytes(s):
@@ -98,7 +97,7 @@ def addr2bytes(s):
             h = '00' + h
         else:
             break
-    return unhexstr(h)[1:-4]  # skip version and checksum
+    return unhexstr(h)[2:-4]  # skip version and checksum // ANIME addresses use 2 characters for version
 
 
 def checkmultisig_scriptPubKey_dump(fd):
@@ -146,10 +145,10 @@ def store_data_in_utxo(jsonrpc, input_data):
         scriptPubKey = checkmultisig_scriptPubKey_dump(fd)
         if scriptPubKey is None:
             break
-        value = Decimal(1000 / COIN)
+        value = Decimal(300.0 / NetWorkSettings.COIN)
         txouts.append((value, scriptPubKey))
         change -= value
-    out_value = Decimal(base_transaction_amount)  # dest output
+    out_value = Decimal(NetWorkSettings.BASE_TRANSACTION_AMOUNT)  # dest output
     change -= out_value
     receiving_blockchain_address = jsonrpc.getnewaddress()
     txouts.append((out_value, OP_DUP + OP_HASH160 + pushdata(
@@ -165,7 +164,6 @@ def store_data_in_utxo(jsonrpc, input_data):
     signed_tx = jsonrpc.signrawtransaction(hexlify(final_tx).decode('utf-8'))
     require_true(signed_tx['complete'])
     hex_signed_transaction = signed_tx['hex']
-    print("HEX SIGNED TRANSACTION", hex_signed_transaction)
     # print('Sending data transaction to address: ' + receiving_blockchain_address)
     # print('Size: %d  Fee: %2.8f' % (len(hex_signed_transaction) / 2, fee), file=sys.stderr)
     send_raw_transaction_result = jsonrpc.sendrawtransaction(hex_signed_transaction)
@@ -175,8 +173,10 @@ def store_data_in_utxo(jsonrpc, input_data):
 
 
 def retrieve_data_from_utxo(jsonrpc, blockchain_transaction_id):
+    # raw = jsonrpc.getrawtransaction(blockchain_transaction_id)
+    # outputs = raw.split('0100000000000000')
     raw = jsonrpc.getrawtransaction(blockchain_transaction_id)
-    outputs = raw.split('0100000000000000')
+    outputs = raw.split('01000000000000') # //ANIME - two zerros less then BTC
     # for idx, output in enumerate(outputs):
     #     print(idx, output)
     encoded_hex_data = ''

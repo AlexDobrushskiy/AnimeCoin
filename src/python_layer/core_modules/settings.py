@@ -75,12 +75,14 @@ NetWorkSettings.BLOCKCHAIN = "animecoind"
 if NetWorkSettings.BLOCKCHAIN == "bitcoind":
     #NetWorkSettings.BLOCKCHAIN_BINARY = "/usr/bin/bitcoind"
     NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/tmp/bitcoind_old/bitcoin/src/bitcoind"
+    NetWorkSettings.BASE_TRANSACTION_AMOUNT = 0.000001
     NetWorkSettings.COIN = 100000000  # satoshis in 1 btc
     NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
 else:
     # animecoind
     NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
     NetWorkSettings.COIN = 100000
+    NetWorkSettings.BASE_TRANSACTION_AMOUNT = 300.0/NetWorkSettings.COIN  #0.00300
     NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
 
 NetWorkSettings.PYTHONPATH = "python"
