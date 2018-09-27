@@ -30,5 +30,5 @@ def get_chainwrapper(blockchain):
 logger = initlogging()
 
 # ["rt", "rt", "127.0.0.1", 12218]
-privkey = open(settings.PASTEL_PRIVKEY).read()
-pubkey = open(settings.PASTEL_PUBKEY).read()
+privkey = open(settings.PASTEL_PRIVKEY, "rb").read()
+pubkey = open(settings.PASTEL_PUBKEY, "rb").read()

@@ -12,7 +12,7 @@ class TestNSFW(unittest.TestCase):
 
     def test_nsfw_get_score(self):
         score = NSFWDetector.get_score(self.image_data)
-        self.assertEquals(score, 0.8916751220822334)
+        self.assertEqual(score, 0.8916751220822334)
 
     def test_nsfw_is_nsfw(self):
         is_nsfw = NSFWDetector.is_nsfw(self.image_data)

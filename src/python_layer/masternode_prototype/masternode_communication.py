@@ -14,7 +14,7 @@ class NodeManager:
 
     def add_masternode(self, nodeid, ip, port, pubkey, keytype):
         if keytype == "file":
-            pubkey = open(pubkey).read()
+            pubkey = open(pubkey, "rb").read()
         self.__masternodes[nodeid] = RPCClient(self.__logger, self.__privkey, self.__pubkey, nodeid, ip, port, pubkey)
 
     def get(self, nodeid):

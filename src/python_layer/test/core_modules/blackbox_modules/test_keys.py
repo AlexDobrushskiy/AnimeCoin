@@ -9,6 +9,7 @@ class TestKeys(unittest.TestCase):
     def test_key_generation(self, mock_method):
         privkey, pubkey = keys.id_keypair_generation_func()
         mock_method.assert_called_once_with(521*2)
-        self.assertEqual(privkey, "544553542052414E444F4D204259544553")
-        self.assertEqual(pubkey, "03236DFAF4B9CFC88C4F9ECAB84F176F07416B0E3A1F57DF6922B606C11A8D52A50747C31ABB4"
-                                 "6C64CE66A6F7B440F8C894FB1FB9F973024988DF0EB91BC06145800")
+        self.assertEqual(privkey, b'TEST RANDOM BYTES')
+        self.assertEqual(pubkey, b'\x03#m\xfa\xf4\xb9\xcf\xc8\x8cO\x9e\xca\xb8O\x17o\x07Ak\x0e:\x1fW\xdfi"\xb6'
+                                 b'\x06\xc1\x1a\x8dR\xa5\x07G\xc3\x1a\xbbF\xc6L\xe6jo{D\x0f\x8c\x89O\xb1\xfb\x9f'
+                                 b'\x970$\x98\x8d\xf0\xeb\x91\xbc\x06\x14X\x00')

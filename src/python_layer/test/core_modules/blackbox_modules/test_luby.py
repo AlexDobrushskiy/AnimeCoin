@@ -11,4 +11,4 @@ class TestLuby(unittest.TestCase):
         data = b'A' * 1024 * 512 + b'A' * 100  # test for padding
         blocks = luby.encode(redundancy_factor, block_size, data)
         decoded = luby.decode(blocks)
-        self.assertEquals(data, decoded)
+        self.assertEqual(data, decoded)

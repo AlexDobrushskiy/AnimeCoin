@@ -77,16 +77,16 @@ class MasterNodeDaemon:
         if not os.path.isfile(privkeypath) or not os.path.isfile(pubkeypath):
             self.__logger.debug("It seems that public and private keys are not generated, creating them now...")
             self.__privkey, self.__pubkey = id_keypair_generation_func()
-            with open(privkeypath, "wt") as f:
+            with open(privkeypath, "wb") as f:
                 f.write(self.__privkey)
             os.chmod(privkeypath, 0o0700)
-            with open(pubkeypath, "wt") as f:
+            with open(pubkeypath, "wb") as f:
                 f.write(self.__pubkey)
             os.chmod(pubkeypath, 0o0700)
         else:
-            with open(privkeypath) as f:
+            with open(privkeypath, "rb") as f:
                 self.__privkey = f.read()
-            with open(pubkeypath) as f:
+            with open(pubkeypath, "rb") as f:
                 self.__pubkey = f.read()
 
     def __start_django(self):

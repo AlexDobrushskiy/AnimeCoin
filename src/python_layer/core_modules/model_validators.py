@@ -4,8 +4,6 @@ from PIL import Image
 
 from .settings import NetWorkSettings
 
-# TODO: make sure we do everything here we can to validate the data
-
 
 class FieldValidator:
     pass
@@ -96,11 +94,11 @@ class ListTypeValidatorField(FieldValidator):
         return value
 
 
-class ImageField(ListTypeValidatorField):
+class ImageTypeValidatorField(ListTypeValidatorField):
     accepted_type = bytes
 
-    def __init__(self):
-        super().__init__(0, NetWorkSettings.IMAGE_MAX_SIZE)
+    def __init__(self, min, max):
+        super().__init__(min, max)
 
     def validate(self, value):
         super().validate(value)
@@ -111,9 +109,12 @@ class ImageField(ListTypeValidatorField):
         return value
 
 
-class ThumbnailField(ListTypeValidatorField):
-    accepted_type = bytes
+class ImageField(ImageTypeValidatorField):
+    def __init__(self):
+        super().__init__(0, NetWorkSettings.IMAGE_MAX_SIZE)
 
+
+class ThumbnailField(ImageTypeValidatorField):
     def __init__(self):
         super().__init__(0, NetWorkSettings.THUMBNAIL_MAX_SIZE)
 
@@ -191,14 +192,14 @@ class TXIDField(SHA2256Field):
     pass
 
 
-class SignatureField(StringField):
+class SignatureField(BytesField):
     def __init__(self):
-        super().__init__(minsize=264, maxsize=264)
+        super().__init__(minsize=132, maxsize=132)
 
 
-class PubkeyField(StringField):
+class PubkeyField(BytesField):
     def __init__(self):
-        super().__init__(minsize=32, maxsize=NetWorkSettings.MAX_TICKET_SIZE)
+        super().__init__(minsize=66, maxsize=66)
 
 
 class BlockChainAddressField(StringField):
