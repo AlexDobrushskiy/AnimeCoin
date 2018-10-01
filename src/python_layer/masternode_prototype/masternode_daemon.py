@@ -115,7 +115,7 @@ class MasterNodeDaemon:
             "-testnet=1",
             # "-regtest=1",
             "-dnsseed=0",
-            "-gen=1",
+            # "-gen=1",
             "-debug=1",
             "-genproclimit=1",
             "-equihashsolver=tromp",

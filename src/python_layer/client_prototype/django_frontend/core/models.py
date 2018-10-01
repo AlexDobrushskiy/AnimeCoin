@@ -1,9 +1,9 @@
 import logging
 
 from django.conf import settings
+from core_modules.blockchain import BlockChain
 from core_modules.chainwrapper import ChainWrapper
 from masternode_prototype.masternode_discovery import read_settings_file
-from core_modules.blockchain import BlockChain
 
 
 def initlogging():

@@ -2,6 +2,7 @@ from bitcoinrpc.authproxy import AuthServiceProxy
 
 from core_modules.blackbox_modules.blockchain import store_data_in_utxo,\
     retrieve_data_from_utxo
+from core_modules.settings import NetWorkSettings
 
 
 class BlockChain:
@@ -13,18 +14,14 @@ class BlockChain:
         return self.jsonrpc.addnode(addr, "onetry")
 
     def search_chain(self):
-        processed = 0
-        while True:
-            # TODO: handle blocks being added here
-            transactions = self.jsonrpc.listtransactions("*", 1000, processed)
-            if len(transactions) == 0:
+        blockcount = int(self.jsonrpc.getblockcount()) - 1
+        for blocknum in range(1, blockcount + 1):
+            block = self.jsonrpc.getblock(str(blocknum))
+            if block["confirmations"] < NetWorkSettings.REQUIRED_CONFIRMATIONS:
                 break
-            for transaction in transactions:
-                txid = transaction["txid"]
 
-                # print("TRANSACTION", processed, transaction["time"], txid, transaction)
+            for txid in block["tx"]:
                 yield txid
-                processed += 1
 
     def store_data_in_utxo(self, input_data):
         return store_data_in_utxo(self.jsonrpc, input_data)

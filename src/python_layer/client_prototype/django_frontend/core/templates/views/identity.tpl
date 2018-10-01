@@ -6,16 +6,6 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-3 mt-3">
-            <h4>My Pastel Identities</h4>
-            {% for address in addresses %}
-                <table class="table">
-                    <tr>
-                        <td>Blockchain address:</td>
-                        <td>{{ address }}</td>
-                    </tr>
-                </table>
-            {% endfor %}
-
             <h4>ALL Pastel Identities</h4>
             {% for txid, ticket in all_identities %}
                 <table class="table">
@@ -27,7 +17,17 @@
                 </table>
             {% endfor %}
 
-            {% if identity == none %}
+            <h4>My Pastel Identities</h4>
+            {% for address in addresses %}
+                <table class="table">
+                    <tr>
+                        <td>Blockchain address:</td>
+                        <td>{{ address }}</td>
+                    </tr>
+                </table>
+            {% endfor %}
+
+            {% if identity_ticket == none %}
                 Your identity is not yet established!
                 <form method="post">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
@@ -37,7 +37,8 @@
                     <button type="submit" class="btn btn-success btn-center">Establish identity</button>
                 </form>
             {% else %}
-                {{ identity.to_dict()|pprint }}
+                txid: {{ identity_txid }}
+                ticket: {{ identity_ticket.to_dict()|pprint }}
             {% endif %}
     </div>
 </div>

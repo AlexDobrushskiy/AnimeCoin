@@ -6,7 +6,13 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-3 mt-3">
+            <h4>Receiving address:</h4>
+            <p>{{ receivingaddress }}</p>
+    </div>
+
+    <div class="col-sm-3 mt-3">
             <h4>Send coins:</h4>
+            <p>Balance: {{ balance }}</p>
             <form method="post">
                 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
                 <table class="table">

@@ -16,12 +16,17 @@ def index(request):
                  "getnetworkinfo", "getpeerinfo", "getwalletinfo"]:
         infos[name] = getattr(blockchain.jsonrpc, name)()
 
+    infos["mnsync"] = blockchain.jsonrpc.mnsync("status")
+
     return render(request, "views/index.tpl", {"infos": infos,
                                                "pastel_basedir": settings.PASTEL_BASEDIR})
 
 
 def walletinfo(request):
     blockchain = get_blockchain()
+
+    receivingaddress = blockchain.jsonrpc.getaccountaddress("")
+    balance = blockchain.jsonrpc.getbalance()
 
     listunspent = blockchain.jsonrpc.listunspent()
 
@@ -38,8 +43,8 @@ def walletinfo(request):
             else:
                 return redirect("/walletinfo/")
 
-    return render(request, "views/walletinfo.tpl", {"listunspent": listunspent,
-                                                    "form": form})
+    return render(request, "views/walletinfo.tpl", {"listunspent": listunspent, "receivingaddress": receivingaddress,
+                                                    "balance": balance, "form": form})
 
 
 def identity(request):
@@ -51,7 +56,7 @@ def identity(request):
         if unspent["address"] not in addresses:
             addresses.append(unspent["address"])
 
-    identity = chainwrapper.get_identity_ticket(pubkey)
+    identity_txid, identity_ticket = chainwrapper.get_identity_ticket(pubkey)
     all_identities = chainwrapper.get_tickets_by_type("identity")
 
     form = IdentityRegistrationForm()
@@ -66,7 +71,9 @@ def identity(request):
                 regclient.register_id(address)
                 return redirect("/identity")
 
-    return render(request, "views/identity.tpl", {"addresses": addresses, "identity": identity, "form": form,
+    return render(request, "views/identity.tpl", {"addresses": addresses,
+                                                  "identity_txid": identity_txid,
+                                                  "identity_ticket": identity_ticket, "form": form,
                                                   "all_identities": all_identities})
 
 

@@ -11,38 +11,6 @@ class BlockChainTicket:
         self.data = data
 
 
-class MockChain:
-    def __init__(self):
-        self.__chain = []
-        self.__utxo_index = {}
-
-    def search_chain(self):
-        for txid, ticket in self.__chain:
-            yield txid, ticket
-
-    def __add_to_chain(self, ticket):
-        txid = len(self.__chain).to_bytes(32, byteorder='big')
-        self.__utxo_index[txid] = len(self.__chain)
-        self.__chain.append((txid, ticket))
-        return txid
-
-    def store_data_in_utxo(self, tickettype, data):
-        ticket = BlockChainTicket(tickettype=tickettype, data=data)
-        return self.__add_to_chain(ticket)
-
-    def retrieve_data_from_utxo(self, txid):
-        idx = self.__utxo_index[txid]
-        return self.__chain[idx][1].data
-
-    def get_block_distance(self, atxid, btxid):
-        aidx = self.__utxo_index[atxid]
-        bidx = self.__utxo_index[btxid]
-        return abs(aidx-bidx)
-
-    def getbestblockhash(self):
-        return self.__chain[-1][0]
-
-
 class ChainWrapper:
     def __init__(self, blockchain):
         self.__blockchain = blockchain
@@ -59,7 +27,8 @@ class ChainWrapper:
     def get_identity_ticket(self, pubkey):
         for txid, ticket in self.get_tickets_by_type("identity"):
             if ticket.ticket.public_key == pubkey:
-                return ticket
+                return txid, ticket
+        return None, None
 
     def get_block_distance(self, atxid, btxid):
         # TODO: clean up this interface

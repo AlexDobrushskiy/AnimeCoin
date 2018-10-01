@@ -191,6 +191,7 @@ def retrieve_data_from_utxo(jsonrpc, blockchain_transaction_id):
     reconstructed_combined_data = binascii.a2b_hex(encoded_hex_data).decode('utf-8')
     reconstructed_length_of_compressed_data_hex_string = reconstructed_combined_data[
                                                          0:30]  # len(hexlify('{0:015}'.format(len(encoded_zstd_compressed_data)).encode('utf-8'))) is 30
+
     reconstructed_length_of_compressed_data_hex_string = int(
         unhexstr(reconstructed_length_of_compressed_data_hex_string).decode('utf-8').lstrip('0'))
     reconstructed_combined_data__remainder_1 = reconstructed_combined_data[30:]
