@@ -1,0 +1,34 @@
+from collections import OrderedDict
+from core_modules.helpers import get_digest, get_intdigest, bytes_from_hex, bytes_to_hex
+
+
+class DummyTicket:
+    def serialize(self):
+        return b'test data'
+
+
+class MockChainWrapper:
+    def __init__(self):
+        self.__storage = OrderedDict()
+
+        # set up so that last_block_hash returns something meaningful
+        self.store_ticket(DummyTicket())
+
+    def all_ticket_iterator(self):
+        for txid, ticket in self.__storage.items():
+            yield txid, ticket
+
+    def get_last_block_hash(self):
+        return next(reversed(self.__storage.items()))[0]
+
+    def get_block_distance(self, atxid, btxid):
+        txids = list(self.__storage.keys())
+        return abs(txids.index(atxid) - txids.index(btxid))
+
+    def store_ticket(self, ticket):
+        txid = get_digest(ticket.serialize())
+        self.__storage[txid] = ticket
+        return txid
+
+    def retrieve_ticket(self, txid):
+        return self.__storage[txid]

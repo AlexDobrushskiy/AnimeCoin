@@ -17,11 +17,6 @@ class ArtRegistrationServer:
         # this is to aid testing
         self.pubkey = self.__pub
 
-        # register on blockchain
-        # TODO: implement this
-        # self.__chainwrapper.store_ticket(self.__pub)
-        # self.__chainwrapper.register_masternode(self.__pub, self)
-
     def masternode_sign_registration_ticket(self, signature_serialized, regticket_serialized):
         # parse inputs
         signed_regticket = Signature(serialized=signature_serialized)
@@ -222,7 +217,7 @@ class ArtRegistrationClient:
         actticket = ActivationTicket(dictionary={
             "author": self.__pubkey,
             "order_block_txid": regticket.order_block_txid,
-            "registration_ticket_txid": bytes_from_hex(regticket_txid),
+            "registration_ticket_txid": regticket_txid,
         })
         actticket.validate(self.__chainwrapper, image)
 

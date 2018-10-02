@@ -258,13 +258,8 @@ class RegistrationTicket(TicketModelBase):
         # TODO: move this artwork index logic into chainwrapper
         fingerprint_db = {}
         for txid, ticket in chainwrapper.all_ticket_iterator():
-            if ticket.tickettype == "regticket":
-                ticket = FinalRegistrationTicket(serialized=ticket.data)
+            if type(ticket) == FinalRegistrationTicket:
                 ticket.validate(chainwrapper)
-
-            # elif ticket.tickettype == "actticket":
-            #     ticket = FinalActivationTicket(serialized=ticket.data)
-            #     ticket.validate(chainwrapper)
             else:
                 continue
 
@@ -318,7 +313,7 @@ class ActivationTicket(TicketModelBase):
         image.validate()
 
         # get registration ticket
-        final_regticket = chainwrapper.retrieve_ticket(bytes_to_hex(self.registration_ticket_txid))
+        final_regticket = chainwrapper.retrieve_ticket(self.registration_ticket_txid)
 
         # validate final ticket
         final_regticket.validate(chainwrapper)
