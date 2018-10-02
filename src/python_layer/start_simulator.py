@@ -73,7 +73,7 @@ class Simulator:
                 try:
                     blockchain = BlockChain(nodea["rpcuser"], nodea["rpcpassword"], nodea["ip"],
                                             nodea["rpcport"])
-                    blockchain.jsonrpc.addnode(newnode, "onetry")
+                    blockchain.addnode(newnode, "onetry")
                 except (JSONRPCException, ConnectionRefusedError) as exc:
                     if waitforboot:
                         self.__logger.debug("Waiting for MasterNode to boot up, exception: %s" % exc)

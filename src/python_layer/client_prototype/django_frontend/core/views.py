@@ -16,7 +16,7 @@ def index(request):
                  "getnetworkinfo", "getpeerinfo", "getwalletinfo"]:
         infos[name] = getattr(blockchain.jsonrpc, name)()
 
-    infos["mnsync"] = blockchain.jsonrpc.mnsync("status")
+    infos["mnsync"] = blockchain.mnsync("status")
 
     return render(request, "views/index.tpl", {"infos": infos,
                                                "pastel_basedir": settings.PASTEL_BASEDIR})
@@ -25,10 +25,10 @@ def index(request):
 def walletinfo(request):
     blockchain = get_blockchain()
 
-    receivingaddress = blockchain.jsonrpc.getaccountaddress("")
-    balance = blockchain.jsonrpc.getbalance()
+    receivingaddress = blockchain.getaccountaddress("")
+    balance = blockchain.getbalance()
 
-    listunspent = blockchain.jsonrpc.listunspent()
+    listunspent = blockchain.listunspent()
 
     form = SendCoinsForm()
     if request.method == "POST":
@@ -37,7 +37,7 @@ def walletinfo(request):
             address = form.cleaned_data["recipient_wallet"]
             amount = form.cleaned_data["amount"]
             try:
-                blockchain.jsonrpc.sendtoaddress(address, amount)
+                blockchain.sendtoaddress(address, amount)
             except JSONRPCException as exc:
                 form.add_error(None, str(exc))
             else:
@@ -52,7 +52,7 @@ def identity(request):
     chainwrapper = get_chainwrapper(blockchain)
 
     addresses = []
-    for unspent  in blockchain.jsonrpc.listunspent():
+    for unspent  in blockchain.listunspent():
         if unspent["address"] not in addresses:
             addresses.append(unspent["address"])
 
@@ -155,15 +155,15 @@ def console(request):
 def explorer(request, functionality, id=""):
     blockchain = get_blockchain()
     if functionality == "chaininfo":
-        chaininfo = blockchain.jsonrpc.getblockchaininfo()
+        chaininfo = blockchain.getblockchaininfo()
         return render(request, "views/explorer_chaininfo.tpl", {"chaininfo": chaininfo})
     elif functionality == "block":
-        blockcount = int(blockchain.jsonrpc.getblockcount())-1
+        blockcount = blockchain.getblockcount()-1
         if id == "":
             return redirect("/explorer/block/%s" % blockcount)
 
         try:
-            block = blockchain.jsonrpc.getblock(id)
+            block = blockchain.getblock(id)
         except JSONRPCException:
             raise Http404("Block does not exist")
 
@@ -182,18 +182,18 @@ def explorer(request, functionality, id=""):
     elif functionality == "transaction":
         try:
             if id == "":
-                transaction = blockchain.jsonrpc.listsinceblock()["transactions"][-1]
+                transaction = blockchain.listsinceblock()["transactions"][-1]
             else:
-                transaction = blockchain.jsonrpc.gettransaction(id)
+                transaction = blockchain.gettransaction(id)
         except JSONRPCException:
             raise Http404("Transaction does not exist")
         return render(request, "views/explorer_transaction.tpl", {"transaction": transaction})
     elif functionality == "address":
         try:
             if id != "":
-                transactions = blockchain.jsonrpc.listunspent(1, 999999999, [id])
+                transactions = blockchain.listunspent(1, 999999999, [id])
             else:
-                transactions = blockchain.jsonrpc.listunspent(1, 999999999)
+                transactions = blockchain.listunspent(1, 999999999)
         except JSONRPCException:
             raise Http404("Address does not exist")
         return render(request, "views/explorer_addresses.tpl", {"id": id, "transactions": transactions})

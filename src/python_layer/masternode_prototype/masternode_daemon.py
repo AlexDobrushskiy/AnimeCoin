@@ -40,12 +40,6 @@ class MasterNodeDaemon:
         # set up ChainWrapper
         self.chainwrapper = ChainWrapper(self.blockchain)
 
-        # set up logic
-        # TODO: do we need the cMN pub/privkey at all?
-        # mn_address = self.blockchain.jsonrpc.getaccountaddress("")
-        # mn_privkey = self.blockchain.jsonrpc.dumpprivkey(mn_address)
-        # self.__logger.debug("loaded address %s with privkey %s" % (mn_address, mn_privkey))
-
         # load or generate keys
         self.__load_keys()
 
@@ -148,7 +142,7 @@ class MasterNodeDaemon:
                                     ip=self.__settings.ip,
                                     rpcport=self.__settings.rpcport)
             try:
-                blockchain.jsonrpc.getwalletinfo()
+                blockchain.getwalletinfo()
             except (ConnectionRefusedError, bitcoinrpc.authproxy.JSONRPCException) as exc:
                 self.__logger.debug("Exception %s while getting wallet info, retrying..." % exc)
                 time.sleep(0.5)

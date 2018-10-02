@@ -70,7 +70,7 @@ class Daemon:
                                     ip=self.ip,
                                     rpcport=self.rpcport)
             try:
-                blockchain.jsonrpc.getwalletinfo()
+                blockchain.getwalletinfo()
             except (ConnectionRefusedError, bitcoinrpc.authproxy.JSONRPCException) as exc:
                 time.sleep(0.5)
             else:

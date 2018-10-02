@@ -19,12 +19,12 @@ def main(basedir):
     blockchain = get_blockchain(basedir)
     chainwrapper = ChainWrapper(blockchain)
 
-    blockcount = int(blockchain.jsonrpc.getblockcount()) - 1
+    blockcount = blockchain.getblockcount() - 1
     for blocknum in range(1, blockcount+1):
-        block = blockchain.jsonrpc.getblock(str(blocknum))
+        block = blockchain.getblock(str(blocknum))
         for tx in block["tx"]:
             print("TX", blocknum, tx)
-            t = blockchain.jsonrpc.getrawtransaction(tx, 1)
+            t = blockchain.getrawtransaction(tx, 1)
             print(t["confirmations"])
 
 

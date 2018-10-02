@@ -34,14 +34,14 @@ class ChainWrapper:
         if type(btxid) == bytes:
             btxid = bytes_to_hex(btxid)
 
-        block_a = self.__blockchain.jsonrpc.getblock(atxid)
-        block_b = self.__blockchain.jsonrpc.getblock(btxid)
+        block_a = self.__blockchain.getblock(atxid)
+        block_b = self.__blockchain.getblock(btxid)
         height_a = int(block_a["height"])
         height_b = int(block_b["height"])
         return abs(height_a-height_b)
 
     def get_last_block_hash(self):
-        return bytes_from_hex(self.__blockchain.jsonrpc.getbestblockhash())
+        return bytes_from_hex(self.__blockchain.getbestblockhash())
 
     def store_ticket(self, ticket):
         if type(ticket) == FinalIDTicket:
