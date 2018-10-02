@@ -10,7 +10,7 @@ import multiprocessing
 from bitcoinrpc.authproxy import JSONRPCException
 
 from masternode_prototype.masternode_daemon import MasterNodeDaemon
-from masternode_prototype.masternode_communication import NodeManager
+from core_modules.masternode_communication import NodeManager
 from masternode_prototype.masternode_discovery import discover_nodes
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 from core_modules.blockchain import BlockChain
@@ -85,8 +85,7 @@ class Simulator:
                     self.__logger.debug("Successfully added %s to node %s" % (newnode, nodea["nodeid"]))
                     break
 
-            self.__nodemanager.add_masternode(nodea["nodeid"], nodea["ip"], nodea["pyrpcport"],
-                                              nodea["pubkey"], keytype="file")
+            self.__nodemanager.add_masternode(nodea["ip"], nodea["pyrpcport"], nodea["pubkey"], keytype="file")
 
     def main(self):
         # spawn MasterNode Daemons
@@ -96,8 +95,7 @@ class Simulator:
 
         # connect to blockchain spawned by daemons
         for settings in settings_list:
-            self.__nodemanager.add_masternode(settings["nodeid"], settings["ip"], settings["pyrpcport"],
-                                              settings["pubkey"], keytype="file")
+            self.__nodemanager.add_masternode(settings["ip"], settings["pyrpcport"], settings["pubkey"], keytype="file")
 
         # start our event loop
         loop = asyncio.get_event_loop()

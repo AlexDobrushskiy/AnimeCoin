@@ -28,12 +28,13 @@ class LengthValidator(FieldValidator):
 
     def validate(self, value):
         if type(value) != self.accepted_type:
-            raise TypeError("value is not %s, was: %s" % (self.accepted_type, type(value)))
+            raise TypeError("%s: value is not %s, was: %s" % (self, self.accepted_type, type(value)))
 
         if len(value) < self.minsize or len(value) > self.maxsize:
-            raise ValueError("Length is out of bound (value < %s or value > %s), was: %s" % (self.minsize,
-                                                                                             self.maxsize,
-                                                                                             len(value)))
+            raise ValueError("%s: Length is out of bound (value < %s or value > %s), was: %s" % (self,
+                                                                                                 self.minsize,
+                                                                                                 self.maxsize,
+                                                                                                 len(value)))
 
         return value
 
@@ -47,12 +48,13 @@ class NumberValidator(FieldValidator):
 
     def validate(self, value):
         if type(value) != self.accepted_type:
-            raise TypeError("value is not %s, was: %s" % (self.accepted_type, type(value)))
+            raise TypeError("%s: value is not %s, was: %s" % (self, self.accepted_type, type(value)))
 
         if value < self.minsize or value > self.maxsize:
-            raise ValueError("Value is out of bound (value < %s or value > %s), was: %s" % (self.minsize,
-                                                                                            self.maxsize,
-                                                                                            value))
+            raise ValueError("%s: Value is out of bound (value < %s or value > %s), was: %s" % (self,
+                                                                                                self.minsize,
+                                                                                                self.maxsize,
+                                                                                                value))
 
         return value
 
@@ -64,13 +66,14 @@ class StringField(FieldValidator):
 
     def validate(self, value):
         if type(value) != str:
-            raise TypeError("value is not str, was: %s" % (type(value)))
+            raise TypeError("%s: value is not str, was: %s" % (self, type(value)))
 
         encoded = value.encode("utf-8")
         if len(encoded) < self.minsize or len(encoded) > self.maxsize:
-            raise ValueError("encoded value is out of bounds (value < %s or value > %s), was: %s" % (self.minsize,
-                                                                                                     self.maxsize,
-                                                                                                     len(encoded)))
+            raise ValueError("%s: encoded value is out of bounds (value < %s or value > %s), was: %s" % (self,
+                                                                                                         self.minsize,
+                                                                                                         self.maxsize,
+                                                                                                         len(encoded)))
 
         return value
 
@@ -81,10 +84,10 @@ class StringChoiceField(FieldValidator):
 
     def validate(self, value):
         if type(value) != str:
-            raise TypeError("value is not list, was: %s" % (type(value)))
+            raise TypeError("%s: value is not list, was: %s" % (self, type(value)))
 
         if value not in self.choices:
-            raise ValueError("Value not in choices: %s" % self.choices)
+            raise ValueError("%s: Value not in choices: %s" % (self, self.choices))
 
         return value
 

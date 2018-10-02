@@ -2,7 +2,7 @@ import random
 
 
 from core_modules.zmq_rpc import RPCClient
-from core_modules.helpers import get_hexdigest, hex_to_int, int_to_hex
+from core_modules.helpers import get_hexdigest, get_intdigest, hex_to_int, int_to_hex
 
 
 class NodeManager:
@@ -12,9 +12,12 @@ class NodeManager:
         self.__privkey = privkey
         self.__pubkey = pubkey
 
-    def add_masternode(self, nodeid, ip, port, pubkey, keytype):
+    def add_masternode(self, ip, port, pubkey, keytype):
         if keytype == "file":
             pubkey = open(pubkey, "rb").read()
+
+        nodeid = get_intdigest(pubkey)
+
         self.__masternodes[nodeid] = RPCClient(self.__logger, self.__privkey, self.__pubkey, nodeid, ip, port, pubkey)
 
     def get(self, nodeid):
@@ -36,6 +39,10 @@ class NodeManager:
             if mn.nodeid != mynodeid:
                 other_nodes.append(mn.nodeid)
         return other_nodes
+
+    def get_masternode_ordering(self, blocknum):
+        # TODO: We need to return rpcclient instances for each MN
+        raise NotImplementedError("TODO")
 
     def update_maternode_list(self, masternode_list):
         # parse new list

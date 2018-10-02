@@ -51,13 +51,19 @@ class _DupeDetector:
         x = np.expand_dims(image, axis=0)
         x = preprocess_input(x)
 
-        fingerprints = {}
+        fingerprint_dict = {}
         for k, v in self.DUPE_DETECTION_MODELS.items():
             features = v.predict(x)[0]  # extract the features
             fingerprint_vector = self.__prepare_fingerprint_for_export(features)
-            fingerprints[k] = fingerprint_vector
+            fingerprint_dict[k] = fingerprint_vector
 
-        return fingerprints
+        fingerprints = []
+        for k, v in fingerprint_dict.items():
+            # REFACTOR: we inherited this interface
+            value_flattened = [x[0] for x in v.tolist()]
+            fingerprints += value_flattened
+
+        return fingerprint_dict
 
 
 def combine_fingerprint_vectors(fingerprint_collection):

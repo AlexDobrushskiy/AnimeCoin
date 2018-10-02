@@ -2,8 +2,13 @@ import subprocess
 import os
 import tempfile
 import shutil
+import time
+
+import bitcoinrpc
 
 from core_modules.settings import NetWorkSettings
+
+from core_modules.blockchain import BlockChain
 
 
 class Daemon:
@@ -25,8 +30,6 @@ class Daemon:
         # create empty animecoin.conf
         with open(animecoin_conf, "w") as f:
             pass
-
-        print("Started", self.__test_dir)
 
         cmdline = [
             NetWorkSettings.BLOCKCHAIN_BINARY,
@@ -58,3 +61,17 @@ class Daemon:
             self.__process.wait()
 
         shutil.rmtree(self.__test_dir)
+
+    def connect(self):
+        # connect to daemon
+        while True:
+            blockchain = BlockChain(user=self.rpcuser,
+                                    password=self.rpcpassword,
+                                    ip=self.ip,
+                                    rpcport=self.rpcport)
+            try:
+                blockchain.jsonrpc.getwalletinfo()
+            except (ConnectionRefusedError, bitcoinrpc.authproxy.JSONRPCException) as exc:
+                time.sleep(0.5)
+            else:
+                return blockchain

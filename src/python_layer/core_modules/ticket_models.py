@@ -5,16 +5,14 @@ from PIL import Image
 
 from .blackbox_modules.nsfw import NSFWDetector
 from .blackbox_modules.helpers import get_sha3_512_func_bytes
-from core_modules.blackbox_modules.signatures import \
-    pastel_id_verify_signature_with_public_key_func
+from core_modules.blackbox_modules.signatures import pastel_id_verify_signature_with_public_key_func
 from .model_validators import FieldValidator, StringField, IntegerField, FingerprintField, SHA3512Field,\
     LubyChunkHashField, LubyChunkField, ImageField, ThumbnailField, TXIDField, SignatureField, PubkeyField,\
     LubySeedField, BlockChainAddressField, UnixTimeField, StringChoiceField
-from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity,\
-    assemble_fingerprints_for_pandas
+from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas
 from .blackbox_modules import luby
 from .settings import NetWorkSettings
-from .helpers import require_true
+from .helpers import require_true, bytes_from_hex, bytes_to_hex
 
 
 # ===== SERIALIZERS ===== #
@@ -167,12 +165,7 @@ class ImageData(TicketModelBase):
         return get_sha3_512_func_bytes(self.image)
 
     def generate_fingerprints(self):
-        fingerprint_dict = DupeDetector().compute_deep_learning_features(self.image)
-        fingerprints = []
-        for k, v in fingerprint_dict.items():
-            # REFACTOR: we inherited this interface
-            value_flattened = [x[0] for x in v.tolist()]
-            fingerprints += value_flattened
+        fingerprints = DupeDetector().compute_deep_learning_features(self.image)
         return fingerprints
 
     @staticmethod
@@ -325,8 +318,7 @@ class ActivationTicket(TicketModelBase):
         image.validate()
 
         # get registration ticket
-        final_regticket_serialized = chainwrapper.retrieve_ticket(self.registration_ticket_txid)
-        final_regticket = FinalRegistrationTicket(serialized=final_regticket_serialized)
+        final_regticket = chainwrapper.retrieve_ticket(bytes_to_hex(self.registration_ticket_txid))
 
         # validate final ticket
         final_regticket.validate(chainwrapper)

@@ -3,14 +3,14 @@ import random
 
 from core_modules.chunk_manager import ChunkManager
 from core_modules.zmq_rpc import RPCException, RPCServer
-from masternode_prototype.masternode_communication import NodeManager
-from core_modules.helpers import get_hexdigest, hex_to_int, int_to_hex, require_true
+from core_modules.masternode_communication import NodeManager
+from core_modules.helpers import get_hexdigest, get_intdigest, hex_to_int, int_to_hex, require_true
 
 
 class MasterNodeLogic:
-    def __init__(self, name, logger, nodeid, basedir, privkey, pubkey, ip, port, chunks):
+    def __init__(self, name, logger, basedir, privkey, pubkey, ip, port, chunks):
         self.__name = name
-        self.__nodeid = hex_to_int(nodeid)
+        self.__nodeid = get_intdigest(pubkey)
         self.__basedir = basedir
         self.__privkey = privkey
         self.__pubkey = pubkey
@@ -23,7 +23,7 @@ class MasterNodeLogic:
 
         # masternode manager
         self.__mn_manager = NodeManager(self.__logger, self.__privkey, self.__pubkey)
-        self.add_masternode(self.__nodeid, self.__ip, self.__port, self.__pubkey)
+        self.add_masternode(self.__ip, self.__port, self.__pubkey)
 
         # chunk manager
         self.__chunkmanager = ChunkManager(self.__logger, self.__nodeid,
@@ -38,8 +38,8 @@ class MasterNodeLogic:
         self.__rpcserver = RPCServer(self.__logger, self.__nodeid, self.__ip, self.__port,
                                      self.__privkey, self.__pubkey, self.__chunkmanager)
 
-    def add_masternode(self, nodeid, ip, port, pubkey):
-        self.__mn_manager.add_masternode(nodeid, ip, port, pubkey, keytype="plain")
+    def add_masternode(self, ip, port, pubkey):
+        self.__mn_manager.add_masternode(ip, port, pubkey, keytype="plain")
 
     async def issue_random_tests_forever(self, waittime, number_of_chunks=1):
         while True:

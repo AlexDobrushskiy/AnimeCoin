@@ -85,13 +85,12 @@ if __name__ == "__main__":
         nodeid, ip, port, privkey, pubkey = config
 
         mn = MasterNodeLogic(name=name,
-                        nodeid=nodeid,
-                        basedir=chunkdir,
-                        privkey=privkey,
-                        pubkey=pubkey,
-                        ip=ip,
-                        port=port,
-                        chunks=[x[0] for x in chunks])
+                             basedir=chunkdir,
+                             privkey=privkey,
+                             pubkey=pubkey,
+                             ip=ip,
+                             port=port,
+                             chunks=[x[0] for x in chunks])
 
         masternodes.append(mn)
 

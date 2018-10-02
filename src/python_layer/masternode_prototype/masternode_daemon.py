@@ -52,7 +52,6 @@ class MasterNodeDaemon:
         # spawn logic
         self.logic = MasterNodeLogic(name="node%s" % self.__nodeid,
                                      logger=self.__logger,
-                                     nodeid=str(self.__nodeid),
                                      basedir=self.__settings.basedir,
                                      privkey=self.__privkey,
                                      pubkey=self.__pubkey,
@@ -137,9 +136,6 @@ class MasterNodeDaemon:
                 cmdline.append("-addnode=%s" % nodeaddress)
 
         self.__cmnprocess = subprocess.Popen(cmdline, cwd=NetWorkSettings.BASEDIR)
-
-        # self.__logger.debug("Connecting to %s" % NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
-        # self.blockchain.bootstrap(NetWorkSettings.BLOCKCHAIN_SEED_ADDR)
 
     def __stop_cmn(self):
         self.__cmnprocess.terminate()

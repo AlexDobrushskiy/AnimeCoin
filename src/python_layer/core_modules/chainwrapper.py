@@ -1,7 +1,4 @@
-import random
-
 from .helpers import bytes_from_hex, bytes_to_hex
-from .helpers_type import ensure_type
 from .ticket_models import FinalIDTicket, FinalActivationTicket, FinalRegistrationTicket
 
 
@@ -46,14 +43,6 @@ class ChainWrapper:
     def get_last_block_hash(self):
         return bytes_from_hex(self.__blockchain.jsonrpc.getbestblockhash())
 
-    # BITCOIN RPCS
-    def generate(self, amount):
-        return self.__blockchain.jsonrpc.generate(amount)
-
-    def listtransactions(self):
-        return self.__blockchain.jsonrpc.listtransactions()
-    # END
-
     def store_ticket(self, ticket):
         if type(ticket) == FinalIDTicket:
             identifier = b'idticket'
@@ -94,35 +83,3 @@ class ChainWrapper:
                 # print("ERROR parsing txid %s: %s" % (txid, exc))
                 continue
             yield txid, ticket
-
-    def __get_masternodes_from_blockchain(self, target_txid=None):
-        for txid, ticket in self.__blockchain.search_chain():
-            if ticket.tickettype == "masternode":
-                pubkey, mn = ticket.data[0], ticket.data[1]
-                yield pubkey, mn
-            if target_txid is not None and txid == target_txid:
-                break
-
-    def get_masternode_order(self, target_txid):
-        # get MNs that were active at target_txid time
-        masternodes = [pubkey for pubkey, mn in self.__get_masternodes_from_blockchain(target_txid)]
-
-        # generate a reproducible sample of the MN population, then reset the random seed
-        random.seed(target_txid)
-        random_sample = random.sample(masternodes, 3)
-        random.seed()
-        # end
-
-        random_sample.sort()
-        return random_sample
-
-    # MASTERNODE STUFF WE HAVE TO ACCESS GLOBALLY
-    def register_masternode(self, pubkey, mn):
-        self.__blockchain.store_data_in_utxo(tickettype="masternode", data=(pubkey, mn))
-
-    def get_masternode(self, key):
-        for pubkey, mn in self.__get_masternodes_from_blockchain():
-            if pubkey == key:
-                return mn
-        raise KeyError("Masternode for key %s does not exist!" % key)
-    # END

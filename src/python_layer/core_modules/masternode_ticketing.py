@@ -2,23 +2,25 @@ import time
 
 from .ticket_models import RegistrationTicket, Signature, FinalRegistrationTicket, ActivationTicket,\
     FinalActivationTicket, ImageData, IDTicket, FinalIDTicket
-from core_modules.blackbox_modules.keys import id_keypair_generation_func
 from core_modules.blackbox_modules.signatures import\
     pastel_id_write_signature_on_data_func
-from core_modules.chainwrapper import ChainWrapper
-from core_modules.helpers import require_true
+from core_modules.helpers import require_true, bytes_from_hex
 
 
 class ArtRegistrationServer:
-    def __init__(self, blockchain, chunkstorage):
-        self.__priv, self.__pub = id_keypair_generation_func()
-        self.__chainwrapper = ChainWrapper(blockchain)
+    def __init__(self, privkey, pubkey, chainwrapper, chunkstorage):
+        self.__priv = privkey
+        self.__pub = pubkey
+        self.__chainwrapper = chainwrapper
         self.__chunkstorage = chunkstorage
+
+        # this is to aid testing
+        self.pubkey = self.__pub
 
         # register on blockchain
         # TODO: implement this
         # self.__chainwrapper.store_ticket(self.__pub)
-        self.__chainwrapper.register_masternode(self.__pub, self)
+        # self.__chainwrapper.register_masternode(self.__pub, self)
 
     def masternode_sign_registration_ticket(self, signature_serialized, regticket_serialized):
         # parse inputs
@@ -59,20 +61,19 @@ class ArtRegistrationServer:
         })
         return ticket_signed_by_mn.serialize()
 
-    def masternode_place_ticket_on_blockchain(self, ticket, tickettype):
+    def masternode_place_ticket_on_blockchain(self, ticket):
         # validate signed ticket
         ticket.validate(self.__chainwrapper)
 
         # place ticket on the blockchain
-        return self.__chainwrapper.store_ticket(ticket.serialize())
+        return self.__chainwrapper.store_ticket(ticket)
 
     def masternode_place_image_data_in_chunkstorage(self, regticket_txid, imagedata_serialized):
         imagedata = ImageData(serialized=imagedata_serialized)
         image_hash = imagedata.get_thumbnail_hash()
 
         # verify that this is an actual image that is being registered
-        final_regticket_serialized = self.__chainwrapper.retrieve_ticket(regticket_txid)
-        final_regticket = FinalRegistrationTicket(serialized=final_regticket_serialized)
+        final_regticket = self.__chainwrapper.retrieve_ticket(regticket_txid)
         final_regticket.validate(self.__chainwrapper)
 
         # store thumbnail
@@ -84,9 +85,9 @@ class ArtRegistrationServer:
 
 
 class ArtRegistrationClient:
-    def __init__(self, privkey, pubkey, blockchain):
-        self.__blockchain = blockchain
-        self.__chainwrapper = ChainWrapper(blockchain)
+    def __init__(self, privkey, pubkey, chainwrapper, nodemanager):
+        self.__chainwrapper = chainwrapper
+        self.__nodemanager = nodemanager
 
         # get MN ordering
         self.__privkey = privkey
@@ -118,15 +119,14 @@ class ArtRegistrationClient:
 
     def __collect_mn_regticket_signatures(self, signature, ticket, masternode_ordering):
         signatures = []
-        for mn_pub in masternode_ordering:
-            mn = self.__chainwrapper.get_masternode(mn_pub)
+        for mn in masternode_ordering:
             data_from_mn = mn.masternode_sign_registration_ticket(signature.serialize(), ticket.serialize())
 
             # client parses signed ticket and validated signature
             mn_signature = Signature(serialized=data_from_mn)
 
             # is the data the same and the signature valid?
-            require_true(mn_signature.pubkey == mn_pub)
+            require_true(mn_signature.pubkey == mn.pubkey)
             mn_signature.validate(ticket)
 
             # add signature to collected signatures
@@ -136,8 +136,7 @@ class ArtRegistrationClient:
     def __collect_mn_actticket_signatures(self, signature, ticket, image, masternode_ordering):
         # TODO: refactor the two MN signature collection functions into one
         signatures = []
-        for mn_pub in masternode_ordering:
-            mn = self.__chainwrapper.get_masternode(mn_pub)
+        for mn in masternode_ordering:
             data_from_mn = mn.masternode_sign_activation_ticket(signature.serialize(), ticket.serialize(),
                                                                 image.serialize())
 
@@ -145,24 +144,18 @@ class ArtRegistrationClient:
             mn_signature = Signature(serialized=data_from_mn)
 
             # is the data the same and the signature valid?
-            require_true(mn_signature.pubkey == mn_pub)
+            require_true(mn_signature.pubkey == mn.pubkey)
             mn_signature.validate(ticket)
 
             # add signature to collected signatures
             signatures.append(mn_signature)
         return signatures
 
-    def __rpc_mn_store_ticket(self, ticket, mn_pubkey, tickettype):
-        mn = self.__chainwrapper.get_masternode(mn_pubkey)
-        return mn.masternode_place_ticket_on_blockchain(ticket, tickettype=tickettype)
-
-    def __rpc_mn_store_image(self, regticket_txid, image, mn_pubkey):
-        mn = self.__chainwrapper.get_masternode(mn_pubkey)
+    def __rpc_mn_store_image(self, regticket_txid, image, mn):
         mn.masternode_place_image_data_in_chunkstorage(regticket_txid, image.serialize())
 
     def __wait_for_ticket_on_blockchain(self, regticket_txid):
-        serialized = self.__blockchain.retrieve_data_from_utxo(regticket_txid)
-        new_ticket = FinalRegistrationTicket(serialized=serialized)
+        new_ticket = self.__chainwrapper.retrieve_ticket(regticket_txid)
 
         # validate new ticket
         new_ticket.validate(self.__chainwrapper)
@@ -206,7 +199,8 @@ class ArtRegistrationClient:
         regticket.validate(self.__chainwrapper)
 
         # get masternode ordering from regticket
-        masternode_ordering = self.__chainwrapper.get_masternode_order(regticket.order_block_txid)
+        masternode_ordering = self.__nodemanager.get_masternode_ordering(regticket.order_block_txid)
+        mn0, mn1, mn2 = masternode_ordering
 
         # sign ticket
         signature_regticket = self.__generate_signed_ticket(regticket)
@@ -219,7 +213,7 @@ class ArtRegistrationClient:
                                                        mn_signatures)
 
         # ask first MN to store regticket on chain
-        regticket_txid = self.__rpc_mn_store_ticket(final_regticket, masternode_ordering[0], tickettype="regticket")
+        regticket_txid = mn0.masternode_place_ticket_on_blockchain(final_regticket)
 
         # wait for regticket to show up on the chain
         self.__wait_for_ticket_on_blockchain(regticket_txid)
@@ -228,7 +222,7 @@ class ArtRegistrationClient:
         actticket = ActivationTicket(dictionary={
             "author": self.__pubkey,
             "order_block_txid": regticket.order_block_txid,
-            "registration_ticket_txid": regticket_txid,
+            "registration_ticket_txid": bytes_from_hex(regticket_txid),
         })
         actticket.validate(self.__chainwrapper, image)
 
@@ -236,7 +230,7 @@ class ArtRegistrationClient:
         signature_actticket = self.__generate_signed_ticket(actticket)
 
         # place image in chunkstorage
-        self.__rpc_mn_store_image(regticket_txid, image, masternode_ordering[0])
+        mn0.masternode_place_image_data_in_chunkstorage(regticket_txid, image.serialize())
 
         # have masternodes sign the ticket
         mn_signatures = self.__collect_mn_actticket_signatures(signature_actticket, actticket, image,
@@ -247,7 +241,7 @@ class ArtRegistrationClient:
                                                        mn_signatures)
 
         # ask first MN to store regticket on chain
-        actticket_txid = self.__rpc_mn_store_ticket(final_actticket, masternode_ordering[0], tickettype="actticket")
+        actticket_txid = mn0.masternode_place_ticket_on_blockchain(final_actticket)
 
         return actticket_txid
 

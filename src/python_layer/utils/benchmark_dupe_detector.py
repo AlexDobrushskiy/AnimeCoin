@@ -48,20 +48,18 @@ def populate_fingerprint_db(basedir):
                                                                                  counter, len(files)))
 
         imghash, fingerprints = get_fingerprint_for_file(current_image_file_path)
-        combined = combine_fingerprint_vectors(fingerprints)
 
         # add to the database
-        db[imghash] = (current_image_file_path, combined)
+        db[imghash] = (current_image_file_path, fingerprints)
         counter += 1
     return db
 
 
 def compute_fingerprint_for_single_image(filepath):
     imagehash, fingerprints = get_fingerprint_for_file(filepath)
-    combined = combine_fingerprint_vectors(fingerprints)
 
     A = pd.DataFrame([imagehash, filepath]).T
-    B = pd.DataFrame(combined)
+    B = pd.DataFrame(fingerprints)
     combined_image_fingerprint_df_row = pd.concat([A, B], axis=1, join_axes=[A.index])
     fingerprint = combined_image_fingerprint_df_row.iloc[:,2:].T.values.flatten().tolist()
     return fingerprint
@@ -76,8 +74,7 @@ def test_files_for_duplicates(dupe_images, pandas_table):
 
         # compute fingerprint
         _, fingerprints = get_fingerprint_for_file(filename)
-        combinged_fingerprints = combine_fingerprint_vectors(fingerprints)
-        is_likely_dupe, params_df = measure_similarity(combinged_fingerprints, pandas_table)
+        is_likely_dupe, params_df = measure_similarity(fingerprints, pandas_table)
 
         if is_likely_dupe:
             print("Art file (%s) appears to be a DUPLICATE!" % filename)
