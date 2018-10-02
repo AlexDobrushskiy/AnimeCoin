@@ -1,4 +1,3 @@
-import itertools
 import time
 import logging
 import signal
@@ -7,13 +6,10 @@ import sys
 import os
 import multiprocessing
 
-from bitcoinrpc.authproxy import JSONRPCException
-
 from masternode_prototype.masternode_daemon import MasterNodeDaemon
 from core_modules.masternode_communication import NodeManager
 from masternode_prototype.masternode_discovery import discover_nodes
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
-from core_modules.blockchain import BlockChain
 
 
 class Simulator:
@@ -62,30 +58,6 @@ class Simulator:
             #     break
 
         return masternodes
-
-    def __reconnect_masternodes(self, settings_list, waitforboot=True):
-        # connect masternodes to each other
-        # TODO: there has to be another way where the testnet can take care of this for us
-        for nodea, nodeb in itertools.combinations(settings_list, 2):
-            newnode = "%s:%s" % (nodeb["ip"], nodeb["port"])
-            self.__logger.debug("Adding %s to node %s" % (newnode, nodea["nodeid"]))
-            while True:
-                try:
-                    blockchain = BlockChain(nodea["rpcuser"], nodea["rpcpassword"], nodea["ip"],
-                                            nodea["rpcport"])
-                    blockchain.addnode(newnode, "onetry")
-                except (JSONRPCException, ConnectionRefusedError) as exc:
-                    if waitforboot:
-                        self.__logger.debug("Waiting for MasterNode to boot up, exception: %s" % exc)
-                        time.sleep(0.5)
-                    else:
-                        self.__logger.debug("Node went away with exception: %s" % exc)
-                        break
-                else:
-                    self.__logger.debug("Successfully added %s to node %s" % (newnode, nodea["nodeid"]))
-                    break
-
-            self.__nodemanager.add_masternode(nodea["ip"], nodea["pyrpcport"], nodea["pubkey"], keytype="file")
 
     def main(self):
         # spawn MasterNode Daemons

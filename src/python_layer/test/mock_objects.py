@@ -1,3 +1,5 @@
+import pprint
+
 from collections import OrderedDict
 from core_modules.helpers import get_digest, get_intdigest, bytes_from_hex, bytes_to_hex
 
@@ -5,6 +7,9 @@ from core_modules.helpers import get_digest, get_intdigest, bytes_from_hex, byte
 class DummyTicket:
     def serialize(self):
         return b'test data'
+
+    def to_dict(self):
+        return "DummyTicket"
 
 
 class MockChainWrapper:
@@ -32,3 +37,8 @@ class MockChainWrapper:
 
     def retrieve_ticket(self, txid):
         return self.__storage[txid]
+
+    def debug_dump_storage(self):
+        print("DEBUG DUMP")
+        for txid, ticket in self.__storage.items():
+            print(bytes_to_hex(txid), pprint.pformat(ticket.to_dict(), indent=4))

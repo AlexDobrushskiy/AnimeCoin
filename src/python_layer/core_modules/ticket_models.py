@@ -15,16 +15,6 @@ from .settings import NetWorkSettings
 from .helpers import require_true, bytes_from_hex, bytes_to_hex
 
 
-# ===== SERIALIZERS ===== #
-def serialize(data):
-    return msgpack.packb(data, use_bin_type=True)
-
-
-def unserialize(packed):
-    return msgpack.unpackb(packed, raw=False)
-# ===== END ===== #
-
-
 # ===== VALIDATORS ===== #
 class NotImplementedValidator:
     msg = "You forgot to set \"validators\" while inheriting from ModelBase!"
@@ -140,10 +130,10 @@ class TicketModelBase:
         return ret
 
     def serialize(self):
-        return serialize(self.to_dict())
+        return msgpack.packb(self.to_dict(), use_bin_type=True)
 
     def unserialize(self, packed):
-        return unserialize(packed)
+        return msgpack.unpackb(packed, raw=False)
 
     def get_hash(self):
         return get_sha3_512_func_bytes(self.serialize())
@@ -412,7 +402,6 @@ class MasterNodeSignedTicket(TicketModelBase):
         self.signature_3.validate(self.ticket)
 
         # TODO: make sure the ticket was paid for
-        # TODO: validate that MN list is correct
 
 
 class SelfSignedTicket(TicketModelBase):
