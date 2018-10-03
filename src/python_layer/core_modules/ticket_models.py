@@ -388,18 +388,34 @@ class MasterNodeSignedTicket(TicketModelBase):
         if self.signature_author.pubkey != self.ticket.author:
             raise ValueError("Signature pubkey does not match regticket.author!")
 
-        # validate masternode order that's in the ticket
-        masternode_ordering = chainwrapper.get_masternode_order(self.ticket.order_block_txid)
-        if (self.signature_1.pubkey != masternode_ordering[0] or
-            self.signature_2.pubkey != masternode_ordering[1] or
-            self.signature_3.pubkey != masternode_ordering[2]):
-            raise ValueError("Invalid pubkey for masternode ordering")
+        if NetWorkSettings.VALIDATE_MN_SIGNATURES:
+            # validate masternode order that's in the ticket
+            masternode_ordering = chainwrapper.get_masternode_order(self.ticket.order_block_txid)
 
-        # validate signatures
-        self.signature_author.validate(self.ticket)
-        self.signature_1.validate(self.ticket)
-        self.signature_2.validate(self.ticket)
-        self.signature_3.validate(self.ticket)
+            # make sure we got 3 MNs
+            if len(masternode_ordering) != 3:
+                raise ValueError("Incorrect masternode list returned by get_masternode_order: %s" % masternode_ordering)
+
+            # make sure they're unique
+            if len(set(masternode_ordering)) != 3:
+                raise ValueError("Masternodes are not unique as returned by get_masternode_order: %s" % masternode_ordering)
+
+            if (self.signature_1.pubkey != masternode_ordering[0] or
+                self.signature_2.pubkey != masternode_ordering[1] or
+                self.signature_3.pubkey != masternode_ordering[2]):
+                raise ValueError("Invalid pubkey for masternode ordering")
+
+            # validate signatures
+            self.signature_author.validate(self.ticket)
+            self.signature_1.validate(self.ticket)
+            self.signature_2.validate(self.ticket)
+            self.signature_3.validate(self.ticket)
+        else:
+            # we are running in debug mode, only check that all of the signatures match the author's pubkey
+            if (self.signature_1.pubkey != self.signature_author.pubkey or
+                self.signature_2.pubkey != self.signature_author.pubkey or
+                self.signature_3.pubkey != self.signature_author.pubkey):
+                raise ValueError("Invalid pubkey for masternode ordering")
 
         # TODO: make sure the ticket was paid for
 

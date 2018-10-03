@@ -72,6 +72,11 @@ NetWorkSettings = __NetworkSettings()
 
 NetWorkSettings.DEBUG = True
 
+if NetWorkSettings.DEBUG:
+    NetWorkSettings.VALIDATE_MN_SIGNATURES = False
+else:
+    NetWorkSettings.VALIDATE_MN_SIGNATURES = True
+
 NetWorkSettings.BLOCKCHAIN = "animecoind"
 if NetWorkSettings.BLOCKCHAIN == "bitcoind":
     NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/tmp/bitcoind_old/bitcoin/src/bitcoind"
