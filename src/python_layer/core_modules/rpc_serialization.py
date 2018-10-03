@@ -4,7 +4,7 @@ import msgpack
 
 from core_modules.blackbox_modules.signatures import pastel_id_write_signature_on_data_func,\
     pastel_id_verify_signature_with_public_key_func
-from core_modules.blackbox_modules.helpers import sleep_rand, get_sha3_512_func
+from core_modules.blackbox_modules.helpers import sleep_rand, get_sha3_512_func_bytes
 from core_modules.helpers_type import ensure_type, ensure_type_of_field
 from core_modules.helpers import require_true
 
@@ -16,12 +16,12 @@ VALID_CONTAINER_KEYS_v1 = {"version", "sender_id", "receiver_id", "data", "nonce
 
 
 def ensure_types_for_v1(container):
-    sender_id = ensure_type_of_field(container, "sender_id", str)
-    receiver_id = ensure_type_of_field(container, "receiver_id", str)
+    sender_id = ensure_type_of_field(container, "sender_id", bytes)
+    receiver_id = ensure_type_of_field(container, "receiver_id", bytes)
     data = ensure_type_of_field(container, "data", list)
     nonce = ensure_type_of_field(container, "nonce", bytes)
     timestamp = ensure_type_of_field(container, "timestamp", float)
-    signature = ensure_type_of_field(container, "signature", str)
+    signature = ensure_type_of_field(container, "signature", bytes)
     return sender_id, receiver_id, data, nonce, timestamp, signature
 
 
@@ -63,9 +63,9 @@ def verify_and_unpack(raw_message_contents, expected_receiver_id):
         #  since signature can't be put into the dict we have to recreate it without the signature field
         #  this validates that the message was indeed signed by the sender_id public key
         tmp = container.copy()
-        tmp["signature"] = ""
+        tmp["signature"] = b''
         sleep_rand()
-        raw_hash = get_sha3_512_func(msgpack.packb(tmp, use_bin_type=True))
+        raw_hash = get_sha3_512_func_bytes(msgpack.packb(tmp, use_bin_type=True))
         verified = pastel_id_verify_signature_with_public_key_func(raw_hash, signature, sender_id)
         sleep_rand()
 
@@ -93,7 +93,7 @@ def pack_and_sign(privkey, pubkey, receiver_id, message_body, version=MAX_SUPPOR
             "data": message_body,
             "nonce": nacl.utils.random(NONCE_LENGTH),
             "timestamp": time.time(),
-            "signature": "",
+            "signature": b'',
         }
 
         # make sure types are valid
@@ -102,7 +102,7 @@ def pack_and_sign(privkey, pubkey, receiver_id, message_body, version=MAX_SUPPOR
         # serialize container, calculate hash and sign with private key
         # signature is None as this point as we can't know the signature without calculating it
         container_serialized = msgpack.packb(container, use_bin_type=True)
-        signature = pastel_id_write_signature_on_data_func(get_sha3_512_func(container_serialized), privkey, pubkey)
+        signature = pastel_id_write_signature_on_data_func(get_sha3_512_func_bytes(container_serialized), privkey, pubkey)
 
         # TODO: serializing twice is not the best solution if we want to work with large messages
 

@@ -7,8 +7,7 @@ import os
 import multiprocessing
 
 from masternode_prototype.masternode_daemon import MasterNodeDaemon
-from core_modules.masternode_communication import NodeManager
-from masternode_prototype.masternode_discovery import discover_nodes
+from core_modules.masternode_discovery import discover_nodes
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 
 
@@ -20,9 +19,6 @@ class Simulator:
 
         # generate our keys for RPC
         self.__privkey, self.__pubkey = id_keypair_generation_func()
-
-        # get node manager
-        self.__nodemanager = NodeManager(self.__logger, self.__privkey, self.__pubkey)
 
     def __initlogging(self):
         logger = logging.getLogger(self.__name)
@@ -64,10 +60,6 @@ class Simulator:
         settings_list = discover_nodes(self.__configdir)
         addnodes = ["%s:%s" % (x["ip"], x["port"]) for x in settings_list]
         masternodes = self.start_masternode_in_new_process(settings_list, addnodes)
-
-        # connect to blockchain spawned by daemons
-        for settings in settings_list:
-            self.__nodemanager.add_masternode(settings["ip"], settings["pyrpcport"], settings["pubkey"], keytype="file")
 
         # start our event loop
         loop = asyncio.get_event_loop()

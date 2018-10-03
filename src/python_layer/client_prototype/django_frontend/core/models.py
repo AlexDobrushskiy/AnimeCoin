@@ -3,7 +3,8 @@ import logging
 from django.conf import settings
 from core_modules.blockchain import BlockChain
 from core_modules.chainwrapper import ChainWrapper
-from masternode_prototype.masternode_discovery import read_settings_file
+from core_modules.masternode_communication import NodeManager
+from core_modules.masternode_discovery import read_settings_file
 
 
 def initlogging():
@@ -29,6 +30,10 @@ def get_chainwrapper(blockchain):
 
 logger = initlogging()
 
-# ["rt", "rt", "127.0.0.1", 12218]
 privkey = open(settings.PASTEL_PRIVKEY, "rb").read()
 pubkey = open(settings.PASTEL_PUBKEY, "rb").read()
+
+# TODO: remove this hack
+import os
+PASTEL_TEST_NODES_DIR = os.path.dirname(settings.PASTEL_BASEDIR)
+nodemanager = NodeManager(logger, privkey, pubkey, PASTEL_TEST_NODES_DIR)

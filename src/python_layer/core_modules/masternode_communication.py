@@ -2,23 +2,21 @@ import random
 
 
 from core_modules.zmq_rpc import RPCClient
-from core_modules.helpers import get_hexdigest, get_intdigest, hex_to_int, int_to_hex
+from core_modules.helpers import get_intdigest, hex_to_int
+from core_modules.masternode_discovery import discover_nodes
 
 
 class NodeManager:
-    def __init__(self, logger, privkey, pubkey):
+    def __init__(self, logger, privkey, pubkey, configdir):
         self.__masternodes = {}
         self.__logger = logger
         self.__privkey = privkey
         self.__pubkey = pubkey
 
-    def add_masternode(self, ip, port, pubkey, keytype):
-        if keytype == "file":
-            pubkey = open(pubkey, "rb").read()
-
-        nodeid = get_intdigest(pubkey)
-
-        self.__masternodes[nodeid] = RPCClient(self.__logger, self.__privkey, self.__pubkey, nodeid, ip, port, pubkey)
+        # TODO: remove this
+        self.__configdir = configdir
+        if self.__configdir is not None:
+            self.__update_masternode_list()
 
     def get(self, nodeid):
         return self.__masternodes[nodeid]
@@ -44,16 +42,31 @@ class NodeManager:
         # TODO: We need to return rpcclient instances for each MN
         raise NotImplementedError("TODO")
 
-    def update_maternode_list(self, masternode_list):
+    def __update_masternode_list(self):
+        # TODO: this list should come from cNode
+        settings_list = discover_nodes(self.__configdir)
+
         # parse new list
         new_mn_list = {}
-        for nodeid, ip, port, privkey, pubkey in masternode_list:
-            nodeid = hex_to_int(nodeid)
-            new_mn_list[nodeid] = RPCClient(self.__logger, self.__privkey, self.__pubkey, nodeid, ip, port, pubkey)
+        for settings in settings_list:
+            pubkey = open(settings["pubkey"], "rb").read()
+            nodeid = get_intdigest(pubkey)
+            new_mn_list[nodeid] = RPCClient(self.__logger, self.__privkey, self.__pubkey,
+                                            nodeid, settings["ip"], settings["pyrpcport"], pubkey)
 
         old = set(self.__masternodes.keys())
         new = set(new_mn_list.keys())
-        added = new-old
-        removed = old-new
+        added = new - old
+        removed = old - new
         self.__masternodes = new_mn_list
         return added, removed
+
+# class MockNodeManager:
+#     def __init__(self, logger, privkey, pubkey):
+#         self.__masternodes = {}
+#         self.__logger = logger
+#         self.__privkey = privkey
+#         self.__pubkey = pubkey
+#
+#     def get_masternode_ordering(self, blocknum):
+#         ArtRegistrationServer(self.__privkey, self.__pubkey, chainwrapper, chunkstorage)

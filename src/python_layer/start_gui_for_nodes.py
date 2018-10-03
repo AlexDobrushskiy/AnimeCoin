@@ -5,8 +5,7 @@ import logging
 import sys
 
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
-from core_modules.masternode_communication import NodeManager
-from masternode_prototype.masternode_discovery import discover_nodes
+from core_modules.masternode_discovery import discover_nodes
 
 from client_prototype.cefpython.cefpython import start_cefpython
 
@@ -29,9 +28,6 @@ if __name__ == "__main__":
     logger = initlogging()
 
     privkey, pubkey = id_keypair_generation_func()
-    nodemanager = NodeManager(logger, privkey, pubkey)
-    for settings in discover_nodes(basedir):
-        nodemanager.add_masternode(settings["ip"], settings["pyrpcport"], settings["pubkey"], keytype="file")
 
     # load tabs for masternodes
     browsers = []

@@ -1,10 +1,6 @@
 import time
 import unittest
 
-import bitcoinrpc
-
-
-from core_modules.blockchain import BlockChain
 from test.helpers import Daemon
 
 

@@ -20,7 +20,7 @@ class BlockChain:
     def addnode(self, node, mode):
         return self.jsonrpc.addnode(node, mode)
 
-    def listunspent(self, minimum, maximum, addresses):
+    def listunspent(self, minimum=1, maximum=9999999, addresses=[]):
         return self.jsonrpc.listunspent(minimum, maximum, addresses)
 
     def getblockchaininfo(self):

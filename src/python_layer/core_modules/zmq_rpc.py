@@ -263,7 +263,10 @@ class RPCServer:
 
         await self.__zmq.send_multipart([ident, reply_packet])
 
+    async def zmq_run_once(self):
+        ident, msg = await self.__zmq.recv_multipart()  # waits for msg to be ready
+        asyncio.ensure_future(self.__zmq_process(ident, msg))
+
     async def zmq_run_forever(self):
         while True:
-            ident, msg = await self.__zmq.recv_multipart()  # waits for msg to be ready
-            asyncio.ensure_future(self.__zmq_process(ident, msg))
+            await self.zmq_run_once()

@@ -22,8 +22,10 @@ class MasterNodeLogic:
         self.__todolist = asyncio.Queue()
 
         # masternode manager
-        self.__mn_manager = NodeManager(self.__logger, self.__privkey, self.__pubkey)
-        self.add_masternode(self.__ip, self.__port, self.__pubkey)
+        # TODO: remove this hack
+        import os
+        nodes_basedir = os.path.dirname(os.path.dirname(self.__basedir))
+        self.__mn_manager = NodeManager(self.__logger, self.__privkey, self.__pubkey, nodes_basedir)
 
         # chunk manager
         self.__chunkmanager = ChunkManager(self.__logger, self.__nodeid,
@@ -37,9 +39,6 @@ class MasterNodeLogic:
         # start rpc server
         self.__rpcserver = RPCServer(self.__logger, self.__nodeid, self.__ip, self.__port,
                                      self.__privkey, self.__pubkey, self.__chunkmanager)
-
-    def add_masternode(self, ip, port, pubkey):
-        self.__mn_manager.add_masternode(ip, port, pubkey, keytype="plain")
 
     async def issue_random_tests_forever(self, waittime, number_of_chunks=1):
         while True:

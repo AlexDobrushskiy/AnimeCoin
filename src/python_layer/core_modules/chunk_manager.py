@@ -221,7 +221,7 @@ class ChunkManager:
         return chunk
 
     def update_mn_list(self, masternode_list):
-        added, removed = self.__mn_manager.update_maternode_list(masternode_list)
+        added, removed = self.__mn_manager.update_maternode_list()
         if len(added) + len(removed) > 0:
             if self.__nodeid in removed:
                 self.__logger.warning("I am removed from the MN list, aborting %s" % self.__nodeid)

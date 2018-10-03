@@ -6,7 +6,7 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-12 mt-3">
-        <h1>Exchange: {{ resp }}</h1>
+        <p>Exchange: {{ results|pprint }}</p>
     </div>
 </div>
 {% endblock %}

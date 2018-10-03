@@ -1,3 +1,5 @@
+import asyncio
+
 from bitcoinrpc.authproxy import JSONRPCException
 
 from django.conf import settings
@@ -5,7 +7,7 @@ from django.shortcuts import render, redirect, Http404
 
 from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
 
-from core.models import get_blockchain, get_chainwrapper, pubkey, privkey
+from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
 
 
@@ -83,8 +85,25 @@ def portfolio(request):
 
 
 def exchange(request):
-    resp = "TODO"
-    return render(request, "views/exchange.tpl", {"resp": resp})
+    masternodes = nodemanager.get_all()
+
+    new_loop = asyncio.new_event_loop()
+
+    futures, tasks = [], []
+    for mn in masternodes:
+        future = asyncio.ensure_future(mn.send_rpc_ping(b'PING'), loop=new_loop)
+        tasks.append(future)
+        futures.append((mn, future))
+
+    new_loop.run_until_complete(asyncio.wait(tasks))
+
+    results = []
+    for mn, future in futures:
+        results.append((str(mn), future.result()))
+
+    new_loop.stop()
+
+    return render(request, "views/exchange.tpl", {"results": results})
 
 
 def trending(request):
@@ -101,7 +120,7 @@ def browse(request):
 
 def register(request):
     form = ArtworkRegistrationForm()
-    blockchain = get_blockchain()
+    chainwrapper = get_chainwrapper()
 
     if request.method == "POST":
         form = ArtworkRegistrationForm(request.POST, request.FILES)
@@ -111,7 +130,7 @@ def register(request):
             image_data = image_field.read()
 
             # get the registration object
-            artreg = ArtRegistrationClient(settings.PASTEL_PRIVKEY, settings.PASTEL_PUBKEY, blockchain)
+            artreg = ArtRegistrationClient(settings.PASTEL_PRIVKEY, settings.PASTEL_PUBKEY, chainwrapper, nodemanager)
 
             # register image
             # TODO: fill these out properly
