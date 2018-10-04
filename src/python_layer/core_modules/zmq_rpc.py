@@ -51,12 +51,26 @@ class RPCClient:
         ctx = zmq.asyncio.Context()
         if self.__zmq is None:
             self.__zmq = ctx.socket(zmq.DEALER)
+            # TODO: make sure identity handling is correct and secure
             self.__zmq.setsockopt(zmq.IDENTITY, bytes(str(uuid.uuid4()), "utf-8"))
             self.__zmq.connect("tcp://%s:%s" % (self.__server_ip, self.__server_port))
 
-        await self.__zmq.send_multipart([msg])
+        while True:
+            try:
+                await self.__zmq.send_multipart([msg], flags=zmq.NOBLOCK)
+            except zmq.error.Again:
+                await asyncio.sleep(0.01)
+            else:
+                break
 
-        msgs = await self.__zmq.recv_multipart()  # waits for msg to be ready
+        while True:
+            try:
+                msgs = await self.__zmq.recv_multipart(flags=zmq.NOBLOCK)  # waits for msg to be ready
+            except zmq.error.Again:
+                await asyncio.sleep(0.01)
+            else:
+                break
+
         if len(msgs) != 1:
             raise ValueError("msgs must be 1, we don't use multipart messages: %s" % len(msgs))
 
@@ -65,6 +79,7 @@ class RPCClient:
         return msg
 
     async def __send_rpc_to_mn(self, response_name, request_packet):
+
         response_packet = await self.__send_rpc_and_wait_for_response(request_packet)
 
         sender_id, response_msg = verify_and_unpack(response_packet, self.__pubkey)
@@ -261,10 +276,23 @@ class RPCServer:
 
         reply_packet = self.__process_local_rpc(sender_id, rpcname, data)
 
-        await self.__zmq.send_multipart([ident, reply_packet])
+        while True:
+            try:
+                await self.__zmq.send_multipart([ident, reply_packet], flags=zmq.NOBLOCK)
+            except zmq.error.Again:
+                await asyncio.sleep(0.01)
+            else:
+                break
 
     async def zmq_run_once(self):
-        ident, msg = await self.__zmq.recv_multipart()  # waits for msg to be ready
+        while True:
+            try:
+                ident, msg = await self.__zmq.recv_multipart(flags=zmq.NOBLOCK)  # waits for msg to be ready
+            except zmq.error.Again:
+                await asyncio.sleep(0.01)
+            else:
+                break
+
         asyncio.ensure_future(self.__zmq_process(ident, msg))
 
     async def zmq_run_forever(self):

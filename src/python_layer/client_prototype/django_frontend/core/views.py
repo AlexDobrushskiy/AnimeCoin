@@ -87,21 +87,26 @@ def portfolio(request):
 def exchange(request):
     masternodes = nodemanager.get_all()
 
-    new_loop = asyncio.new_event_loop()
+    # get event loop, or start a new one
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
     futures, tasks = [], []
     for mn in masternodes:
-        future = asyncio.ensure_future(mn.send_rpc_ping(b'PING'), loop=new_loop)
+        future = asyncio.ensure_future(mn.send_rpc_ping(b'PING'), loop=loop)
         tasks.append(future)
         futures.append((mn, future))
 
-    new_loop.run_until_complete(asyncio.wait(tasks))
-
+    loop.run_until_complete(asyncio.wait(tasks))
     results = []
     for mn, future in futures:
         results.append((str(mn), future.result()))
 
-    new_loop.stop()
+    loop.stop()
+    loop.close()
 
     return render(request, "views/exchange.tpl", {"results": results})
 

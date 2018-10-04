@@ -30,15 +30,9 @@ class TestZMQRPC(unittest.TestCase):
 
         original_data = b'TEST DATA'
 
-        loop = asyncio.get_event_loop()
-        loop.create_task(s.zmq_run_once())
-        future = asyncio.ensure_future(c.send_rpc_ping(original_data))
-
-        try:
+        for i in range(2):
+            loop = asyncio.get_event_loop()
+            loop.create_task(s.zmq_run_once())
+            future = asyncio.ensure_future(c.send_rpc_ping(original_data), loop=loop)
             loop.run_until_complete(future)
-        except KeyboardInterrupt:
-            pass
-        finally:
-            loop.stop()
-
-        self.assertEqual(future.result(), original_data)
+            self.assertEqual(future.result(), original_data)

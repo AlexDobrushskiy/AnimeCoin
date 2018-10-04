@@ -60,13 +60,3 @@ class NodeManager:
         removed = old - new
         self.__masternodes = new_mn_list
         return added, removed
-
-# class MockNodeManager:
-#     def __init__(self, logger, privkey, pubkey):
-#         self.__masternodes = {}
-#         self.__logger = logger
-#         self.__privkey = privkey
-#         self.__pubkey = pubkey
-#
-#     def get_masternode_ordering(self, blocknum):
-#         ArtRegistrationServer(self.__privkey, self.__pubkey, chainwrapper, chunkstorage)
