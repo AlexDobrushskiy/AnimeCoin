@@ -7,10 +7,11 @@ from core_modules.blackbox_modules.signatures import pastel_id_write_signature_o
 from core_modules.blackbox_modules.helpers import sleep_rand, get_sha3_512_func_bytes
 from core_modules.helpers_type import ensure_type, ensure_type_of_field
 from core_modules.helpers import require_true
+from core_modules.settings import NetWorkSettings
 
 MAX_SUPPORTED_VERSION = 1
 NONCE_LENGTH = 32
-MSG_SIZELIMIT = 4*1024*1024
+
 
 VALID_CONTAINER_KEYS_v1 = {"version", "sender_id", "receiver_id", "data", "nonce", "timestamp", "signature"}
 
@@ -28,8 +29,9 @@ def ensure_types_for_v1(container):
 def verify_and_unpack(raw_message_contents, expected_receiver_id):
     # validate raw_message_contents
     ensure_type(raw_message_contents, bytes)
-    if len(raw_message_contents) > MSG_SIZELIMIT:
-        raise ValueError("raw_message_contents is too large: > %s" % MSG_SIZELIMIT)
+    if len(raw_message_contents) > NetWorkSettings.RPC_MSG_SIZELIMIT:
+        raise ValueError("raw_message_contents is too large: %s > %s" % (len(raw_message_contents),
+                                                                         NetWorkSettings.RPC_MSG_SIZELIMIT))
 
     # raw=False makes this unpack to utf-8 strings
     container = msgpack.unpackb(raw_message_contents, raw=False)
@@ -109,6 +111,10 @@ def pack_and_sign(privkey, pubkey, receiver_id, message_body, version=MAX_SUPPOR
         # fill signature field in and serialize again
         container["signature"] = signature
         final = msgpack.packb(container, use_bin_type=True)
+
+        if len(final) > NetWorkSettings.RPC_MSG_SIZELIMIT:
+            raise ValueError("raw_message_contents is too large: %s > %s" % (len(final),
+                                                                             NetWorkSettings.RPC_MSG_SIZELIMIT))
 
         sleep_rand()
         return final

@@ -46,6 +46,7 @@ class MasterNodeDaemon:
         # spawn logic
         self.logic = MasterNodeLogic(name="node%s" % self.__nodeid,
                                      logger=self.__logger,
+                                     chainwrapper=self.chainwrapper,
                                      basedir=self.__settings.basedir,
                                      privkey=self.__privkey,
                                      pubkey=self.__pubkey,
@@ -105,8 +106,8 @@ class MasterNodeDaemon:
             NetWorkSettings.BLOCKCHAIN_BINARY,
             "-rpcuser=%s" % self.__settings.rpcuser,
             "-rpcpassword=%s" % self.__settings.rpcpassword,
-            "-testnet=1",
-            # "-regtest=1",
+            # "-testnet=1",
+            "-regtest=1",
             "-dnsseed=0",
             # "-gen=1",
             "-debug=1",

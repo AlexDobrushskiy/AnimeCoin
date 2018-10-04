@@ -13,12 +13,18 @@ class ChainWrapper:
         self.__blockchain = blockchain
 
     def get_tickets_by_type(self, tickettype):
-        if tickettype not in ["identity"]:
+        if tickettype not in ["identity", "regticket", "actticket"]:
             raise ValueError("%s is not a valid ticket type!" % tickettype)
 
         for txid, ticket in self.all_ticket_iterator():
             if tickettype == "identity":
                 if type(ticket) == FinalIDTicket:
+                    yield txid, ticket
+            elif tickettype == "regticket":
+                if type(ticket) == FinalRegistrationTicket:
+                    yield txid, ticket
+            elif tickettype == "actticket":
+                if type(ticket) == FinalActivationTicket:
                     yield txid, ticket
 
     def get_identity_ticket(self, pubkey):
@@ -41,7 +47,7 @@ class ChainWrapper:
         return abs(height_a-height_b)
 
     def get_last_block_hash(self):
-        return bytes_from_hex(self.__blockchain.getbestblockhash())
+        return self.__blockchain.getbestblockhash()
 
     def store_ticket(self, ticket):
         if type(ticket) == FinalIDTicket:
@@ -78,7 +84,7 @@ class ChainWrapper:
             try:
                 ticket = self.retrieve_ticket(txid)
                 # TODO: this is very slow, cache these somehow
-                ticket.validate()
+                # ticket.validate()
             except Exception as exc:
                 # print("ERROR parsing txid %s: %s" % (txid, exc))
                 continue

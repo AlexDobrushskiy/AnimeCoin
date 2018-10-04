@@ -7,6 +7,8 @@
 <div class="row">
     <div class="col-sm-12 mt-3">
         <h5>Form:</h5>
+        <p>actticket_txid: {{ actticket_txid }}</p>
+        <p>ticket: {{ final_actticket }}</p>
         <form method="post" enctype="multipart/form-data">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
             <table class="table">

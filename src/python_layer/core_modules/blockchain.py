@@ -1,4 +1,7 @@
-from bitcoinrpc.authproxy import AuthServiceProxy
+import time
+
+from http.client import CannotSendRequest
+from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
 from core_modules.blackbox_modules.blockchain import store_data_in_utxo,\
     retrieve_data_from_utxo
@@ -9,63 +12,115 @@ from core_modules.settings import NetWorkSettings
 
 class BlockChain:
     def __init__(self, user, password, ip, rpcport):
-        url = "http://%s:%s@%s:%s" % (user, password, ip, rpcport)
-        self.jsonrpc = AuthServiceProxy(url)
+        self.__url = "http://%s:%s@%s:%s" % (user, password, ip, rpcport)
+        self.__reconnect()
+
+    def __reconnect(self):
+        while True:
+            try:
+                newjsonrpc = AuthServiceProxy(self.__url)
+
+                # we need this so that we know the blockchain has started
+                newjsonrpc.getwalletinfo()
+            except ConnectionRefusedError:
+                time.sleep(0.1)
+            except JSONRPCException as exc:
+                if exc.code == -28:
+                    time.sleep(0.1)
+                else:
+                    raise
+            else:
+                self.__jsonrpc = newjsonrpc
+                break
 
     def get_masternode_order(self, blocknum):
         # TODO: should return MN list: [(sha256(pubkey), ip, port, pubkey), (sha256(pubkey), ip, port, pubkey)...]
         # sha256(pubkey) is the nodeid as int
         raise NotImplementedError("TODO")
 
+    def __call_jsonrpc(self, name, *params):
+        while True:
+            f = getattr(self.__jsonrpc, name)
+            try:
+                if len(params) == 0:
+                    ret = f()
+                else:
+                    ret = f(*params)
+            except (BrokenPipeError, CannotSendRequest) as exc:
+                print("RECONNECTING %s" % exc)
+                self.__reconnect()
+            else:
+                break
+
+        return ret
+
     def addnode(self, node, mode):
-        return self.jsonrpc.addnode(node, mode)
+        return self.__call_jsonrpc("addnode", node, mode)
 
     def listunspent(self, minimum=1, maximum=9999999, addresses=[]):
-        return self.jsonrpc.listunspent(minimum, maximum, addresses)
+        return self.__call_jsonrpc("listunspent", minimum, maximum, addresses)
 
     def getblockchaininfo(self):
-        return self.jsonrpc.getblockchaininfo()
+        return self.__call_jsonrpc("getblockchaininfo")
 
-    def getbalance(self):
-        return self.jsonrpc.getbalance()
+    def getmempoolinfo(self):
+        return self.__call_jsonrpc("getmempoolinfo")
 
-    def sendtoaddress(self, address, amount):
-        return self.jsonrpc.sendtoaddress(address, amount)
+    def gettxoutsetinfo(self):
+        return self.__call_jsonrpc("gettxoutsetinfo")
 
-    def getblock(self, blocknum):
-        return self.jsonrpc.getblock(blocknum)
+    def getmininginfo(self):
+        return self.__call_jsonrpc("getmininginfo")
 
-    def getblockcount(self):
-        return int(self.jsonrpc.getblockcount())
+    def getnetworkinfo(self):
+        return self.__call_jsonrpc("getnetworkinfo")
 
-    def getaccountaddress(self, address):
-        return self.jsonrpc.getaccountaddress(address)
-
-    def mnsync(self, param):
-        return self.jsonrpc.mnsync(param)
-
-    def gettransaction(self, txid):
-        return self.jsonrpc.gettransaction(txid)
-
-    def listsinceblock(self):
-        return self.jsonrpc.listsinceblock()
-
-    def getbestblockhash(self):
-        return self.jsonrpc.getbestblockhash()
+    def getpeerinfo(self):
+        return self.__call_jsonrpc("getpeerinfo")
 
     def getwalletinfo(self):
-        return self.jsonrpc.getwalletinfo()
+        return self.__call_jsonrpc("getwalletinfo")
+
+    def getbalance(self):
+        return self.__call_jsonrpc("getbalance")
+
+    def sendtoaddress(self, address, amount):
+        return self.__call_jsonrpc("sendtoaddress", address, amount)
+
+    def getblock(self, blocknum):
+        return self.__call_jsonrpc("getblock", blocknum)
+
+    def getblockcount(self):
+        return int(self.__call_jsonrpc("getblockcount"))
+
+    def getaccountaddress(self, address):
+        return self.__call_jsonrpc("getaccountaddress", address)
+
+    def mnsync(self, param):
+        return self.__call_jsonrpc("mnsync", param)
+
+    def gettransaction(self, txid):
+        return self.__call_jsonrpc("gettransaction", txid)
+
+    def listsinceblock(self):
+        return self.__call_jsonrpc("listsinceblock")
+
+    def getbestblockhash(self):
+        return self.__call_jsonrpc("getbestblockhash")
+
+    def getwalletinfo(self):
+        return self.__call_jsonrpc("getwalletinfo")
 
     def getrawtransaction(self, txid, verbose):
-        return self.jsonrpc.getrawtransaction(txid, verbose)
+        return self.__call_jsonrpc("getrawtransaction", txid, verbose)
 
     def generate(self, n):
-        return self.jsonrpc.generate(n)
+        return self.__call_jsonrpc("generate", int(n))
 
     def search_chain(self, confirmations=NetWorkSettings.REQUIRED_CONFIRMATIONS):
-        blockcount = int(self.jsonrpc.getblockcount()) - 1
+        blockcount = int(self.__call_jsonrpc("getblockcount") - 1)
         for blocknum in range(1, blockcount + 1):
-            block = self.jsonrpc.getblock(str(blocknum))
+            block = self.__call_jsonrpc("getblock", (str(blocknum)))
             if block["confirmations"] < confirmations:
                 break
 
@@ -73,8 +128,18 @@ class BlockChain:
                 yield txid
 
     def store_data_in_utxo(self, input_data):
-        txid = store_data_in_utxo(self.jsonrpc, input_data)
+        while True:
+            try:
+                txid = store_data_in_utxo(self.__jsonrpc, input_data)
+            except BrokenPipeError:
+                self.__reconnect()
+            else:
+                break
         return txid
 
     def retrieve_data_from_utxo(self, blockchain_transaction_id):
-        return retrieve_data_from_utxo(self.jsonrpc, blockchain_transaction_id)
+        while True:
+            try:
+                return retrieve_data_from_utxo(self.__jsonrpc, blockchain_transaction_id)
+            except BrokenPipeError:
+                self.__reconnect()

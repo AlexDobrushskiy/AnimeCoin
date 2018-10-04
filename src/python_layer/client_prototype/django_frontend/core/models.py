@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from django.conf import settings
@@ -26,6 +27,31 @@ def get_blockchain():
 
 def get_chainwrapper(blockchain):
     return ChainWrapper(blockchain)
+
+
+def call_parallel_rpcs(tasks):
+    # get event loop, or start a new one
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    futures = []
+    lookup = {}
+    for identifier, task in tasks:
+        future = asyncio.ensure_future(task, loop=loop)
+        futures.append(future)
+        lookup[future] = identifier
+
+    loop.run_until_complete(asyncio.wait(futures))
+    results = []
+    for future in futures:
+        results.append((lookup[future], future.result()))
+
+    loop.stop()
+    loop.close()
+    return results
 
 
 logger = initlogging()

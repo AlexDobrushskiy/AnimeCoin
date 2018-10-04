@@ -1,14 +1,16 @@
+import os
 import asyncio
 import random
 
 from core_modules.chunk_manager import ChunkManager
 from core_modules.zmq_rpc import RPCException, RPCServer
 from core_modules.masternode_communication import NodeManager
+from core_modules.masternode_ticketing import ArtRegistrationServer
 from core_modules.helpers import get_hexdigest, get_intdigest, hex_to_int, int_to_hex, require_true
 
 
 class MasterNodeLogic:
-    def __init__(self, name, logger, basedir, privkey, pubkey, ip, port, chunks):
+    def __init__(self, name, logger, chainwrapper, basedir, privkey, pubkey, ip, port, chunks):
         self.__name = name
         self.__nodeid = get_intdigest(pubkey)
         self.__basedir = basedir
@@ -18,12 +20,12 @@ class MasterNodeLogic:
         self.__port = port
 
         self.__logger = logger
+        self._chainwrapper = chainwrapper
 
         self.__todolist = asyncio.Queue()
 
         # masternode manager
         # TODO: remove this hack
-        import os
         nodes_basedir = os.path.dirname(os.path.dirname(self.__basedir))
         self.__mn_manager = NodeManager(self.__logger, self.__privkey, self.__pubkey, nodes_basedir)
 
@@ -33,12 +35,26 @@ class MasterNodeLogic:
                                            chunks,
                                            self.__mn_manager, self.__todolist)
 
+        # art registration server
+        self.__artregistrationserver = ArtRegistrationServer(self.__privkey, self.__pubkey,
+                                                             self._chainwrapper, self.__chunkmanager)
+
         # functions exposed from chunkmanager
         self.load_full_chunks = self.__chunkmanager.load_full_chunks
 
         # start rpc server
         self.__rpcserver = RPCServer(self.__logger, self.__nodeid, self.__ip, self.__port,
-                                     self.__privkey, self.__pubkey, self.__chunkmanager)
+                                     self.__privkey, self.__pubkey)
+
+        # TODO: the are blocking calls. We should turn them into coroutines if possible!
+        # TODO: we should ACL who can access these RPCs, chunk related RPC is only for MNs!
+        self.__rpcserver.add_callback("SPOTCHECK_REQ", "SPOTCHECK_RESP",
+                                      self.__chunkmanager.receive_rpc_spotcheck)
+        self.__rpcserver.add_callback("FETCHCHUNK_REQ", "FETCHCHUNK_RESP",
+                                      self.__chunkmanager.receive_rpc_fetchchunk)
+
+        self.__artregistrationserver.register_rpcs(self.__rpcserver)
+
 
     async def issue_random_tests_forever(self, waittime, number_of_chunks=1):
         while True:

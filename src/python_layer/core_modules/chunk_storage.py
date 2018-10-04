@@ -1,5 +1,7 @@
 import os
-from .helpers import int_to_hex, hex_to_int, get_intdigest
+
+from core_modules.blackbox_modules.helpers import get_sha3_512_func_int
+from .helpers import int_to_hex, hex_to_int
 
 
 class ChunkStorage:
@@ -67,7 +69,7 @@ class ChunkStorage:
         except FileNotFoundError:
             return False
 
-        digest = get_intdigest(data)
+        digest = get_sha3_512_func_int(data)
         return chunkname == digest
 
     def index(self):

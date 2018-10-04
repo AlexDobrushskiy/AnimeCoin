@@ -1,9 +1,10 @@
 import os
 import random
 
+from .blackbox_modules.helpers import get_sha3_512_func_bytes, get_sha3_512_func_hex, get_sha3_512_func_int
 from .settings import NetWorkSettings
 from .chunk_storage import ChunkStorage
-from .helpers import get_digest, get_intdigest, get_hexdigest, hex_to_int, int_to_hex
+from .helpers import hex_to_int, int_to_hex
 
 
 class Chunk:
@@ -73,9 +74,9 @@ class ChunkManager:
 
     def __init_alias_digests(self):
         for i in range(NetWorkSettings.REPLICATION_FACTOR):
-            digest = get_digest(i.to_bytes(1, byteorder='big') + NetWorkSettings.ALIAS_SEED)
+            digest = get_sha3_512_func_bytes(i.to_bytes(1, byteorder='big') + NetWorkSettings.ALIAS_SEED)
             digest_int = int.from_bytes(digest, byteorder='big')
-            self.__logger.debug("Alias digest %s -> %s" % (i, digest_int))
+            self.__logger.debug("Alias digest %s -> %s" % (i, int_to_hex(digest_int)))
             self.__alias_digests.append(digest_int)
 
     def __recalculate_ownership_of_all_chunks(self):
@@ -235,7 +236,7 @@ class ChunkManager:
             self.dump_internal_stats("DB STAT After")
 
     def store_chunk(self, chunkid, data):
-        if chunkid != get_intdigest(data):
+        if chunkid != get_sha3_512_func_int(data):
             raise ValueError("data does not match chunkid!")
 
         if chunkid not in self.__chunk_table:
@@ -302,7 +303,7 @@ class ChunkManager:
         data = self.__storage.get(chunk.chunkid)
 
         # verify the chunk
-        digest = get_intdigest(data)
+        digest = get_sha3_512_func_int(data)
         if digest != chunkid:
             # TODO: verify failed, refetch chunk?
             raise ValueError("Chunk's content does not match it's hash (%s != %s)" % (digest, chunkid))
@@ -319,6 +320,63 @@ class ChunkManager:
                 raise ValueError("Self-initiated spotcheck faield on us for chunk: %s" % chunkid)
 
         return self.__storage.get(chunk.chunkid)
+
+    # RPC FUNCTIONS
+    def receive_rpc_spotcheck(self, data):
+        # NOTE: data is untrusted!
+        if not isinstance(data, dict):
+            raise TypeError("Data must be a dict!")
+
+        if set(data.keys()) != {"chunkid", "start", "end"}:
+            raise ValueError("Invalid arguments for spotcheck: %s" % (data.keys()))
+
+        for k, v in data.items():
+            if k in ["start", "end"]:
+                if not isinstance(v, int):
+                    raise TypeError("Invalid type for key %s in spotcheck" % k)
+            else:
+                if not isinstance(v, str):
+                    raise TypeError("Invalid type for key %s in spotcheck" % k)
+
+        chunkid = hex_to_int(data["chunkid"])
+        start = data["start"]
+        end = data["end"]
+
+        # check if start and end are within parameters
+        if start < 0:
+            raise ValueError("start is < 0")
+        if start >= end:
+            raise ValueError("start >= end")
+        if start > NetWorkSettings.CHUNKSIZE or end > NetWorkSettings.CHUNKSIZE:
+            raise ValueError("start > CHUNKSIZE or end > CHUNKSIZE")
+
+        # we don't actually need the full chunk here, but we get it anyway as we are running verify() on it
+        chunk = self.return_chunk_data_if_valid_and_owned_and_we_have_it(chunkid)
+
+        # generate digest
+        data = chunk[start:end]
+        digest = get_sha3_512_func_hex(data)
+
+        return {"digest": digest}
+
+    def receive_rpc_fetchchunk(self, data):
+        # NOTE: data is untrusted!
+        if not isinstance(data, dict):
+            raise TypeError("Data must be a dict!")
+
+        if set(data.keys()) != {"chunkid"}:
+            raise ValueError("Invalid arguments for spotcheck: %s" % (data.keys()))
+
+        if not isinstance(data["chunkid"], str):
+            raise TypeError("Invalid type for key chunkid in spotcheck")
+
+        chunkid = hex_to_int(data["chunkid"])
+
+        # TODO: error handling
+        chunk = self.return_chunk_data_if_valid_and_owned_and_we_have_it(chunkid)
+
+        return {"chunk": chunk}
+    # END
 
     # DEBUG FUNCTIONS
     def dump_internal_stats(self, msg=""):

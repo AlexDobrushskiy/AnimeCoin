@@ -101,8 +101,14 @@ NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", ".."))
 NetWorkSettings.DJANGO_ROOT = os.path.join(NetWorkSettings.BASEDIR, "client_prototype", "django_frontend")
 
 NetWorkSettings.ALIAS_SEED = b'd\xad`n\xdc\x89\xc2/\xf6\xcd\xd6\xec\xcc\x1c\xc7\xd4\x83B9\x01\xb4\x06\xa2\xc9=\xf8_\x98\xa1p\x01&'
-NetWorkSettings.HASH_ALGO = hashlib.sha256
-NetWorkSettings.HEX_DIGEST_SIZE = NetWorkSettings.HASH_ALGO().digest_size * 2
+NetWorkSettings.CNODE_HASH_ALGO = hashlib.sha256
+NetWorkSettings.PYNODE_HASH_ALGO = hashlib.sha3_512
+NetWorkSettings.CNODE_HEX_DIGEST_SIZE = NetWorkSettings.CNODE_HASH_ALGO().digest_size * 2
+NetWorkSettings.PYNODE_HEX_DIGEST_SIZE = NetWorkSettings.PYNODE_HASH_ALGO().digest_size * 2
+
+# TODO: set this to something more reasonable, perhaps set it per RPC call with ACLs?
+NetWorkSettings.RPC_MSG_SIZELIMIT = 100*1024*1024        # 100MB
+
 NetWorkSettings.REPLICATION_FACTOR = 15
 NetWorkSettings.CHUNKSIZE = 1 * 1024*1024                # 1MB
 

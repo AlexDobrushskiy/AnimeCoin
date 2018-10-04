@@ -21,7 +21,7 @@ class TestBlockChain(unittest.TestCase):
         origdata = b'THIS IS SOME TEST DATA'
         txid = self.blockchain.store_data_in_utxo(origdata)
         retdata = self.blockchain.retrieve_data_from_utxo(txid)
-        self.assertEquals(origdata, retdata)
+        self.assertEqual(origdata, retdata)
 
     def test_generate(self):
         for i in range(3):

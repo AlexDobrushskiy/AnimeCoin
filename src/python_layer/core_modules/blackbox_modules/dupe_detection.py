@@ -48,7 +48,8 @@ class _DupeDetector:
 
         # the image is now in an array of shape (3, 224, 224) but we need to expand it to (1, 2, 224, 224) as
         # Keras is expecting a list of images
-        x = np.expand_dims(image, axis=0)
+        x = keras.preprocessing.image.img_to_array(image)
+        x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
 
         fingerprint_dict = {}
@@ -63,7 +64,7 @@ class _DupeDetector:
             value_flattened = [x[0] for x in v.tolist()]
             fingerprints += value_flattened
 
-        return fingerprint_dict
+        return fingerprints
 
 
 def combine_fingerprint_vectors(fingerprint_collection):

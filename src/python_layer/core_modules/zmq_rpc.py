@@ -22,6 +22,9 @@ class RPCClient:
         self.__privkey = privkey
         self.__pubkey = pubkey
 
+        # pubkey should be public
+        self.pubkey = self.__pubkey
+
         # variables of the server (the MN)
         self.__server_nodeid = nodeid
         self.__server_ip = server_ip
@@ -98,9 +101,7 @@ class RPCClient:
         await asyncio.sleep(0)
         request_packet = self.__return_rpc_packet(self.__server_pubkey, ["PING_REQ", data])
 
-        self.__logger.debug("RPC START")
         returned_data = await self.__send_rpc_to_mn("PING_RESP", request_packet)
-        self.__logger.debug("RPC END")
 
         if set(returned_data.keys()) != {"data"}:
             raise ValueError("RPC parameters are wrong for PING RESP: %s" % returned_data.keys())
@@ -159,16 +160,24 @@ class RPCClient:
 
         return chunk
 
+    async def __send_mn_ticket_rpc(self, rpcreq, rpcresp, data):
+        await asyncio.sleep(0)
+        request_packet = self.__return_rpc_packet(self.__server_pubkey, [rpcreq, data])
+        returned_data = await self.__send_rpc_to_mn(rpcresp, request_packet)
+        return returned_data
+
+    async def call_masternode(self, req, resp, data):
+        return await self.__send_mn_ticket_rpc(req, resp, data)
+
 
 class RPCServer:
-    def __init__(self, logger, nodeid, ip, port, privkey, pubkey, chunkmanager):
+    def __init__(self, logger, nodeid, ip, port, privkey, pubkey):
         self.__logger = logger
         self.__nodeid = nodeid
         self.__ip = ip
         self.__port = port
         self.__privkey = privkey
         self.__pubkey = pubkey
-        self.__chunkmanager = chunkmanager
 
         # our RPC socket
         self.__zmq = zmq.asyncio.Context().socket(zmq.ROUTER)
@@ -176,72 +185,19 @@ class RPCServer:
         self.__zmq.bind("tcp://%s:%s" % (self.__ip, self.__port))
 
         # define our RPCs
-        self.__RPCs = {
-            "PING_REQ": ["PING_RESP", self.__receive_rpc_ping],
-            "SPOTCHECK_REQ": ["SPOTCHECK_RESP", self.__receive_rpc_spotcheck],
-            "FETCHCHUNK_REQ": ["FETCHCHUNK_RESP", self.__receive_rpc_fetchchunk],
-        }
+        self.__RPCs = {}
+
+        # add our only call
+        self.add_callback("PING_REQ", "PING_RESP", self.__receive_rpc_ping)
+
+    def add_callback(self, callback_req, callback_resp, callback_function):
+        self.__RPCs[callback_req] = [callback_resp, callback_function]
 
     def __receive_rpc_ping(self, data):
         if not isinstance(data, bytes):
             raise TypeError("Data must be a bytes!")
 
         return {"data": data}
-
-    def __receive_rpc_spotcheck(self, data):
-        # NOTE: data is untrusted!
-        if not isinstance(data, dict):
-            raise TypeError("Data must be a dict!")
-
-        if set(data.keys()) != {"chunkid", "start", "end"}:
-            raise ValueError("Invalid arguments for spotcheck: %s" % (data.keys()))
-
-        for k, v in data.items():
-            if k in ["start", "end"]:
-                if not isinstance(v, int):
-                    raise TypeError("Invalid type for key %s in spotcheck" % k)
-            else:
-                if not isinstance(v, str):
-                    raise TypeError("Invalid type for key %s in spotcheck" % k)
-
-        chunkid = hex_to_int(data["chunkid"])
-        start = data["start"]
-        end = data["end"]
-
-        # check if start and end are within parameters
-        if start < 0:
-            raise ValueError("start is < 0")
-        if start >= end:
-            raise ValueError("start >= end")
-        if start > NetWorkSettings.CHUNKSIZE or end > NetWorkSettings.CHUNKSIZE:
-            raise ValueError("start > CHUNKSIZE or end > CHUNKSIZE")
-
-        # we don't actually need the full chunk here, but we get it anyway as we are running verify() on it
-        chunk = self.__chunkmanager.return_chunk_data_if_valid_and_owned_and_we_have_it(chunkid)
-
-        # generate digest
-        data = chunk[start:end]
-        digest = get_hexdigest(data)
-
-        return {"digest": digest}
-
-    def __receive_rpc_fetchchunk(self, data):
-        # NOTE: data is untrusted!
-        if not isinstance(data, dict):
-            raise TypeError("Data must be a dict!")
-
-        if set(data.keys()) != {"chunkid"}:
-            raise ValueError("Invalid arguments for spotcheck: %s" % (data.keys()))
-
-        if not isinstance(data["chunkid"], str):
-            raise TypeError("Invalid type for key chunkid in spotcheck")
-
-        chunkid = hex_to_int(data["chunkid"])
-
-        # TODO: error handling
-        chunk = self.__chunkmanager.return_chunk_data_if_valid_and_owned_and_we_have_it(chunkid)
-
-        return {"chunk": chunk}
 
     def __return_rpc_packet(self, sender_id, msg):
         response_packet = pack_and_sign(self.__privkey,
@@ -261,14 +217,15 @@ class RPCServer:
         try:
             ret = fn(data)
         except Exception as exc:
-            self.__logger.warning("Exception received while doing RPC: %s" % exc)
+            self.__logger.exception("Exception received while doing RPC: %s" % exc)
             msg = [response_name, "ERROR", "RPC ERRROR happened: %s" % exc]
         else:
             # generate response if everything went well
             msg = [response_name, "SUCCESS", ret]
 
+        ret = self.__return_rpc_packet(sender_id, msg)
         self.__logger.debug("Done with RPC RPC %s" % (rpcname))
-        return self.__return_rpc_packet(sender_id, msg)
+        return ret
 
     async def __zmq_process(self, ident, msg):
         # TODO: authenticate RPC, only allow from other MNs

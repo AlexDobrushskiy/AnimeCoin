@@ -25,7 +25,7 @@ class TestZMQRPC(unittest.TestCase):
         self.c_pub = b'\xeb\xb9\xec\x97X-9\xf0\x92\x08\x88\xc6\x15X\xd5\x95\xe7^\x83\x90o\x9f\x02]\xf7\xa8\xea\xcc(s\xae\x87\xf3\xfe2\xd7r\xe0M\x9e\x80Qy\x96\xdd\xb3BA\xedD\xe0E\x17\xa4Q\xe6\xe0\xccvX\xe4\xebe\xb0\xe1\x00'
 
     def test_zmq_rpc(self):
-        s = RPCServer(self.logger, self.s_nodeid, self.s_ip, self.s_port, self.s_priv, self.s_pub, self.s_chunkmanager)
+        s = RPCServer(self.logger, self.s_nodeid, self.s_ip, self.s_port, self.s_priv, self.s_pub)
         c = RPCClient(self.logger, self.c_priv, self.c_pub, self.c_nodeid, self.s_ip, self.s_port, self.s_pub)
 
         original_data = b'TEST DATA'

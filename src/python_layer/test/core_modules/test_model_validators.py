@@ -385,14 +385,14 @@ class TestTXIDField(unittest.TestCase):
 
     def test_invalid_min(self):
         with self.assertRaises(ValueError):
-            self.v.validate(b'U'*31)
+            self.v.validate('U'*63)
 
     def test_invalid_max(self):
         with self.assertRaises(ValueError):
-            self.v.validate(b'Y'*33)
+            self.v.validate('Y'*65)
 
     def test_valid(self):
-        self.v.validate(b'T'*32)
+        self.v.validate('T'*64)
 
 
 class TestSignatureField(unittest.TestCase):

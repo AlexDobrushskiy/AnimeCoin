@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, Http404
 
 from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
 
-from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager
+from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager, call_parallel_rpcs
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
 
 
@@ -16,7 +16,7 @@ def index(request):
     infos = {}
     for name in ["getblockchaininfo", "getmempoolinfo", "gettxoutsetinfo", "getmininginfo",
                  "getnetworkinfo", "getpeerinfo", "getwalletinfo"]:
-        infos[name] = getattr(blockchain.jsonrpc, name)()
+        infos[name] = getattr(blockchain, name)()
 
     infos["mnsync"] = blockchain.mnsync("status")
 
@@ -87,26 +87,10 @@ def portfolio(request):
 def exchange(request):
     masternodes = nodemanager.get_all()
 
-    # get event loop, or start a new one
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    futures, tasks = [], []
+    tasks = []
     for mn in masternodes:
-        future = asyncio.ensure_future(mn.send_rpc_ping(b'PING'), loop=loop)
-        tasks.append(future)
-        futures.append((mn, future))
-
-    loop.run_until_complete(asyncio.wait(tasks))
-    results = []
-    for mn, future in futures:
-        results.append((str(mn), future.result()))
-
-    loop.stop()
-    loop.close()
+        tasks.append((str(mn), mn.send_rpc_ping(b'PING')))
+    results = call_parallel_rpcs(tasks)
 
     return render(request, "views/exchange.tpl", {"results": results})
 
@@ -119,13 +103,15 @@ def trending(request):
 def browse(request):
     blockchain = get_blockchain()
     chainwrapper = get_chainwrapper(blockchain)
-    identities = chainwrapper.get_tickets_by_type("identity")
-    return render(request, "views/browse.tpl", {"identities": identities})
+    tickets = chainwrapper.all_ticket_iterator()
+    return render(request, "views/browse.tpl", {"tickets": tickets})
 
 
 def register(request):
     form = ArtworkRegistrationForm()
-    chainwrapper = get_chainwrapper()
+    chainwrapper = get_chainwrapper(get_blockchain())
+
+    final_actticket, actticket_txid = None, None
 
     if request.method == "POST":
         form = ArtworkRegistrationForm(request.POST, request.FILES)
@@ -135,11 +121,11 @@ def register(request):
             image_data = image_field.read()
 
             # get the registration object
-            artreg = ArtRegistrationClient(settings.PASTEL_PRIVKEY, settings.PASTEL_PUBKEY, chainwrapper, nodemanager)
+            artreg = ArtRegistrationClient(privkey, pubkey, chainwrapper, nodemanager)
 
             # register image
             # TODO: fill these out properly
-            actticket_txid = artreg.register_image(
+            task = artreg.register_image(
                 image_data=image_data,
                 artist_name="Example Artist",
                 artist_website="exampleartist.com",
@@ -151,10 +137,15 @@ def register(request):
                 total_copies=10
             )
 
-            # get and process ticket as new node
-            # get_ticket_as_new_node(actticket_txid, chainwrapper, chunkstorage)
+            # TODO: this interface is very awkward
+            results = call_parallel_rpcs([("dummy", task)])
+            actticket_txid = results[0][1]
 
-    return render(request, "views/register.tpl", {"form": form})
+            # get and process ticket as new node
+            final_actticket = chainwrapper.retrieve_ticket(actticket_txid)
+
+    return render(request, "views/register.tpl", {"form": form, "actticket_txid": actticket_txid,
+                                                  "final_actticket": final_actticket})
 
 
 def console(request):
@@ -166,7 +157,7 @@ def console(request):
         if form.is_valid():
             command = form.cleaned_data["command"].split(" ")
             commandname, args = command[0], command[1:]
-            command_rpc = getattr(blockchain.jsonrpc, commandname)
+            command_rpc = getattr(blockchain, commandname)
             try:
                 result = command_rpc(*args)
             except JSONRPCException as exc:

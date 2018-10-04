@@ -162,9 +162,9 @@ class SHA2256Field(BytesField):
         super().__init__(minsize=32, maxsize=32)
 
 
-class TXIDField(BytesField):
+class TXIDField(StringField):
     def __init__(self):
-        super().__init__(minsize=32, maxsize=32)
+        super().__init__(minsize=64, maxsize=64)
 
 
 class SignatureField(BytesField):

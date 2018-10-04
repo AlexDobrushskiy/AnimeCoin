@@ -9,7 +9,8 @@ from core_modules.blackbox_modules.signatures import pastel_id_verify_signature_
 from .model_validators import FieldValidator, StringField, IntegerField, FingerprintField, SHA3512Field,\
     LubyChunkHashField, LubyChunkField, ImageField, ThumbnailField, TXIDField, SignatureField, PubkeyField,\
     LubySeedField, BlockChainAddressField, UnixTimeField, StringChoiceField
-from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas
+from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas,\
+    combine_fingerprint_vectors
 from .blackbox_modules import luby
 from .settings import NetWorkSettings
 from .helpers import require_true, bytes_from_hex, bytes_to_hex
@@ -323,9 +324,9 @@ class ActivationTicket(TicketModelBase):
         # image hash matches regticket hash
         require_true(regticket.imagedata_hash == image.get_artwork_hash())
 
-        # run nsfw check
-        if NSFWDetector.is_nsfw(image.image):
-            raise ValueError("Image is NSFW, score: %s" % NSFWDetector.get_score(image.image))
+        # # run nsfw check - TODO: re-enable this
+        # if NSFWDetector.is_nsfw(image.image):
+        #     raise ValueError("Image is NSFW, score: %s" % NSFWDetector.get_score(image.image))
 
 
 class OrderTicket(TicketModelBase):
@@ -411,11 +412,8 @@ class MasterNodeSignedTicket(TicketModelBase):
             self.signature_2.validate(self.ticket)
             self.signature_3.validate(self.ticket)
         else:
-            # we are running in debug mode, only check that all of the signatures match the author's pubkey
-            if (self.signature_1.pubkey != self.signature_author.pubkey or
-                self.signature_2.pubkey != self.signature_author.pubkey or
-                self.signature_3.pubkey != self.signature_author.pubkey):
-                raise ValueError("Invalid pubkey for masternode ordering")
+            # we are running in debug mode, do not check signatures
+            pass
 
         # TODO: make sure the ticket was paid for
 

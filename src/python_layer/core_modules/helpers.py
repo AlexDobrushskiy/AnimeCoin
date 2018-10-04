@@ -2,8 +2,9 @@ import random
 
 from .settings import NetWorkSettings
 
-HASH_ALGO = NetWorkSettings.HASH_ALGO
-HEXFORMAT = "%0" + str(NetWorkSettings.HEX_DIGEST_SIZE) + "x"
+CNODE_HASH_ALGO = NetWorkSettings.CNODE_HASH_ALGO
+SHA2_HEXFORMAT = "%0" + str(NetWorkSettings.CNODE_HEX_DIGEST_SIZE) + "x"
+SHA3_HEXFORMAT = "%0" + str(NetWorkSettings.PYNODE_HEX_DIGEST_SIZE) + "x"
 
 
 def getrandbytes(n):
@@ -11,19 +12,19 @@ def getrandbytes(n):
 
 
 def get_digest(data):
-    h = HASH_ALGO()
+    h = CNODE_HASH_ALGO()
     h.update(data)
     return h.digest()
 
 
 def get_intdigest(data):
-    h = HASH_ALGO()
+    h = CNODE_HASH_ALGO()
     h.update(data)
     return int.from_bytes(h.digest(), byteorder="big")
 
 
 def get_hexdigest(data):
-    h = HASH_ALGO()
+    h = CNODE_HASH_ALGO()
     h.update(data)
     return h.hexdigest()
 
@@ -33,7 +34,7 @@ def hex_to_int(digest):
 
 
 def int_to_hex(digest):
-    return HEXFORMAT % digest
+    return SHA2_HEXFORMAT % digest
 
 
 def bytes_from_hex(data):
@@ -42,6 +43,14 @@ def bytes_from_hex(data):
 
 def bytes_to_hex(data):
     return data.hex()
+
+
+def bytes_to_int(data):
+    return int(data.hex(), 16)
+
+
+def bytes_from_int(data):
+    return int.from_bytes(data, byteorder="big")
 
 
 def require_true(param, msg=""):

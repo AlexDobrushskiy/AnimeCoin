@@ -4,6 +4,7 @@ import random
 from core_modules.zmq_rpc import RPCClient
 from core_modules.helpers import get_intdigest, hex_to_int
 from core_modules.masternode_discovery import discover_nodes
+from core_modules.settings import NetWorkSettings
 
 
 class NodeManager:
@@ -39,8 +40,11 @@ class NodeManager:
         return other_nodes
 
     def get_masternode_ordering(self, blocknum):
-        # TODO: We need to return rpcclient instances for each MN
-        raise NotImplementedError("TODO")
+        if NetWorkSettings.VALIDATE_MN_SIGNATURES:
+            # TODO: We need to return rpcclient instances for each MN
+            raise NotImplementedError("TODO")
+        else:
+            return self.get_all()[:3]
 
     def __update_masternode_list(self):
         # TODO: this list should come from cNode
