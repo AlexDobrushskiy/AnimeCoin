@@ -79,7 +79,7 @@ class RPCClient:
         return msg
 
     async def __send_rpc_to_mn(self, response_name, request_packet):
-
+        await asyncio.sleep(0)
         response_packet = await self.__send_rpc_and_wait_for_response(request_packet)
 
         sender_id, response_msg = verify_and_unpack(response_packet, self.__pubkey)
@@ -95,6 +95,7 @@ class RPCClient:
         return response_data
 
     async def send_rpc_ping(self, data):
+        await asyncio.sleep(0)
         request_packet = self.__return_rpc_packet(self.__server_pubkey, ["PING_REQ", data])
 
         self.__logger.debug("RPC START")
