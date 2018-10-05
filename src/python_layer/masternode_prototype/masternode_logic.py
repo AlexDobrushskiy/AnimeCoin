@@ -1,8 +1,8 @@
 import os
 import asyncio
-import random
 
-from core_modules.chunk_manager import ChunkManager
+from core_modules.chunkmanager import ChunkManager
+from core_modules.chunkmanager_modules.chunkmanager_rpc import ChunkManagerRPC
 from core_modules.zmq_rpc import RPCException, RPCServer
 from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_ticketing import ArtRegistrationServer
@@ -35,6 +35,8 @@ class MasterNodeLogic:
                                            chunks,
                                            self.__mn_manager, self.__todolist)
 
+        self.__chunkmanager_rpc = ChunkManagerRPC(self.__logger, self.__chunkmanager)
+
         # art registration server
         self.__artregistrationserver = ArtRegistrationServer(self.__privkey, self.__pubkey,
                                                              self._chainwrapper, self.__chunkmanager)
@@ -49,55 +51,13 @@ class MasterNodeLogic:
         # TODO: the are blocking calls. We should turn them into coroutines if possible!
         # TODO: we should ACL who can access these RPCs, chunk related RPC is only for MNs!
         self.__rpcserver.add_callback("SPOTCHECK_REQ", "SPOTCHECK_RESP",
-                                      self.__chunkmanager.receive_rpc_spotcheck)
+                                      self.__chunkmanager_rpc.receive_rpc_spotcheck)
         self.__rpcserver.add_callback("FETCHCHUNK_REQ", "FETCHCHUNK_RESP",
-                                      self.__chunkmanager.receive_rpc_fetchchunk)
+                                      self.__chunkmanager_rpc.receive_rpc_fetchchunk)
 
         self.__artregistrationserver.register_rpcs(self.__rpcserver)
 
-
-    async def issue_random_tests_forever(self, waittime, number_of_chunks=1):
-        while True:
-            await asyncio.sleep(waittime)
-
-            chunks = self.__chunkmanager.select_random_chunks_we_have(number_of_chunks)
-            for chunkid in chunks:
-                self.__logger.debug("Selected chunk %s for random check" % int_to_hex(chunkid))
-
-                # get chunk
-                data = self.__chunkmanager.get_chunk(chunkid, verify=True)
-
-                # pick a random range
-                require_true(len(data) > 1024)
-                start = random.randint(0, len(data)-1024)
-                end = start + 1024
-
-                # calculate digest
-                digest = get_hexdigest(data[start:end])
-                self.__logger.debug("Digest for range %s - %s is: %s" % (start, end, digest))
-
-                # find owners for all the alt keys who are not us
-                owners = self.__chunkmanager.find_owners_for_chunk(chunkid)
-                if self.__nodeid in owners:
-                    # we have already tested ourselves with verify()
-                    owners.remove(self.__nodeid)
-
-                # call RPC on all other MNs
-                for owner in owners:
-                    mn = self.__mn_manager.get(owner)
-
-                    try:
-                        response_digest = await mn.send_rpc_spotcheck(chunkid, start, end)
-                    except RPCException as exc:
-                        self.__logger.info("SPOTCHECK RPC FAILED for node %s with exception %s" % (owner, exc))
-                    else:
-                        if response_digest != digest:
-                            self.__logger.warning("SPOTCHECK FAILED for node %s (%s != %s)" % (owner, digest,
-                                                                                               response_digest))
-                        else:
-                            self.__logger.debug("SPOTCHECK SUCCESS for node %s for chunk: %s" % (owner, digest))
-
-                    # TODO: track successes/errors
+        self.issue_random_tests_forever = self.__chunkmanager_rpc.issue_random_tests_forever
 
     async def run_heartbeat_forever(self):
         while True:
@@ -138,9 +98,7 @@ class MasterNodeLogic:
                 self.__logger.debug("Fetching chunk %s" % chunkid)
 
                 found = False
-                for owner in self.__chunkmanager.find_owners_for_chunk(chunkid):
-                    if owner == self.__nodeid:
-                        continue
+                for owner in self.__chunkmanager.find_other_owners_for_chunk(chunkid):
                     mn = self.__mn_manager.get(owner)
 
                     try:

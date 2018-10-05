@@ -169,6 +169,10 @@ class ChunkManager:
             owners.add(owner)
         return owners
 
+    def find_other_owners_for_chunk(self, chunkid):
+        owners = self.find_other_owners_for_chunk(chunkid)
+        return owners - {self.__nodeid}
+
     def __we_own_this_alt_key(self, alt_key):
         my_distance = alt_key ^ self.__nodeid
 
@@ -235,14 +239,22 @@ class ChunkManager:
             self.__purge_orphaned_db_entries()
             self.dump_internal_stats("DB STAT After")
 
+    def new_chunks_added_to_blockchain(self, chunks):
+        self.dump_internal_stats("DB STAT Before")
+        for chunk_str in chunks:
+            chunkid = int(chunk_str, 16)
+            self.__chunk_table.add(chunkid)
+            self.__update_chunk_ownership(chunkid)
+        self.dump_internal_stats("DB STAT After")
+
     def store_chunk(self, chunkid, data):
         if chunkid != get_sha3_512_func_int(data):
             raise ValueError("data does not match chunkid!")
 
-        if chunkid not in self.__chunk_table:
+        if not self.we_have_chunkid_in_chunk_table(chunkid):
             raise KeyError("chunkid is not in chunk_table!")
 
-        if self.__nodeid not in self.find_owners_for_chunk(chunkid):
+        if not self.we_own_chunk(chunkid):
             raise ValueError("chunkid does not belong to us!")
 
         # store chunk
@@ -267,14 +279,6 @@ class ChunkManager:
             self.__logger.debug("Chunk %s is loaded" % chunkid)
         self.dump_internal_stats("DB STAT After")
 
-    def new_chunks_added_to_blockchain(self, chunks):
-        self.dump_internal_stats("DB STAT Before")
-        for chunk_str in chunks:
-            chunkid = int(chunk_str, 16)
-            self.__chunk_table.add(chunkid)
-            self.__update_chunk_ownership(chunkid)
-        self.dump_internal_stats("DB STAT After")
-
     def get_chunk_ownership(self, chunk_str):
         chunkid = int(chunk_str, 16)
         if self.__file_db.get(chunkid) is not None:
@@ -282,101 +286,26 @@ class ChunkManager:
         else:
             return False
 
-    def return_chunk_data_if_valid_and_owned_and_we_have_it(self, chunkid):
-        # TODO: do error handling better here
+    def we_have_chunkid_in_chunk_table(self, chunkid):
+        return chunkid in self.__chunk_table
 
-        # check if this is an actual chunk
-        if chunkid not in self.__chunk_table:
-            raise ValueError("This chunk is not in the chunk table: %s" % chunkid)
+    def we_own_chunk(self, chunkid):
+        return self.__nodeid in self.find_owners_for_chunk(chunkid)
 
-        # check if we should have this chunk
-        if self.__nodeid not in self.find_owners_for_chunk(chunkid):
-            raise ValueError("chunk %s does not belong ot us!" % chunkid)
-
-        # check if we have this chunk
+    def we_have_chunk_on_disk(self, chunkid):
         chunk = self.__file_db.get(chunkid)
-        if chunk is None or not chunk.exists or not chunk.verified:
-            # TODO: we should store this, refetch chunk?
-            raise ValueError("We don't have this chunk: %s" % int_to_hex(chunkid))
-
-        # get chunk from disk
-        data = self.__storage.get(chunk.chunkid)
-
-        # verify the chunk
-        digest = get_sha3_512_func_int(data)
-        if digest != chunkid:
-            # TODO: verify failed, refetch chunk?
-            raise ValueError("Chunk's content does not match it's hash (%s != %s)" % (digest, chunkid))
-
-        return data
+        return chunk is not None and chunk.exists and chunk.verified
 
     def get_chunk(self, chunkid, verify=True):
-        # pick a file we have for sure
-        chunk = self.__file_db[chunkid]
+        if not self.we_have_chunk_on_disk(chunkid):
+            raise ValueError("We don't have this chunk: %s" % int_to_hex(chunkid))
 
         if verify:
             if not self.__storage.verify(chunkid):
                 # TODO: We should resync the chunk and increment some counter
                 raise ValueError("Self-initiated spotcheck faield on us for chunk: %s" % chunkid)
 
-        return self.__storage.get(chunk.chunkid)
-
-    # RPC FUNCTIONS
-    def receive_rpc_spotcheck(self, data):
-        # NOTE: data is untrusted!
-        if not isinstance(data, dict):
-            raise TypeError("Data must be a dict!")
-
-        if set(data.keys()) != {"chunkid", "start", "end"}:
-            raise ValueError("Invalid arguments for spotcheck: %s" % (data.keys()))
-
-        for k, v in data.items():
-            if k in ["start", "end"]:
-                if not isinstance(v, int):
-                    raise TypeError("Invalid type for key %s in spotcheck" % k)
-            else:
-                if not isinstance(v, str):
-                    raise TypeError("Invalid type for key %s in spotcheck" % k)
-
-        chunkid = hex_to_int(data["chunkid"])
-        start = data["start"]
-        end = data["end"]
-
-        # check if start and end are within parameters
-        if start < 0:
-            raise ValueError("start is < 0")
-        if start >= end:
-            raise ValueError("start >= end")
-        if start > NetWorkSettings.CHUNKSIZE or end > NetWorkSettings.CHUNKSIZE:
-            raise ValueError("start > CHUNKSIZE or end > CHUNKSIZE")
-
-        # we don't actually need the full chunk here, but we get it anyway as we are running verify() on it
-        chunk = self.return_chunk_data_if_valid_and_owned_and_we_have_it(chunkid)
-
-        # generate digest
-        data = chunk[start:end]
-        digest = get_sha3_512_func_hex(data)
-
-        return {"digest": digest}
-
-    def receive_rpc_fetchchunk(self, data):
-        # NOTE: data is untrusted!
-        if not isinstance(data, dict):
-            raise TypeError("Data must be a dict!")
-
-        if set(data.keys()) != {"chunkid"}:
-            raise ValueError("Invalid arguments for spotcheck: %s" % (data.keys()))
-
-        if not isinstance(data["chunkid"], str):
-            raise TypeError("Invalid type for key chunkid in spotcheck")
-
-        chunkid = hex_to_int(data["chunkid"])
-
-        # TODO: error handling
-        chunk = self.return_chunk_data_if_valid_and_owned_and_we_have_it(chunkid)
-
-        return {"chunk": chunk}
-    # END
+        return self.__storage.get(chunkid)
 
     # DEBUG FUNCTIONS
     def dump_internal_stats(self, msg=""):
