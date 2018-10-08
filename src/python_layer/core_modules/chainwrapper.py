@@ -1,3 +1,5 @@
+from bitcoinrpc.authproxy import JSONRPCException
+
 from .helpers import bytes_from_hex, bytes_to_hex
 from .ticket_models import FinalIDTicket, FinalActivationTicket, FinalRegistrationTicket
 
@@ -63,18 +65,29 @@ class ChainWrapper:
 
         return self.__blockchain.store_data_in_utxo(encoded_data)
 
-    def retrieve_ticket(self, txid):
-        raw_ticket_data = self.__blockchain.retrieve_data_from_utxo(txid)
+    def retrieve_ticket(self, txid, validate=False):
+        try:
+            raw_ticket_data = self.__blockchain.retrieve_data_from_utxo(txid)
+        except JSONRPCException as exc:
+            if exc.code == -8:
+                # parameter 1 must be hexadecimal string
+                return None
+            else:
+                raise
 
-        ticket = None
         if raw_ticket_data.startswith(b'idticket'):
             ticket = FinalIDTicket(serialized=raw_ticket_data[len(b'idticket'):])
+            if validate:
+                ticket.validate()
         elif raw_ticket_data.startswith(b'regticket'):
             ticket = FinalRegistrationTicket(serialized=raw_ticket_data[len(b'regticket'):])
+            if validate:
+                ticket.validate(self)
         elif raw_ticket_data.startswith(b'actticket'):
             ticket = FinalActivationTicket(serialized=raw_ticket_data[len(b'actticket'):])
-
-        if ticket is None:
+            if validate:
+                ticket.validate(self)
+        else:
             raise ValueError("TXID %s is not a valid ticket: %s" % (txid, raw_ticket_data))
 
         return ticket
@@ -83,8 +96,6 @@ class ChainWrapper:
         for txid in self.__blockchain.search_chain():
             try:
                 ticket = self.retrieve_ticket(txid)
-                # TODO: this is very slow, cache these somehow
-                # ticket.validate()
             except Exception as exc:
                 # print("ERROR parsing txid %s: %s" % (txid, exc))
                 continue

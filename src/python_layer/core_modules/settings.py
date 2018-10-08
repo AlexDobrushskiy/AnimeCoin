@@ -132,11 +132,13 @@ else:
     NetWorkSettings.NSFW_THRESHOLD = 0.7
 
 if NetWorkSettings.DEBUG:
+    NetWorkSettings.DUPE_DETECTION_ENABLED = False
     NetWorkSettings.DUPE_DETECTION_MODELS = ["VGG16"]
     NetWorkSettings.DUPE_DETECTION_FINGERPRINT_SIZE = 512
     # NetWorkSettings.DUPE_DETECTION_MODELS = ["VGG16", "Xception", "InceptionResNetV2", "DenseNet201", "InceptionV3"]
     # NetWorkSettings.DUPE_DETECTION_FINGERPRINT_SIZE = 8064
 else:
+    NetWorkSettings.DUPE_DETECTION_ENABLED = True
     NetWorkSettings.DUPE_DETECTION_MODELS = ["VGG16", "Xception", "InceptionResNetV2", "DenseNet201", "InceptionV3"]
     NetWorkSettings.DUPE_DETECTION_FINGERPRINT_SIZE = 8064
 

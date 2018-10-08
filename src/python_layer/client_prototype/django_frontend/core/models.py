@@ -44,7 +44,7 @@ def call_parallel_rpcs(tasks):
         futures.append(future)
         lookup[future] = identifier
 
-    loop.run_until_complete(asyncio.wait(futures))
+    loop.run_until_complete(asyncio.gather(*futures))
     results = []
     for future in futures:
         results.append((lookup[future], future.result()))

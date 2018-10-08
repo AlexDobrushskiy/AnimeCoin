@@ -58,11 +58,11 @@ class ChunkManagerRPC:
 
         # check if this is an actual chunk
         if not self.__chunkmanager.we_have_chunkid_in_chunk_table(chunkid):
-            raise ValueError("This chunk is not in the chunk table: %s" % chunkid)
+            return None
 
         # check if we should have this chunk
         if not self.__chunkmanager.we_own_chunk(chunkid):
-            raise ValueError("chunk %s does not belong ot us!" % chunkid)
+            return None
 
         # check if we have this chunk
         if not self.__chunkmanager.we_have_chunk_on_disk(chunkid):
@@ -70,13 +70,7 @@ class ChunkManagerRPC:
             raise ValueError("We don't have this chunk: %s" % int_to_hex(chunkid))
 
         # get chunk from disk
-        data = self.__chunkmanager.get_chunk(chunkid)
-
-        # verify the chunk
-        digest = get_sha3_512_func_int(data)
-        if digest != chunkid:
-            # TODO: verify failed, refetch chunk?
-            raise ValueError("Chunk's content does not match it's hash (%s != %s)" % (digest, chunkid))
+        data = self.__chunkmanager.get_chunk(chunkid, verify=True)
 
         return data
 

@@ -46,6 +46,10 @@ class ChunkManager:
         # table of every chunk we know of
         self.__chunk_table = set((hex_to_int(x) for x in chunks))
 
+        # tmp storage
+        self.__tmpstoragedir = os.path.join(basedir, "tmpstorage")
+        self.__tmpstorage = ChunkStorage(self.__tmpstoragedir, mode=0o0700)
+
         # masternode manager
         self.__mn_manager = mn_manager
 
@@ -107,7 +111,7 @@ class ChunkManager:
                 # self.__logger.debug("Alt key %s is now OWNED (chunkid: %s)" % (alt_key, chunkid))
                 self.__alias_db[alt_key] = chunkid
             else:
-                # this alias not longer points to us
+                # this alias no longer points to us
                 # self.__logger.debug("Alt key %s is now DISOWNED (chunkid: %s)" % (alt_key, chunkid))
                 if self.__alias_db.get(alt_key) is not None:
                     del self.__alias_db[alt_key]
@@ -122,15 +126,24 @@ class ChunkManager:
 
             # if we don't have it or it's not verified for some reason, fetch it
             if not chunk.exists or not chunk.verified:
-                # do we have it locally? - this can happen if we just booted up
-                verified = self.__storage.verify(chunkid)
+                data = None
 
-                if verified:
+                # do we have it locally? - this can happen if we just booted up
+                if self.__storage.verify(chunkid):
                     self.__logger.debug("Found chunk %s locally" % chunkid)
                     data = self.__storage.get(chunkid)
-                    self.store_chunk(chunkid, data)
+
+                # do we have it in tmp storage?
+                if data is None:
+                    data = self.__tmpstorage.get(chunkid)
+                    if data is not None:
+                        self.__logger.debug("Found chunk %s in temporary storage" % chunkid)
+
+                # did we find the data?
+                if data is not None:
+                    self.store_missing_chunk(chunkid, data)
                 else:
-                    # we need to fetch the chunk
+                    # we need to fetch the chunk using RPC
                     self.__logger.info("Chunk %s missing, added to todolist" % chunkid)
                     self.__todolist.put_nowait(("MISSING_CHUNK", chunkid))
 
@@ -239,15 +252,20 @@ class ChunkManager:
             self.__purge_orphaned_db_entries()
             self.dump_internal_stats("DB STAT After")
 
-    def new_chunks_added_to_blockchain(self, chunks):
-        self.dump_internal_stats("DB STAT Before")
-        for chunk_str in chunks:
-            chunkid = int(chunk_str, 16)
-            self.__chunk_table.add(chunkid)
-            self.__update_chunk_ownership(chunkid)
-        self.dump_internal_stats("DB STAT After")
+    # def new_chunks_added_to_blockchain(self, chunkid):
+    #     self.dump_internal_stats("DB STAT Before")
+    #     self.__chunk_table.add(chunkid)
+    #     self.__update_chunk_ownership(chunkid)
+    #     self.dump_internal_stats("DB STAT After")
 
-    def store_chunk(self, chunkid, data):
+    def store_chunk_provisionally(self, chunkid, data):
+        if chunkid != get_sha3_512_func_int(data):
+            raise ValueError("data does not match chunkid!")
+
+        self.__logger.debug("Storing chunk provisionally: %s", chunkid)
+        self.__tmpstorage.put(chunkid, data)
+
+    def store_missing_chunk(self, chunkid, data):
         if chunkid != get_sha3_512_func_int(data):
             raise ValueError("data does not match chunkid!")
 
@@ -268,23 +286,23 @@ class ChunkManager:
         self.__update_chunk_ownership(chunkid)
         self.__logger.debug("Chunk %s is loaded" % chunkid)
 
-    def load_full_chunks(self, chunks):
-        # helper function to load chunks with data
-        # this is for testing, since we have to bootstrap the system somehow
-        self.dump_internal_stats("DB STAT Before")
-        for chunk_str, data in chunks:
+    # def load_full_chunks(self, chunks):
+    #     # helper function to load chunks with data
+    #     # this is for testing, since we have to bootstrap the system somehow
+    #     self.dump_internal_stats("DB STAT Before")
+    #     for chunk_str, data in chunks:
+    #
+    #         chunkid = int(chunk_str, 16)
+    #         self.store_missing_chunk(chunkid, data)
+    #         self.__logger.debug("Chunk %s is loaded" % chunkid)
+    #     self.dump_internal_stats("DB STAT After")
 
-            chunkid = int(chunk_str, 16)
-            self.store_chunk(chunkid, data)
-            self.__logger.debug("Chunk %s is loaded" % chunkid)
-        self.dump_internal_stats("DB STAT After")
-
-    def get_chunk_ownership(self, chunk_str):
-        chunkid = int(chunk_str, 16)
-        if self.__file_db.get(chunkid) is not None:
-            return self.__file_db[chunkid].is_ours
-        else:
-            return False
+    # def get_chunk_ownership(self, chunk_str):
+    #     chunkid = int(chunk_str, 16)
+    #     if self.__file_db.get(chunkid) is not None:
+    #         return self.__file_db[chunkid].is_ours
+    #     else:
+    #         return False
 
     def we_have_chunkid_in_chunk_table(self, chunkid):
         return chunkid in self.__chunk_table
@@ -296,16 +314,24 @@ class ChunkManager:
         chunk = self.__file_db.get(chunkid)
         return chunk is not None and chunk.exists and chunk.verified
 
-    def get_chunk(self, chunkid, verify=True):
-        if not self.we_have_chunk_on_disk(chunkid):
-            raise ValueError("We don't have this chunk: %s" % int_to_hex(chunkid))
-
-        if verify:
+    def get_chunk(self, chunkid):
+        # try to find chunk in chunkstorage
+        if self.we_have_chunk_on_disk(chunkid):
             if not self.__storage.verify(chunkid):
                 # TODO: We should resync the chunk and increment some counter
                 raise ValueError("Self-initiated spotcheck faield on us for chunk: %s" % chunkid)
+            else:
+                return self.__storage.get(chunkid)
 
-        return self.__storage.get(chunkid)
+        # fall back to try and find chunk in tmpstorage
+        #  - for tickets that are registered through us, but not final on the blockchain yet, this is how we bootstrap
+        #  - we are also graceful and can return chunks that are not ours...
+        chunk = self.__tmpstorage.get(chunkid)
+        if chunk is not None:
+            return chunk
+
+        # we have failed to find the chunk
+        raise ValueError("We don't have this chunk: %s" % int_to_hex(chunkid))
 
     # DEBUG FUNCTIONS
     def dump_internal_stats(self, msg=""):

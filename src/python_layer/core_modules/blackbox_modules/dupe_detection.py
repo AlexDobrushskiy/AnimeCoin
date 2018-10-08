@@ -67,16 +67,6 @@ class _DupeDetector:
         return fingerprints
 
 
-def combine_fingerprint_vectors(fingerprint_collection):
-    # concatenate fingerprints from various models and append it to rows
-    combined = []
-    for modelname, fingerprints in fingerprint_collection.items():
-        fingerprint_vector = [x[0] for x in fingerprints]
-
-        combined += fingerprint_vector
-    return pd.DataFrame(combined).T
-
-
 def measure_similarity(combined_fingerprint, fingerprint_table):
     spearman_thresh = NetWorkSettings.DUPE_DETECTION_SPEARMAN_THRESHOLD
     kendall_thresh = NetWorkSettings.DUPE_DETECTION_KENDALL_THRESHOLD

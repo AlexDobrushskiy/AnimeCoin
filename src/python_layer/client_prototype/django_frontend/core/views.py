@@ -6,6 +6,7 @@ from django.conf import settings
 from django.shortcuts import render, redirect, Http404
 
 from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
+from core_modules.helpers import bytes_to_int
 
 from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager, call_parallel_rpcs
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
@@ -100,11 +101,53 @@ def trending(request):
     return render(request, "views/trending.tpl", {"resp": resp})
 
 
-def browse(request):
+def browse(request, txid=""):
     blockchain = get_blockchain()
     chainwrapper = get_chainwrapper(blockchain)
-    tickets = chainwrapper.all_ticket_iterator()
-    return render(request, "views/browse.tpl", {"tickets": tickets})
+
+    tickets, regticket, lubyhashes = [], None, []
+    if txid == "":
+        for tmptxid, final_actticket in chainwrapper.get_tickets_by_type("actticket"):
+            final_actticket.validate(chainwrapper)
+            final_regticket = chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
+            final_regticket.validate(chainwrapper)
+            regticket = final_regticket.ticket
+            tickets.append((tmptxid, regticket))
+
+    else:
+        # get and process ticket as new node
+        final_actticket = chainwrapper.retrieve_ticket(txid)
+        final_actticket.validate(chainwrapper)
+        final_regticket = chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
+        final_regticket.validate(chainwrapper)
+        regticket = final_regticket.ticket
+
+        # # fetch chunks - TODO: compute who should have this chunk
+        # mn = nodemanager.get_all()[0]
+        #
+        # tasks = []
+        # for chunkid_bytes in regticket.lubyhashes:
+        #     chunkid = bytes_to_int(chunkid_bytes)
+        #     tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
+        #
+        # print("STARTING %s" % len(tasks))
+        # results = call_parallel_rpcs(tasks)
+        # for result in results:
+        #     print("RESULT", result)
+
+        # fetch thumbnail
+        mn = nodemanager.get_masternode_ordering(regticket.order_block_txid)[0]
+
+        tasks = []
+        chunkid = bytes_to_int(regticket.thumbnailhash)
+        tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
+
+        print("STARTING %s" % len(tasks))
+        results = call_parallel_rpcs(tasks)
+        for result in results:
+            print("RESULT", result)
+
+    return render(request, "views/browse.tpl", {"tickets": tickets, "txid": txid, "regticket": regticket})
 
 
 def register(request):
@@ -130,7 +173,7 @@ def register(request):
                 artist_name="Example Artist",
                 artist_website="exampleartist.com",
                 artist_written_statement="This is only a test",
-                artwork_title="My Example Art",
+                artwork_title=image_field.name,
                 artwork_series_name="Examples and Tests collection",
                 artwork_creation_video_youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 artwork_keyword_set="example, testing, sample",
@@ -140,9 +183,7 @@ def register(request):
             # TODO: this interface is very awkward
             results = call_parallel_rpcs([("dummy", task)])
             actticket_txid = results[0][1]
-
-            # get and process ticket as new node
-            final_actticket = chainwrapper.retrieve_ticket(actticket_txid)
+            final_actticket = chainwrapper.retrieve_ticket(actticket_txid, validate=True)
 
     return render(request, "views/register.tpl", {"form": form, "actticket_txid": actticket_txid,
                                                   "final_actticket": final_actticket})

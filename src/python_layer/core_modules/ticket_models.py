@@ -9,8 +9,7 @@ from core_modules.blackbox_modules.signatures import pastel_id_verify_signature_
 from .model_validators import FieldValidator, StringField, IntegerField, FingerprintField, SHA3512Field,\
     LubyChunkHashField, LubyChunkField, ImageField, ThumbnailField, TXIDField, SignatureField, PubkeyField,\
     LubySeedField, BlockChainAddressField, UnixTimeField, StringChoiceField
-from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas,\
-    combine_fingerprint_vectors
+from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas
 from .blackbox_modules import luby
 from .settings import NetWorkSettings
 from .helpers import require_true, bytes_from_hex, bytes_to_hex
@@ -268,10 +267,11 @@ class RegistrationTicket(TicketModelBase):
         # validate that fingerprints are not dupes
         if len(fingerprint_db) > 0:
             # TODO: check for fingerprint dupes
-            pandas_table = assemble_fingerprints_for_pandas([(k, v) for k, v in fingerprint_db.items()])
-            is_duplicate, params_df = measure_similarity(self.fingerprints, pandas_table)
-            if is_duplicate:
-                raise ValueError("Image failed fingerprint check!")
+            if NetWorkSettings.DUPE_DETECTION_ENABLED:
+                pandas_table = assemble_fingerprints_for_pandas([(k, v) for k, v in fingerprint_db.items()])
+                is_duplicate, params_df = measure_similarity(self.fingerprints, pandas_table)
+                if is_duplicate:
+                    raise ValueError("Image failed fingerprint check!")
 
 
 class ActivationTicket(TicketModelBase):

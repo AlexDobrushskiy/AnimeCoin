@@ -7,16 +7,28 @@
 <div class="row">
     <div class="col-sm-12 mt-3">
         <h1>Browse: {{ resp }}</h1>
-        <table class="table">
-            {% for txid, ticket in tickets %}
-            <tr>
-                <td>Ticket</td>
-                <td>{{ txid }}</td>
-                <td>{{ ticket|pprint }}</td>
-                <td>{{ ticket.to_dict()|pprint }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+        {% if txid == "" %}
+            <table class="table">
+                {% for txid, ticket in tickets %}
+                <tr>
+                    <td>Ticket</td>
+                    <td><a href="/browse/{{ txid }}">{{ txid }}</a></td>
+                    <td>{{ ticket|pprint }}</td>
+                    <td>{{ ticket["artist_name"] }}</td>
+                    <td>{{ ticket["artwork_title"] }}</td>
+                    <td>{{ ticket["total_copies"] }}</td>
+                    <td>{{ ticket["imagedata_hash"] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <h5>regticket: {{ regticket }}</h5>
+            <table>
+                {% for i in regticket.lubyhashes %}
+                    <tr><td>{{ i }}</td></tr>
+                {% endfor %}
+            </table>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

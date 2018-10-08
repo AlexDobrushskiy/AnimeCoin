@@ -35,14 +35,14 @@ class MasterNodeLogic:
                                            chunks,
                                            self.__mn_manager, self.__todolist)
 
-        self.__chunkmanager_rpc = ChunkManagerRPC(self.__logger, self.__chunkmanager)
+        self.__chunkmanager_rpc = ChunkManagerRPC(self.__logger, self.__chunkmanager, self.__mn_manager)
 
         # art registration server
         self.__artregistrationserver = ArtRegistrationServer(self.__privkey, self.__pubkey,
                                                              self._chainwrapper, self.__chunkmanager)
 
         # functions exposed from chunkmanager
-        self.load_full_chunks = self.__chunkmanager.load_full_chunks
+        # self.load_full_chunks = self.__chunkmanager.load_full_chunks
 
         # start rpc server
         self.__rpcserver = RPCServer(self.__logger, self.__nodeid, self.__ip, self.__port,
@@ -107,6 +107,10 @@ class MasterNodeLogic:
                         self.__logger.info("FETCHCHUNK RPC FAILED for node %s with exception %s" % (owner, exc))
                         continue
                     else:
+                        if chunk is None:
+                            # chunk was not found
+                            continue
+
                         found = True
                         self.__logger.debug("Fetched chunk %s" % len(chunk))
                         break
@@ -117,7 +121,7 @@ class MasterNodeLogic:
                     raise RuntimeError("Unable to fetch chunk %s!" % chunkid)
 
                 # we have the chunk, store it!
-                self.__chunkmanager.store_chunk(chunkid, chunk)
+                self.__chunkmanager.store_missing_chunk(chunkid, chunk)
 
                 # mark entry as done
                 self.__todolist.task_done()

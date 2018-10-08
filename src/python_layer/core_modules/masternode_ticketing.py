@@ -93,13 +93,13 @@ class ArtRegistrationServer:
         final_regticket = self.__chainwrapper.retrieve_ticket(regticket_txid)
         final_regticket.validate(self.__chainwrapper)
 
-        # # TODO: turn this back on
-        # # store thumbnail
-        # self.__chunkmanager.store_chunk(bytes_to_int(image_hash), imagedata.thumbnail)
-        #
-        # # store chunks
-        # for chunkhash, chunkdata in zip(imagedata.get_luby_hashes(), imagedata.lubychunks):
-        #     self.__chunkmanager.store_chunk(chunkhash, chunkdata)
+        # store thumbnail
+        self.__chunkmanager.store_chunk_provisionally(bytes_to_int(image_hash), imagedata.thumbnail)
+
+        # store chunks
+        for chunkhash, chunkdata in zip(imagedata.get_luby_hashes(), imagedata.lubychunks):
+            chunkhash_int = bytes_to_int(chunkhash)
+            self.__chunkmanager.store_chunk_provisionally(chunkhash_int, chunkdata)
 
 
 class ArtRegistrationClient:
@@ -187,7 +187,6 @@ class ArtRegistrationClient:
                        artwork_title=None, artwork_series_name=None, artwork_creation_video_youtube_url=None,
                        artwork_keyword_set=None, total_copies=None):
         # generate image ticket
-
         image = ImageData(dictionary={
             "image": image_data,
             "lubychunks": ImageData.generate_luby_chunks(image_data),

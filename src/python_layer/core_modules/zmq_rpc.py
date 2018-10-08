@@ -83,6 +83,7 @@ class RPCClient:
 
     async def __send_rpc_to_mn(self, response_name, request_packet):
         await asyncio.sleep(0)
+
         response_packet = await self.__send_rpc_and_wait_for_response(request_packet)
 
         sender_id, response_msg = verify_and_unpack(response_packet, self.__pubkey)
@@ -99,6 +100,7 @@ class RPCClient:
 
     async def send_rpc_ping(self, data):
         await asyncio.sleep(0)
+
         request_packet = self.__return_rpc_packet(self.__server_pubkey, ["PING_REQ", data])
 
         returned_data = await self.__send_rpc_to_mn("PING_RESP", request_packet)
@@ -114,6 +116,8 @@ class RPCClient:
         return response_data
 
     async def send_rpc_spotcheck(self, chunkid, start, end):
+        await asyncio.sleep(0)
+
         self.__logger.debug("SPOTCHECK REQUEST to %s, chunkid: %s" % (self, int_to_hex(chunkid)))
 
         # chunkid is bignum so we need to serialize it
@@ -137,6 +141,8 @@ class RPCClient:
         return response_digest
 
     async def send_rpc_fetchchunk(self, chunkid):
+        await asyncio.sleep(0)
+
         self.__logger.debug("FETCHCHUNK REQUEST to %s, chunkid: %s" % (self, int_to_hex(chunkid)))
 
         # chunkid is bignum so we need to serialize it
@@ -148,15 +154,16 @@ class RPCClient:
         if set(response_data.keys()) != {"chunk"}:
             raise ValueError("RPC parameters are wrong for FETCHCHUNK_RESP: %s" % response_data.keys())
 
-        if type(response_data["chunk"]) != bytes:
-            raise TypeError("chunk is not bytes: %s" % type(response_data["chunk"]))
+        if type(response_data["chunk"]) not in [bytes, type(None)]:
+            raise TypeError("chunk is not bytes or None: %s" % type(response_data["chunk"]))
 
         chunk = response_data["chunk"]
 
         # validate chunk
-        digest = get_hexdigest(chunk)
-        if digest != chunkid_str:
-            raise ValueError("Got chunk data that does not match the digest!")
+        if chunk is not None:
+            digest = get_hexdigest(chunk)
+            if digest != chunkid_str:
+                raise ValueError("Got chunk data that does not match the digest!")
 
         return chunk
 
