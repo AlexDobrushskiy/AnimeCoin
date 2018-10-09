@@ -44,7 +44,8 @@ class NodeManager:
             # TODO: We need to return rpcclient instances for each MN
             raise NotImplementedError("TODO")
         else:
-            return self.get_all()[:3]
+            mnlist = self.get_all()[1:4]
+            return mnlist
 
     def __update_masternode_list(self):
         # TODO: this list should come from cNode

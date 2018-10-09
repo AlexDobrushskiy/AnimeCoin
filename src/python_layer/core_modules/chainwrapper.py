@@ -2,6 +2,7 @@ from bitcoinrpc.authproxy import JSONRPCException
 
 from .helpers import bytes_from_hex, bytes_to_hex
 from .ticket_models import FinalIDTicket, FinalActivationTicket, FinalRegistrationTicket
+from .settings import NetWorkSettings
 
 
 class BlockChainTicket:

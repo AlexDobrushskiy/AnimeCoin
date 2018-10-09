@@ -6,7 +6,7 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-12 mt-3">
-        <h1>Browse:}</h1>
+        <h1>Browse:</h1>
         {% if txid == "" %}
             <table class="table">
                 {% for txid, ticket in tickets %}
