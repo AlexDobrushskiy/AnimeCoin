@@ -3,10 +3,10 @@ import asyncio
 from bitcoinrpc.authproxy import JSONRPCException
 
 from django.conf import settings
-from django.shortcuts import render, redirect, Http404
+from django.shortcuts import render, redirect, Http404, HttpResponse
 
 from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
-from core_modules.helpers import bytes_to_int
+from core_modules.helpers import bytes_to_int, hex_to_int
 
 from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager, call_parallel_rpcs
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
@@ -122,31 +122,6 @@ def browse(request, txid=""):
         final_regticket.validate(chainwrapper)
         regticket = final_regticket.ticket
 
-        # # fetch chunks - TODO: compute who should have this chunk
-        # mn = nodemanager.get_all()[0]
-        #
-        # tasks = []
-        # for chunkid_bytes in regticket.lubyhashes:
-        #     chunkid = bytes_to_int(chunkid_bytes)
-        #     tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
-        #
-        # print("STARTING %s" % len(tasks))
-        # results = call_parallel_rpcs(tasks)
-        # for result in results:
-        #     print("RESULT", result)
-
-        # fetch thumbnail
-        mn = nodemanager.get_masternode_ordering(regticket.order_block_txid)[0]
-
-        tasks = []
-        chunkid = bytes_to_int(regticket.thumbnailhash)
-        tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
-
-        print("STARTING %s" % len(tasks))
-        results = call_parallel_rpcs(tasks)
-        for result in results:
-            print("RESULT", result)
-
     return render(request, "views/browse.tpl", {"tickets": tickets, "txid": txid, "regticket": regticket})
 
 
@@ -255,3 +230,20 @@ def explorer(request, functionality, id=""):
         return render(request, "views/explorer_addresses.tpl", {"id": id, "transactions": transactions})
     else:
         return redirect("/")
+
+
+def chunk(request, chunkid_hex):
+    chunkid = hex_to_int(chunkid_hex)
+
+    # TODO: find masternodes properly
+    # mn = nodemanager.find_mns_for_chunkid(chunkid)
+    mn = nodemanager.get_masternode_ordering(0)[0]
+
+    tasks = []
+    tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
+
+    results = call_parallel_rpcs(tasks)
+    image_data = results[0][1]
+
+    # TODO: set content type properly
+    return HttpResponse(image_data, content_type="image/png")

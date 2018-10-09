@@ -262,17 +262,16 @@ class ChunkManager:
         if chunkid != get_sha3_512_func_int(data):
             raise ValueError("data does not match chunkid!")
 
-        self.__logger.debug("Storing chunk provisionally: %s", chunkid)
         self.__tmpstorage.put(chunkid, data)
 
     def store_missing_chunk(self, chunkid, data):
         if chunkid != get_sha3_512_func_int(data):
             raise ValueError("data does not match chunkid!")
 
-        if not self.we_have_chunkid_in_chunk_table(chunkid):
+        if not self.__we_have_chunkid_in_chunk_table(chunkid):
             raise KeyError("chunkid is not in chunk_table!")
 
-        if not self.we_own_chunk(chunkid):
+        if not self.__we_own_chunk(chunkid):
             raise ValueError("chunkid does not belong to us!")
 
         # store chunk
@@ -304,10 +303,10 @@ class ChunkManager:
     #     else:
     #         return False
 
-    def we_have_chunkid_in_chunk_table(self, chunkid):
+    def __we_have_chunkid_in_chunk_table(self, chunkid):
         return chunkid in self.__chunk_table
 
-    def we_own_chunk(self, chunkid):
+    def __we_own_chunk(self, chunkid):
         return self.__nodeid in self.find_owners_for_chunk(chunkid)
 
     def we_have_chunk_on_disk(self, chunkid):

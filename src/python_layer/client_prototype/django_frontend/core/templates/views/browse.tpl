@@ -6,7 +6,7 @@
 {% block body %}
 <div class="row">
     <div class="col-sm-12 mt-3">
-        <h1>Browse: {{ resp }}</h1>
+        <h1>Browse:}</h1>
         {% if txid == "" %}
             <table class="table">
                 {% for txid, ticket in tickets %}
@@ -23,11 +23,13 @@
             </table>
         {% else %}
             <h5>regticket: {{ regticket }}</h5>
-            <table>
+            <p><a href="/chunk/{{ regticket["thumbnailhash"].hex() }}">{{ regticket["thumbnailhash"].hex() }}</a></p>
+            <img src="/chunk/{{ regticket["thumbnailhash"].hex() }}" />
+            {# <table>
                 {% for i in regticket.lubyhashes %}
                     <tr><td>{{ i }}</td></tr>
                 {% endfor %}
-            </table>
+            </table> #}
         {% endif %}
     </div>
 </div>

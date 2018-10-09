@@ -4,6 +4,7 @@ import zmq
 import zmq.asyncio
 import uuid
 
+from core_modules.blackbox_modules.helpers import get_sha3_512_func_hex
 from .settings import NetWorkSettings
 from core_modules.rpc_serialization import pack_and_sign, verify_and_unpack
 from .helpers import get_hexdigest, hex_to_int, int_to_hex
@@ -161,7 +162,7 @@ class RPCClient:
 
         # validate chunk
         if chunk is not None:
-            digest = get_hexdigest(chunk)
+            digest = get_sha3_512_func_hex(chunk)
             if digest != chunkid_str:
                 raise ValueError("Got chunk data that does not match the digest!")
 

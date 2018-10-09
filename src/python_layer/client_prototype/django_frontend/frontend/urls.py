@@ -30,5 +30,6 @@ urlpatterns = [
     url(r'^register/$', views.register, name='register'),
     url(r'^console/$', views.console, name='console'),
     url(r'^explorer/(?P<functionality>(chaininfo|block|transaction|address))/?(?P<id>.*)?$', views.explorer, name='explorer'),
+    url(r'^chunk/(?P<chunkid_hex>.*?)$', views.chunk, name='chunk'),
     url(r'^$', views.index, name='index'),
 ]

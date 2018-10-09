@@ -22,7 +22,7 @@ class ChunkManagerRPC:
                 self.__logger.debug("Selected chunk %s for random check" % int_to_hex(chunkid))
 
                 # get chunk
-                data = self.__chunkmanager.get_chunk(chunkid, verify=True)
+                data = self.__chunkmanager.get_chunk(chunkid)
 
                 # pick a random range
                 require_true(len(data) > 1024)
@@ -54,24 +54,8 @@ class ChunkManagerRPC:
                     # TODO: track successes/errors
 
     def __return_chunk_data_if_valid_and_owned_and_we_have_it(self, chunkid):
-        # TODO: do error handling better here
-
-        # check if this is an actual chunk
-        if not self.__chunkmanager.we_have_chunkid_in_chunk_table(chunkid):
-            return None
-
-        # check if we should have this chunk
-        if not self.__chunkmanager.we_own_chunk(chunkid):
-            return None
-
-        # check if we have this chunk
-        if not self.__chunkmanager.we_have_chunk_on_disk(chunkid):
-            # TODO: we should store this, refetch chunk?
-            raise ValueError("We don't have this chunk: %s" % int_to_hex(chunkid))
-
         # get chunk from disk
-        data = self.__chunkmanager.get_chunk(chunkid, verify=True)
-
+        data = self.__chunkmanager.get_chunk(chunkid)
         return data
 
     def receive_rpc_spotcheck(self, data):
