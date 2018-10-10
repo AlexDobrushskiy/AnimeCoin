@@ -34,11 +34,18 @@ def get_chainwrapper(blockchain):
 
 def call_parallel_rpcs(tasks):
     # get event loop, or start a new one
+    need_new_loop = False
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        need_new_loop = True
+    else:
+        if loop.is_closed():
+            need_new_loop = True
+
+    if need_new_loop:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        loop = asyncio.get_event_loop()
 
     futures = []
     lookup = {}
