@@ -17,7 +17,6 @@ def get_blockchain(basedir):
 
 def main(basedir):
     blockchain = get_blockchain(basedir)
-    chainwrapper = ChainWrapper(blockchain)
 
     blockcount = blockchain.getblockcount() - 1
     for blocknum in range(1, blockcount+1):

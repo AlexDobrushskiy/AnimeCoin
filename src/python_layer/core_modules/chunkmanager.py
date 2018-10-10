@@ -1,10 +1,10 @@
 import os
 import random
 
-from .blackbox_modules.helpers import get_sha3_512_func_bytes, get_sha3_512_func_hex, get_sha3_512_func_int
-from .settings import NetWorkSettings
-from .chunk_storage import ChunkStorage
-from .helpers import hex_to_int, int_to_hex
+from core_modules.blackbox_modules.helpers import get_sha3_512_func_bytes, get_sha3_512_func_hex, get_sha3_512_func_int
+from core_modules.chunk_storage import ChunkStorage
+from core_modules.helpers import hex_to_int, chunkid_to_hex
+from core_modules.logger import initlogging
 
 
 class Chunk:
@@ -18,16 +18,16 @@ class Chunk:
         self.is_ours = is_ours
 
     def __str__(self):
-        return "chunkid: %s, exists: %s, verified: %s, is_ours: %s" % (int_to_hex(self.chunkid), self.exists,
+        return "chunkid: %s, exists: %s, verified: %s, is_ours: %s" % (chunkid_to_hex(self.chunkid), self.exists,
                                                                        self.verified, self.is_ours)
 
 
 class ChunkManager:
-    def __init__(self, logger, nodeid, basedir, chunks, mn_manager, todolist):
+    def __init__(self, nodenum, nodeid, basedir, chunks, aliasmanager, todolist):
         # initialize logger
         # IMPORTANT: we must ALWAYS use self.__logger.* for logging and not logging.*,
         # since we need instance-level logging
-        self.__logger = logger
+        self.__logger = initlogging(nodenum, __name__)
 
         # our node id
         self.__nodeid = nodeid
@@ -36,12 +36,12 @@ class ChunkManager:
         self.__storagedir = os.path.join(basedir, "chunkdata")
         self.__storage = ChunkStorage(self.__storagedir, mode=0o0700)
 
+        # alias manager
+        self.__alias_manager = aliasmanager
+
         # databases we keep
         self.__alias_db = {}
         self.__file_db = {}
-
-        # helper lookup table for alias generation and other nodes
-        self.__alias_digests = []
 
         # table of every chunk we know of
         self.__chunk_table = set((hex_to_int(x) for x in chunks))
@@ -49,9 +49,6 @@ class ChunkManager:
         # tmp storage
         self.__tmpstoragedir = os.path.join(basedir, "tmpstorage")
         self.__tmpstorage = ChunkStorage(self.__tmpstoragedir, mode=0o0700)
-
-        # masternode manager
-        self.__mn_manager = mn_manager
 
         # todolist
         self.__todolist = todolist
@@ -65,51 +62,32 @@ class ChunkManager:
     def __initialize(self):
         self.__logger.debug("Initializing")
 
-        # sanity check
-        self.__mn_manager.get(self.__nodeid)
-
         # initializations
-        self.__init_alias_digests()
         self.__recalculate_ownership_of_all_chunks()
         self.__purge_orphaned_storage_entries()
         self.__purge_orphaned_db_entries()
         self.__purge_orphaned_files()
         self.dump_internal_stats()
 
-    def __init_alias_digests(self):
-        for i in range(NetWorkSettings.REPLICATION_FACTOR):
-            digest = get_sha3_512_func_bytes(i.to_bytes(1, byteorder='big') + NetWorkSettings.ALIAS_SEED)
-            digest_int = int.from_bytes(digest, byteorder='big')
-            self.__logger.debug("Alias digest %s -> %s" % (i, int_to_hex(digest_int)))
-            self.__alias_digests.append(digest_int)
-
     def __recalculate_ownership_of_all_chunks(self):
         for chunkid in self.__chunk_table:
             self.__update_chunk_ownership(chunkid)
 
-    def __generate_aliases(self, chunkid):
-        for alias_digest in self.__alias_digests:
-            yield alias_digest ^ chunkid
-
     def __update_chunk_ownership(self, chunkid):
-        actual_chunk_is_ours = False
-
-        # maintain the alias table
-        alias_updates = []
-        for alt_key in self.__generate_aliases(chunkid):
-            alias_owned = self.__we_own_this_alt_key(alt_key)
-            alias_updates.append((alt_key, alias_owned))
-
-            if alias_owned:
-                # if we own the alias we own the chunk
-                actual_chunk_is_ours = True
+        alias_updates = self.__alias_manager.calculate_alias_updates(chunkid)
 
         # maintain alias db
+        # TODO: are we sure old entries will not accumulate here?
+
+        actual_chunk_is_ours = False
         for alt_key, alt_key_owned in alias_updates:
             if alt_key_owned:
                 # this alias points to us
                 # self.__logger.debug("Alt key %s is now OWNED (chunkid: %s)" % (alt_key, chunkid))
                 self.__alias_db[alt_key] = chunkid
+
+                # if we own the alias we own the chunk
+                actual_chunk_is_ours = True
             else:
                 # this alias no longer points to us
                 # self.__logger.debug("Alt key %s is now DISOWNED (chunkid: %s)" % (alt_key, chunkid))
@@ -121,7 +99,7 @@ class ChunkManager:
             # maintain file db
             chunk = self.__get_or_create_chunk(chunkid)
             if not chunk.is_ours:
-                # self.__logger.debug("Chunk %s is now OWNED" % chunkid)
+                # self.__logger.debug("Chunk %s is now OWNED" % chunkid_to_hex(chunkid))
                 chunk.is_ours = True
 
             # if we don't have it or it's not verified for some reason, fetch it
@@ -130,73 +108,34 @@ class ChunkManager:
 
                 # do we have it locally? - this can happen if we just booted up
                 if self.__storage.verify(chunkid):
-                    self.__logger.debug("Found chunk %s locally" % chunkid)
+                    self.__logger.debug("Found chunk %s locally" % chunkid_to_hex(chunkid))
                     data = self.__storage.get(chunkid)
 
                 # do we have it in tmp storage?
                 if data is None:
-                    data = self.__tmpstorage.get(chunkid)
-                    if data is not None:
-                        self.__logger.debug("Found chunk %s in temporary storage" % chunkid)
+                    if self.__tmpstorage.verify(chunkid):
+                        data = self.__tmpstorage.get(chunkid)
+                        self.__logger.debug("Found chunk %s in temporary storage" % chunkid_to_hex(chunkid))
 
                 # did we find the data?
                 if data is not None:
                     self.store_missing_chunk(chunkid, data)
                 else:
                     # we need to fetch the chunk using RPC
-                    self.__logger.info("Chunk %s missing, added to todolist" % chunkid)
-                    self.__todolist.put_nowait(("MISSING_CHUNK", chunkid))
-
+                    self.__logger.info("Chunk %s missing, added to todolist" % chunkid_to_hex((chunkid)))
+                    self.__add_missing_chunk_to_todolist(chunkid)
         else:
             # maintain file db
             chunk = self.__get_or_create_chunk(chunkid, create=False)
             if chunk is not None:
                 if chunk.is_ours:
-                    # self.__logger.debug("Chunk %s is now DISOWNED" % chunkid)
+                    self.__logger.debug("Chunk %s is now DISOWNED" % chunkid)
                     chunk.is_ours = False
 
         return actual_chunk_is_ours
 
-    def select_random_chunks_we_have(self, n):
-        chunks_we_have = []
-        for chunk_id, chunk in self.__file_db.items():
-            if chunk.exists and chunk.verified and chunk.is_ours:
-                chunks_we_have.append(chunk_id)
-
-        if len(chunks_we_have) == 0:
-            # we have no chunks yet
-            return []
-
-        return random.sample(chunks_we_have, n)
-
-    def find_owners_for_chunk(self, chunkid):
-        owners = set()
-        for alt_key in self.__generate_aliases(chunkid):
-            # found owner for this alt_key
-            owner, min_distance = None, None
-            for mn in self.__mn_manager.get_all():
-                distance = alt_key ^ mn.nodeid
-                if owner is None or distance < min_distance:
-                    owner = mn.nodeid
-                    min_distance = distance
-            owners.add(owner)
-        return owners
-
-    def find_other_owners_for_chunk(self, chunkid):
-        owners = self.find_other_owners_for_chunk(chunkid)
-        return owners - {self.__nodeid}
-
-    def __we_own_this_alt_key(self, alt_key):
-        my_distance = alt_key ^ self.__nodeid
-
-        # check if we are the closest to this chunk
-        store = True
-        for othernodeid in self.__mn_manager.get_other_nodes(self.__nodeid):
-            if alt_key ^ othernodeid < my_distance:
-                store = False
-                break
-
-        return store
+    def __add_missing_chunk_to_todolist(self, chunkid):
+        self.__todolist.put_nowait(("MISSING_CHUNK", chunkid_to_hex(chunkid)))
 
     def __purge_orphaned_storage_entries(self):
         self.__logger.info("Purging orphaned files")
@@ -238,8 +177,19 @@ class ChunkManager:
         chunk = self.__file_db[chunkid]
         return chunk
 
-    def update_mn_list(self, masternode_list):
-        added, removed = self.__mn_manager.update_maternode_list()
+    def select_random_chunks_we_have(self, n):
+        chunks_we_have = []
+        for chunk_id, chunk in self.__file_db.items():
+            if chunk.exists and chunk.verified and chunk.is_ours:
+                chunks_we_have.append(chunk_id)
+
+        if len(chunks_we_have) == 0:
+            # we have no chunks yet
+            return []
+
+        return random.sample(chunks_we_have, n)
+
+    def update_mn_list(self, added, removed):
         if len(added) + len(removed) > 0:
             if self.__nodeid in removed:
                 self.__logger.warning("I am removed from the MN list, aborting %s" % self.__nodeid)
@@ -252,11 +202,12 @@ class ChunkManager:
             self.__purge_orphaned_db_entries()
             self.dump_internal_stats("DB STAT After")
 
-    # def new_chunks_added_to_blockchain(self, chunkid):
-    #     self.dump_internal_stats("DB STAT Before")
-    #     self.__chunk_table.add(chunkid)
-    #     self.__update_chunk_ownership(chunkid)
-    #     self.dump_internal_stats("DB STAT After")
+    def add_chunks(self, chunks):
+        self.dump_internal_stats("DB STAT Before")
+        for chunkid in chunks:
+            self.__chunk_table.add(chunkid)
+            self.__update_chunk_ownership(chunkid)
+        self.dump_internal_stats("DB STAT After")
 
     def store_chunk_provisionally(self, chunkid, data):
         if chunkid != get_sha3_512_func_int(data):
@@ -268,10 +219,10 @@ class ChunkManager:
         if chunkid != get_sha3_512_func_int(data):
             raise ValueError("data does not match chunkid!")
 
-        if not self.__we_have_chunkid_in_chunk_table(chunkid):
+        if chunkid not in self.__chunk_table:
             raise KeyError("chunkid is not in chunk_table!")
 
-        if not self.__we_own_chunk(chunkid):
+        if not self.__alias_manager.we_own_chunk(chunkid):
             raise ValueError("chunkid does not belong to us!")
 
         # store chunk
@@ -282,7 +233,6 @@ class ChunkManager:
         chunk.verified = True
         chunk.is_ours = True
 
-        self.__update_chunk_ownership(chunkid)
         self.__logger.debug("Chunk %s is loaded" % chunkid)
 
     # def load_full_chunks(self, chunks):
@@ -303,34 +253,25 @@ class ChunkManager:
     #     else:
     #         return False
 
-    def __we_have_chunkid_in_chunk_table(self, chunkid):
-        return chunkid in self.__chunk_table
-
-    def __we_own_chunk(self, chunkid):
-        return self.__nodeid in self.find_owners_for_chunk(chunkid)
-
-    def we_have_chunk_on_disk(self, chunkid):
-        chunk = self.__file_db.get(chunkid)
-        return chunk is not None and chunk.exists and chunk.verified
-
     def get_chunk(self, chunkid):
+        if not self.__alias_manager.we_own_chunk(chunkid):
+            raise ValueError("We don't own this chunk!")
+
+        chunk = self.__file_db.get(chunkid)
+
         # try to find chunk in chunkstorage
-        if self.we_have_chunk_on_disk(chunkid):
-            if not self.__storage.verify(chunkid):
-                # TODO: We should resync the chunk and increment some counter
-                raise ValueError("Self-initiated spotcheck faield on us for chunk: %s" % chunkid)
-            else:
-                return self.__storage.get(chunkid)
+        if chunk is not None and chunk.exists and chunk.verified:
+            return self.__storage.get(chunkid)
 
         # fall back to try and find chunk in tmpstorage
         #  - for tickets that are registered through us, but not final on the blockchain yet, this is how we bootstrap
         #  - we are also graceful and can return chunks that are not ours...
-        chunk = self.__tmpstorage.get(chunkid)
-        if chunk is not None:
-            return chunk
+        if self.__tmpstorage.verify(chunkid):
+            return self.__tmpstorage.get(chunkid)
 
-        # we have failed to find the chunk
-        raise ValueError("We don't have this chunk: %s" % int_to_hex(chunkid))
+        # we have failed to find the chunk, add an item for our todolist
+        self.__logger.warning("We don't have a chunk available that we should have: %s" % chunkid_to_hex(chunkid))
+        self.__add_missing_chunk_to_todolist(chunkid)
 
     # DEBUG FUNCTIONS
     def dump_internal_stats(self, msg=""):
@@ -344,6 +285,6 @@ class ChunkManager:
 
     def dump_file_db(self):
         for k, v in self.__file_db.items():
-            self.__logger.debug("FILE %s: %s" % (int_to_hex(k), v))
+            self.__logger.debug("FILE %s: %s" % (chunkid_to_hex(k), v))
             self.__storage.get(k)
     # END

@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # we can use this to generate chunks, but right now we use the pregenerated test chunks
     # NUM_CHUNKS = 1000
     # CHUNK_SIZE = 1024*1024
-    # chunks = [(int_to_hex(k), v) for k,v in generate_chunks(NUM_CHUNKS, CHUNK_SIZE).items()]
+    # chunks = [(chunkid_to_hex(k), v) for k,v in generate_chunks(NUM_CHUNKS, CHUNK_SIZE).items()]
 
     # read test chunks from disk
     chunks = []

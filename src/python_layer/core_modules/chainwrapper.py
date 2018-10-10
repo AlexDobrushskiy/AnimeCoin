@@ -1,8 +1,10 @@
 from bitcoinrpc.authproxy import JSONRPCException
 
-from .helpers import bytes_from_hex, bytes_to_hex
-from .ticket_models import FinalIDTicket, FinalActivationTicket, FinalRegistrationTicket
-from .settings import NetWorkSettings
+from core_modules.logger import initlogging
+from core_modules.blockchain import NotEnoughConfirmations
+from core_modules.helpers import bytes_from_hex, bytes_to_hex
+from core_modules.ticket_models import FinalIDTicket, FinalActivationTicket, FinalRegistrationTicket
+from core_modules.settings import NetWorkSettings
 
 
 class BlockChainTicket:
@@ -12,7 +14,8 @@ class BlockChainTicket:
 
 
 class ChainWrapper:
-    def __init__(self, blockchain):
+    def __init__(self, nodenum, blockchain):
+        self.__logger = initlogging(nodenum, __name__)
         self.__blockchain = blockchain
 
     def get_tickets_by_type(self, tickettype):
@@ -98,6 +101,16 @@ class ChainWrapper:
             try:
                 ticket = self.retrieve_ticket(txid)
             except Exception as exc:
-                # print("ERROR parsing txid %s: %s" % (txid, exc))
+                # self.__logger.debug("ERROR parsing txid %s: %s" % (txid, exc))
                 continue
+            yield txid, ticket
+
+    def get_tickets_for_block(self, blocknum, confirmations=NetWorkSettings.REQUIRED_CONFIRMATIONS):
+        for txid in self.__blockchain.get_txids_for_block(blocknum, confirmations):
+            try:
+                ticket = self.retrieve_ticket(txid, validate=False)
+            except Exception as exc:
+                # self.__logger.debug("ERROR parsing txid %s: %s" % (txid, exc))
+                continue
+
             yield txid, ticket

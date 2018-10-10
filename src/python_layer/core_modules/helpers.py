@@ -37,6 +37,10 @@ def int_to_hex(digest):
     return SHA2_HEXFORMAT % digest
 
 
+def chunkid_to_hex(digest):
+    return SHA3_HEXFORMAT % digest
+
+
 def bytes_from_hex(data):
     return bytes.fromhex(data)
 
@@ -58,15 +62,3 @@ def require_true(param, msg=""):
     # optimizations turned on
     if not param:
         raise AssertionError(msg)
-
-
-# TEST FUNCTIONS
-def generate_chunks(num_chunks, chunk_size):
-    chunks = {}
-    for i in range(num_chunks):
-        data = getrandbytes(chunk_size)
-        data_digest = get_intdigest(data)
-        data_key = data_digest
-        chunks[data_key] = data
-    return chunks
-# END

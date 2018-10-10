@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect, Http404, HttpResponse
 from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
 from core_modules.helpers import bytes_to_int, hex_to_int
 
-from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager, call_parallel_rpcs
+from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager, aliasmanager, call_parallel_rpcs
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
 
 
@@ -235,15 +235,23 @@ def explorer(request, functionality, id=""):
 def chunk(request, chunkid_hex):
     chunkid = hex_to_int(chunkid_hex)
 
-    # TODO: find masternodes properly
-    # mn = nodemanager.find_mns_for_chunkid(chunkid)
-    mn = nodemanager.get_masternode_ordering(0)[0]
+    image_data = None
 
-    tasks = []
-    tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
+    # find MNs that have this chunk
+    owners = aliasmanager.find_other_owners_for_chunk(chunkid)
+    for owner in owners:
+        mn = nodemanager.get(owner)
 
-    results = call_parallel_rpcs(tasks)
-    image_data = results[0][1]
+        tasks = []
+        tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
+
+        results = call_parallel_rpcs(tasks)
+        image_data = results[0][1]
+        if image_data is not None:
+            break
+
+    if image_data is None:
+        raise Http404
 
     # TODO: set content type properly
     return HttpResponse(image_data, content_type="image/png")

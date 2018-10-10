@@ -1,18 +1,21 @@
+import os
 import asyncio
 import logging
 
 from django.conf import settings
 from core_modules.blockchain import BlockChain
 from core_modules.chainwrapper import ChainWrapper
+from core_modules.helpers import get_intdigest
 from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_discovery import read_settings_file
+from core_modules.chunkmanager_modules.aliasmanager import AliasManager
 
 
 def initlogging():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter(' %(asctime)s - ' + __name__ + ' - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(' %(asctime)s - ' + "%s - %s" % (__name__, os.getpid()) + ' - %(levelname)s - %(message)s')
     consolehandler = logging.StreamHandler()
     consolehandler.setFormatter(formatter)
     logger.addHandler(consolehandler)
@@ -26,7 +29,7 @@ def get_blockchain():
 
 
 def get_chainwrapper(blockchain):
-    return ChainWrapper(blockchain)
+    return ChainWrapper(-1, blockchain)
 
 
 def call_parallel_rpcs(tasks):
@@ -60,6 +63,11 @@ privkey = open(settings.PASTEL_PRIVKEY, "rb").read()
 pubkey = open(settings.PASTEL_PUBKEY, "rb").read()
 
 # TODO: remove this hack
-import os
 PASTEL_TEST_NODES_DIR = os.path.dirname(settings.PASTEL_BASEDIR)
-nodemanager = NodeManager(logger, privkey, pubkey, PASTEL_TEST_NODES_DIR)
+NODENUM = int(os.path.basename(settings.PASTEL_BASEDIR).lstrip("node"))
+NODEID = get_intdigest(pubkey)
+
+nodemanager = NodeManager(NODENUM, privkey, pubkey)
+nodemanager.update_masternode_list(PASTEL_TEST_NODES_DIR)
+
+aliasmanager = AliasManager(NODENUM, NODEID, nodemanager)

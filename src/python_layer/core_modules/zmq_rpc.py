@@ -4,10 +4,10 @@ import zmq
 import zmq.asyncio
 import uuid
 
-from core_modules.blackbox_modules.helpers import get_sha3_512_func_hex
-from .settings import NetWorkSettings
+from core_modules.blackbox_modules.helpers import get_sha3_512_func_hex, get_sha3_512_func_int
+from core_modules.logger import initlogging
 from core_modules.rpc_serialization import pack_and_sign, verify_and_unpack
-from .helpers import get_hexdigest, hex_to_int, int_to_hex
+from core_modules.helpers import get_hexdigest, hex_to_int, chunkid_to_hex
 
 
 class RPCException(Exception):
@@ -15,16 +15,15 @@ class RPCException(Exception):
 
 
 class RPCClient:
-    def __init__(self, logger, privkey, pubkey, nodeid, server_ip, server_port, mnpubkey):
+    def __init__(self, nodenum, privkey, pubkey, nodeid, server_ip, server_port, mnpubkey):
         if type(nodeid) is not int:
             raise TypeError("nodeid must be int!")
+
+        self.__logger = initlogging(nodenum, __name__)
 
         # variables of the client
         self.__privkey = privkey
         self.__pubkey = pubkey
-
-        # pubkey should be public
-        self.pubkey = self.__pubkey
 
         # variables of the server (the MN)
         self.__server_nodeid = nodeid
@@ -32,8 +31,11 @@ class RPCClient:
         self.__server_port = server_port
         self.__server_pubkey = mnpubkey
 
-        self.__logger = logger
         self.__zmq = None
+
+        # pubkey and nodeid should be public for convenience
+        self.pubkey = self.__pubkey
+        self.nodeid = nodeid
 
         # TODO
         self.__reputation = None
@@ -119,10 +121,10 @@ class RPCClient:
     async def send_rpc_spotcheck(self, chunkid, start, end):
         await asyncio.sleep(0)
 
-        self.__logger.debug("SPOTCHECK REQUEST to %s, chunkid: %s" % (self, int_to_hex(chunkid)))
+        self.__logger.debug("SPOTCHECK REQUEST to %s, chunkid: %s" % (self, chunkid_to_hex(chunkid)))
 
         # chunkid is bignum so we need to serialize it
-        chunkid_str = int_to_hex(chunkid)
+        chunkid_str = chunkid_to_hex(chunkid)
         request_packet = self.__return_rpc_packet(self.__server_pubkey, ["SPOTCHECK_REQ", {"chunkid": chunkid_str,
                                                                                            "start": start,
                                                                                            "end": end}])
@@ -144,10 +146,10 @@ class RPCClient:
     async def send_rpc_fetchchunk(self, chunkid):
         await asyncio.sleep(0)
 
-        self.__logger.debug("FETCHCHUNK REQUEST to %s, chunkid: %s" % (self, int_to_hex(chunkid)))
+        self.__logger.debug("FETCHCHUNK REQUEST to %s, chunkid: %s" % (self, chunkid_to_hex(chunkid)))
 
         # chunkid is bignum so we need to serialize it
-        chunkid_str = int_to_hex(chunkid)
+        chunkid_str = chunkid_to_hex(chunkid)
         request_packet = self.__return_rpc_packet(self.__server_pubkey, ["FETCHCHUNK_REQ", {"chunkid": chunkid_str}])
 
         response_data = await self.__send_rpc_to_mn("FETCHCHUNK_RESP", request_packet)
@@ -164,7 +166,7 @@ class RPCClient:
         if chunk is not None:
             digest = get_sha3_512_func_hex(chunk)
             if digest != chunkid_str:
-                raise ValueError("Got chunk data that does not match the digest!")
+                raise ValueError("Got chunk data that does not match the digest: %s != %s" % (digest, chunkid_str))
 
         return chunk
 
@@ -179,9 +181,10 @@ class RPCClient:
 
 
 class RPCServer:
-    def __init__(self, logger, nodeid, ip, port, privkey, pubkey):
-        self.__logger = logger
-        self.__nodeid = nodeid
+    def __init__(self, nodenum, ip, port, privkey, pubkey):
+        self.__logger = initlogging(nodenum, __name__)
+
+        self.__nodenum = nodenum
         self.__ip = ip
         self.__port = port
         self.__privkey = privkey
@@ -189,7 +192,7 @@ class RPCServer:
 
         # our RPC socket
         self.__zmq = zmq.asyncio.Context().socket(zmq.ROUTER)
-        self.__zmq.setsockopt(zmq.IDENTITY, bytes(str(self.__nodeid), "utf-8"))
+        self.__zmq.setsockopt(zmq.IDENTITY, bytes(str(self.__nodenum), "utf-8"))
         self.__zmq.bind("tcp://%s:%s" % (self.__ip, self.__port))
 
         # define our RPCs

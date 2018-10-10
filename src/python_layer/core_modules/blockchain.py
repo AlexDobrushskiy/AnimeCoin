@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from http.client import CannotSendRequest
@@ -8,6 +9,9 @@ from core_modules.blackbox_modules.blockchain import store_data_in_utxo,\
 from core_modules.settings import NetWorkSettings
 
 # TODO: type check all these rpc calls, so that we can rely on it better
+
+class NotEnoughConfirmations(Exception):
+    pass
 
 
 class BlockChain:
@@ -118,12 +122,24 @@ class BlockChain:
         return self.__call_jsonrpc("generate", int(n))
 
     def search_chain(self, confirmations=NetWorkSettings.REQUIRED_CONFIRMATIONS):
-        blockcount = int(self.__call_jsonrpc("getblockcount") - 1)
+        blockcount = self.getblockcount() - 1
         for blocknum in range(1, blockcount + 1):
-            block = self.__call_jsonrpc("getblock", (str(blocknum)))
-            if block["confirmations"] < confirmations:
-                break
+            for txid in self.get_txids_for_block(blocknum, confirmations=confirmations):
+                yield txid
 
+    def get_txids_for_block(self, blocknum, confirmations):
+        try:
+            block = self.getblock(str(blocknum))
+        except JSONRPCException as exc:
+            if exc.code == -8:
+                # Block height out of range
+                raise NotEnoughConfirmations
+            else:
+                raise
+
+        if block["confirmations"] < confirmations:
+            raise NotEnoughConfirmations
+        else:
             for txid in block["tx"]:
                 yield txid
 

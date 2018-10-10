@@ -1,7 +1,7 @@
 import os
 
 from core_modules.blackbox_modules.helpers import get_sha3_512_func_int
-from .helpers import int_to_hex, hex_to_int
+from .helpers import chunkid_to_hex, hex_to_int
 
 
 class ChunkStorage:
@@ -19,7 +19,7 @@ class ChunkStorage:
             raise TypeError("Chunkname must be int!")
 
         # convert integer to filename in hex
-        hexchunkname = int_to_hex(chunkname)
+        hexchunkname = chunkid_to_hex(chunkname)
 
         # max 4096 level 1 dirs, containing max 4096 level2 dirs, containing files
         dir1 = hexchunkname[0:3]
@@ -49,7 +49,10 @@ class ChunkStorage:
     def delete(self, chunkname):
         dirname, filename = self.__derive_fs_file_name(chunkname)
 
-        os.unlink(filename)
+        try:
+            os.unlink(filename)
+        except FileNotFoundError:
+            pass
 
         # TODO: clean up directories that became empty
 

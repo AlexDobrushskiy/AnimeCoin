@@ -1,17 +1,22 @@
 import os
 import asyncio
 
+from core_modules.logger import initlogging
+from core_modules.chainwrapper import NotEnoughConfirmations
 from core_modules.chunkmanager import ChunkManager
 from core_modules.chunkmanager_modules.chunkmanager_rpc import ChunkManagerRPC
+from core_modules.chunkmanager_modules.aliasmanager import AliasManager
+from core_modules.masternode_ticketing import FinalActivationTicket
 from core_modules.zmq_rpc import RPCException, RPCServer
 from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_ticketing import ArtRegistrationServer
-from core_modules.helpers import get_hexdigest, get_intdigest, hex_to_int, int_to_hex, require_true
+from core_modules.helpers import get_hexdigest, get_intdigest, bytes_to_int, hex_to_int, require_true
 
 
 class MasterNodeLogic:
-    def __init__(self, name, logger, chainwrapper, basedir, privkey, pubkey, ip, port, chunks):
-        self.__name = name
+    def __init__(self, nodenum, chainwrapper, basedir, privkey, pubkey, ip, port, chunks):
+        self.__name = "node%s" % nodenum
+        self.__nodenum = nodenum
         self.__nodeid = get_intdigest(pubkey)
         self.__basedir = basedir
         self.__privkey = privkey
@@ -19,33 +24,38 @@ class MasterNodeLogic:
         self.__ip = ip
         self.__port = port
 
-        self.__logger = logger
-        self._chainwrapper = chainwrapper
+        self.__logger = initlogging(self.__nodenum, __name__)
+        self.__chainwrapper = chainwrapper
 
         self.__todolist = asyncio.Queue()
 
         # masternode manager
-        # TODO: remove this hack
-        nodes_basedir = os.path.dirname(os.path.dirname(self.__basedir))
-        self.__mn_manager = NodeManager(self.__logger, self.__privkey, self.__pubkey, nodes_basedir)
+        self.__mn_manager = NodeManager(self.__nodenum, self.__privkey, self.__pubkey)
+
+        # alias manager
+        self.__aliasmanager = AliasManager(self.__nodenum, self.__nodeid, self.__mn_manager)
 
         # chunk manager
-        self.__chunkmanager = ChunkManager(self.__logger, self.__nodeid,
+        self.__chunkmanager = ChunkManager(self.__nodenum, self.__nodeid,
                                            basedir,
                                            chunks,
-                                           self.__mn_manager, self.__todolist)
+                                           self.__aliasmanager, self.__todolist)
 
-        self.__chunkmanager_rpc = ChunkManagerRPC(self.__logger, self.__chunkmanager, self.__mn_manager)
+        # refresh masternode list
+        self.__refresh_masternode_list()
+
+        self.__chunkmanager_rpc = ChunkManagerRPC(self.__nodenum, self.__chunkmanager, self.__mn_manager,
+                                                  self.__aliasmanager)
 
         # art registration server
         self.__artregistrationserver = ArtRegistrationServer(self.__privkey, self.__pubkey,
-                                                             self._chainwrapper, self.__chunkmanager)
+                                                             self.__chainwrapper, self.__chunkmanager)
 
         # functions exposed from chunkmanager
         # self.load_full_chunks = self.__chunkmanager.load_full_chunks
 
         # start rpc server
-        self.__rpcserver = RPCServer(self.__logger, self.__nodeid, self.__ip, self.__port,
+        self.__rpcserver = RPCServer(self.__nodenum, self.__ip, self.__port,
                                      self.__privkey, self.__pubkey)
 
         # TODO: the are blocking calls. We should turn them into coroutines if possible!
@@ -58,6 +68,55 @@ class MasterNodeLogic:
         self.__artregistrationserver.register_rpcs(self.__rpcserver)
 
         self.issue_random_tests_forever = self.__chunkmanager_rpc.issue_random_tests_forever
+
+    def __refresh_masternode_list(self):
+        dirname = os.path.dirname(os.path.dirname(self.__basedir))
+        added, removed = self.__mn_manager.update_masternode_list(dirname)
+        self.__chunkmanager.update_mn_list(added, removed)
+
+    async def run_masternode_parser(self):
+        while True:
+            await asyncio.sleep(1)
+            self.__refresh_masternode_list()
+
+    async def run_ticket_parser(self):
+        # sleep to start fast
+        await asyncio.sleep(0)
+
+        current_block = 0
+        while True:
+            try:
+                for txid, ticket in self.__chainwrapper.get_tickets_for_block(current_block):
+                    # give others some room to breathe
+                    await asyncio.sleep(0)
+
+                    # only parse FinalActivationTickets for now
+                    if type(ticket) == FinalActivationTicket:
+                        # validate ticket
+                        ticket.validate(self.__chainwrapper)
+
+                        # fetch corresponding finalregticket
+                        final_regticket = self.__chainwrapper.retrieve_ticket(ticket.ticket.registration_ticket_txid)
+                        final_regticket.validate(self.__chainwrapper)
+
+                        # get the actual regticket
+                        regticket = final_regticket.ticket
+
+                        # get the chunkids that we need to store
+                        chunks = []
+                        for chunkid_bytes in [regticket.thumbnailhash] + regticket.lubyhashes:
+                            chunkid = bytes_to_int(chunkid_bytes)
+                            chunks.append(chunkid)
+
+                        # add this chunkid to chunkmanager
+                        self.__chunkmanager.add_chunks(chunks)
+            except NotEnoughConfirmations:
+                # this block hasn't got enough confirmations yet
+                await asyncio.sleep(1)
+            else:
+                # successfully parsed this block
+                current_block += 1
+                await asyncio.sleep(.1)
 
     async def run_heartbeat_forever(self):
         while True:
@@ -94,11 +153,12 @@ class MasterNodeLogic:
 
             itemtype, itemdata = todoitem
             if itemtype == "MISSING_CHUNK":
-                chunkid = itemdata
+                chunkid_hex = itemdata
+                chunkid = hex_to_int(chunkid_hex)
                 self.__logger.debug("Fetching chunk %s" % chunkid)
 
                 found = False
-                for owner in self.__chunkmanager.find_other_owners_for_chunk(chunkid):
+                for owner in self.__aliasmanager.find_other_owners_for_chunk(chunkid):
                     mn = self.__mn_manager.get(owner)
 
                     try:
@@ -106,22 +166,23 @@ class MasterNodeLogic:
                     except RPCException as exc:
                         self.__logger.info("FETCHCHUNK RPC FAILED for node %s with exception %s" % (owner, exc))
                         continue
-                    else:
-                        if chunk is None:
-                            # chunk was not found
-                            continue
 
-                        found = True
-                        self.__logger.debug("Fetched chunk %s" % len(chunk))
-                        break
+                    if chunk is None:
+                        # chunk was not found
+                        continue
+
+                    found = True
+                    break
 
                 # nobody has this chunk
                 if not found:
                     # TODO: fall back to reconstruct it from luby blocks
-                    raise RuntimeError("Unable to fetch chunk %s!" % chunkid)
-
-                # we have the chunk, store it!
-                self.__chunkmanager.store_missing_chunk(chunkid, chunk)
+                    self.__logger.error("Unable to fetch chunk %s, luby reconstruction is not yet implemented!" % chunkid)
+                    # raise RuntimeError("Unable to fetch chunk %s!" % chunkid)
+                else:
+                    # we have the chunk, store it!
+                    self.__logger.debug("Fetched chunk %s!" % chunkid)
+                    self.__chunkmanager.store_missing_chunk(chunkid, chunk)
 
                 # mark entry as done
                 self.__todolist.task_done()

@@ -5,19 +5,16 @@ from core_modules.zmq_rpc import RPCClient
 from core_modules.helpers import get_intdigest, hex_to_int
 from core_modules.masternode_discovery import discover_nodes
 from core_modules.settings import NetWorkSettings
+from core_modules.logger import initlogging
 
 
 class NodeManager:
-    def __init__(self, logger, privkey, pubkey, configdir):
+    def __init__(self, nodenum, privkey, pubkey):
         self.__masternodes = {}
-        self.__logger = logger
+        self.__nodenum = nodenum
+        self.__logger = initlogging(nodenum, __name__)
         self.__privkey = privkey
         self.__pubkey = pubkey
-
-        # TODO: remove this
-        self.__configdir = configdir
-        if self.__configdir is not None:
-            self.__update_masternode_list()
 
     def get(self, nodeid):
         return self.__masternodes[nodeid]
@@ -47,21 +44,27 @@ class NodeManager:
             mnlist = self.get_all()[1:4]
             return mnlist
 
-    def __update_masternode_list(self):
+    def update_masternode_list(self, configdir):
         # TODO: this list should come from cNode
-        settings_list = discover_nodes(self.__configdir)
+        settings_list = discover_nodes(configdir)
 
         # parse new list
         new_mn_list = {}
         for settings in settings_list:
             pubkey = open(settings["pubkey"], "rb").read()
             nodeid = get_intdigest(pubkey)
-            new_mn_list[nodeid] = RPCClient(self.__logger, self.__privkey, self.__pubkey,
+            new_mn_list[nodeid] = RPCClient(self.__nodenum, self.__privkey, self.__pubkey,
                                             nodeid, settings["ip"], settings["pyrpcport"], pubkey)
 
         old = set(self.__masternodes.keys())
         new = set(new_mn_list.keys())
         added = new - old
         removed = old - new
+
+        for i in added:
+            self.__logger.debug("Added MN %s" % i)
+        for i in removed:
+            self.__logger.debug("Removed MN %s" % i)
+
         self.__masternodes = new_mn_list
         return added, removed

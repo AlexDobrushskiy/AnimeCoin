@@ -3,14 +3,16 @@ import asyncio
 
 from core_modules.zmq_rpc import RPCException
 from core_modules.blackbox_modules.helpers import get_sha3_512_func_int, get_sha3_512_func_bytes, get_sha3_512_func_hex
-from core_modules.helpers import hex_to_int, int_to_hex, require_true, get_hexdigest
+from core_modules.helpers import hex_to_int, chunkid_to_hex, require_true, get_hexdigest
+from core_modules.logger import initlogging
 from core_modules.settings import NetWorkSettings
 
 
 class ChunkManagerRPC:
-    def __init__(self, logger, chunkmanager, mn_manager):
-        self.__logger = logger
+    def __init__(self, nodenum, chunkmanager, mn_manager, aliasmanager):
+        self.__logger = initlogging(nodenum, __name__)
         self.__chunkmanager = chunkmanager
+        self.__aliasmanager = aliasmanager
         self.__mn_manager = mn_manager
 
     async def issue_random_tests_forever(self, waittime, number_of_chunks=1):
@@ -19,7 +21,7 @@ class ChunkManagerRPC:
 
             chunks = self.__chunkmanager.select_random_chunks_we_have(number_of_chunks)
             for chunkid in chunks:
-                self.__logger.debug("Selected chunk %s for random check" % int_to_hex(chunkid))
+                self.__logger.debug("Selected chunk %s for random check" % chunkid_to_hex(chunkid))
 
                 # get chunk
                 data = self.__chunkmanager.get_chunk(chunkid)
@@ -34,7 +36,7 @@ class ChunkManagerRPC:
                 self.__logger.debug("Digest for range %s - %s is: %s" % (start, end, digest))
 
                 # find owners for all the alt keys who are not us
-                owners = self.__chunkmanager.find_other_owners_for_chunk(chunkid)
+                owners = self.__aliasmanager.find_other_owners_for_chunk(chunkid)
 
                 # call RPC on all other MNs
                 for owner in owners:
@@ -52,11 +54,6 @@ class ChunkManagerRPC:
                             self.__logger.debug("SPOTCHECK SUCCESS for node %s for chunk: %s" % (owner, digest))
 
                     # TODO: track successes/errors
-
-    def __return_chunk_data_if_valid_and_owned_and_we_have_it(self, chunkid):
-        # get chunk from disk
-        data = self.__chunkmanager.get_chunk(chunkid)
-        return data
 
     def receive_rpc_spotcheck(self, data):
         # NOTE: data is untrusted!
@@ -87,7 +84,7 @@ class ChunkManagerRPC:
             raise ValueError("start > CHUNKSIZE or end > CHUNKSIZE")
 
         # we don't actually need the full chunk here, but we get it anyway as we are running verify() on it
-        chunk = self.__return_chunk_data_if_valid_and_owned_and_we_have_it(chunkid)
+        chunk = self.__chunkmanager.get_chunk(chunkid)
 
         # generate digest
         data = chunk[start:end]
@@ -109,6 +106,6 @@ class ChunkManagerRPC:
         chunkid = hex_to_int(data["chunkid"])
 
         # TODO: error handling
-        chunk = self.__return_chunk_data_if_valid_and_owned_and_we_have_it(chunkid)
+        chunk = self.__chunkmanager.get_chunk(chunkid)
 
         return {"chunk": chunk}

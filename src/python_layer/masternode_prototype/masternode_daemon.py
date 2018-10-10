@@ -7,6 +7,7 @@ import subprocess
 
 import bitcoinrpc
 
+from core_modules.logger import initlogging
 from core_modules.settings import MNDeamonSettings, NetWorkSettings
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 from core_modules.blockchain import BlockChain
@@ -17,12 +18,12 @@ from masternode_prototype.masternode_logic import MasterNodeLogic
 class MasterNodeDaemon:
     def __init__(self, settings, addnodes=None):
         # initialize logging
-        self.__initlogging(settings["nodename"])
+        self.__logger = initlogging(int(settings["nodename"]), __name__)
         self.__logger.debug("Started logger")
 
         self.__settings = MNDeamonSettings(settings)
         self.__addnodes = addnodes
-        self.__nodeid = settings["nodeid"]
+        self.__nodenum = settings["nodeid"]
 
         # processes
         self.__cmnprocess = None
@@ -38,14 +39,13 @@ class MasterNodeDaemon:
         self.blockchain = self.__connect_to_daemon()
 
         # set up ChainWrapper
-        self.chainwrapper = ChainWrapper(self.blockchain)
+        self.chainwrapper = ChainWrapper(self.__nodenum, self.blockchain)
 
         # load or generate keys
         self.__load_keys()
 
         # spawn logic
-        self.logic = MasterNodeLogic(name="node%s" % self.__nodeid,
-                                     logger=self.__logger,
+        self.logic = MasterNodeLogic(nodenum=self.__nodenum,
                                      chainwrapper=self.chainwrapper,
                                      basedir=self.__settings.basedir,
                                      privkey=self.__privkey,
@@ -53,15 +53,6 @@ class MasterNodeDaemon:
                                      ip=self.__settings.ip,
                                      port=self.__settings.pyrpcport,
                                      chunks=[])
-
-    def __initlogging(self, name):
-        self.__logger = logging.getLogger(name)
-        self.__logger.setLevel(logging.DEBUG)
-
-        formatter = logging.Formatter(' %(asctime)s - ' + name + ' - %(levelname)s - %(message)s')
-        consolehandler = logging.StreamHandler()
-        consolehandler.setFormatter(formatter)
-        self.__logger.addHandler(consolehandler)
 
     def __load_keys(self):
         # TODO: rethink key generation and audit storage process
@@ -160,6 +151,8 @@ class MasterNodeDaemon:
         loop.add_signal_handler(signal.SIGTERM, loop.stop)
 
         loop.create_task(self.logic.zmq_run_forever())
+        loop.create_task(self.logic.run_masternode_parser())
+        loop.create_task(self.logic.run_ticket_parser())
         # loop.create_task(mn.logic.run_heartbeat_forever())
         # loop.create_task(self.logic.run_ping_test_forever())
         # loop.create_task(mn.logic.issue_random_tests_forever(1))
