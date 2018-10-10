@@ -30,7 +30,6 @@ def read_settings_file(basedir):
     # TODO: cofidy these settings in a concrete model and validate that everything we need is set
     settings["cdaemon_conf"] = settingsfile
     settings["nodename"] = nodename
-    settings["nodeid"] = int(nodename.lstrip("node"))
     settings["datadir"] = basedir                       # TODO: these names are not great
     settings["basedir"] = os.path.join(basedir, "pymn")
     settings["ip"] = "127.0.0.1"

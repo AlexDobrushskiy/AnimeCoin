@@ -23,7 +23,7 @@ class MasterNodeDaemon:
 
         self.__settings = MNDeamonSettings(settings)
         self.__addnodes = addnodes
-        self.__nodenum = settings["nodeid"]
+        self.__nodenum = settings["nodename"]
 
         # processes
         self.__cmnprocess = None

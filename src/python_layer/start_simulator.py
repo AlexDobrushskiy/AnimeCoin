@@ -31,10 +31,10 @@ class Simulator:
         return logger
 
     def spawn_masternode(self, settings, addnodes):
-        self.__logger.debug("Starting masternode: %s" % settings["nodeid"])
+        self.__logger.debug("Starting masternode: %s" % settings["nodename"])
         mn = MasterNodeDaemon(settings=settings, addnodes=addnodes)
         mn.run_event_loop()
-        self.__logger.debug("Stopped spawned masternode: %s" % settings["nodeid"])
+        self.__logger.debug("Stopped spawned masternode: %s" % settings["nodename"])
 
     def start_masternode_in_new_process(self, settings_list, addnodes):
         masternodes = {}

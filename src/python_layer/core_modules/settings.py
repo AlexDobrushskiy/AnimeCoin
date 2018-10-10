@@ -15,7 +15,6 @@ class MNDeamonSettings:
         self.rpcport = ensure_type_of_field(settings, "rpcport", int)
         self.listenonion = ensure_type_of_field(settings, "listenonion", str)
         self.nodename = ensure_type_of_field(settings, "nodename", str)
-        self.nodeid = ensure_type_of_field(settings, "nodeid", int)
         self.datadir = ensure_type_of_field(settings, "datadir", str)
         self.basedir = ensure_type_of_field(settings, "basedir", str)
         self.ip = ensure_type_of_field(settings, "ip", str)
