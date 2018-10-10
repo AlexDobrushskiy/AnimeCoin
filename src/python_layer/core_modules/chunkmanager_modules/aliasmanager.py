@@ -1,4 +1,4 @@
-from core_modules.blackbox_modules.helpers import get_sha3_512_func_bytes
+from core_modules.helpers import get_pynode_digest_int
 from core_modules.settings import NetWorkSettings
 from core_modules.logger import initlogging
 
@@ -13,9 +13,8 @@ class AliasManager:
         self.__alias_digests = []
 
         for i in range(NetWorkSettings.REPLICATION_FACTOR):
-            digest = get_sha3_512_func_bytes(i.to_bytes(1, byteorder='big') + NetWorkSettings.ALIAS_SEED)
-            digest_int = int.from_bytes(digest, byteorder='big')
-            # self.__logger.debug("Alias digest %s -> %s" % (i, int_to_hex(digest_int)))
+            digest_int = get_pynode_digest_int(i.to_bytes(1, byteorder='big') + NetWorkSettings.ALIAS_SEED)
+            # self.__logger.debug("Alias digest %s -> %s" % (i, chunkid_to_hex(digest_int)))
             self.__alias_digests.append(digest_int)
 
     def __generate_aliases(self, chunkid):

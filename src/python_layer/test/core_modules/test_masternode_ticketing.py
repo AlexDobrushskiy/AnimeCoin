@@ -46,7 +46,6 @@ class TestArtRegistrationWithMockMNs(unittest.TestCase):
         consolehandler.setFormatter(formatter)
         logger.addHandler(consolehandler)
 
-
         self.nodemanager = mock.MagicMock()
         self.chainwrapper = MockChainWrapper()
 

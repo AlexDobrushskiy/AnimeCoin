@@ -3,16 +3,14 @@ import msgpack
 
 from PIL import Image
 
-from .blackbox_modules.nsfw import NSFWDetector
-from .blackbox_modules.helpers import get_sha3_512_func_bytes
+from core_modules.helpers import get_pynode_digest_bytes, require_true
 from core_modules.blackbox_modules.signatures import pastel_id_verify_signature_with_public_key_func
-from .model_validators import FieldValidator, StringField, IntegerField, FingerprintField, SHA3512Field,\
+from core_modules.model_validators import FieldValidator, StringField, IntegerField, FingerprintField, SHA3512Field,\
     LubyChunkHashField, LubyChunkField, ImageField, ThumbnailField, TXIDField, SignatureField, PubkeyField,\
     LubySeedField, BlockChainAddressField, UnixTimeField, StringChoiceField
-from .blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas
-from .blackbox_modules import luby
-from .settings import NetWorkSettings
-from .helpers import require_true, bytes_from_hex, bytes_to_hex
+from core_modules.blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas
+from core_modules.blackbox_modules import luby
+from core_modules.settings import NetWorkSettings
 
 
 # ===== VALIDATORS ===== #
@@ -136,7 +134,7 @@ class TicketModelBase:
         return msgpack.unpackb(packed, raw=False)
 
     def get_hash(self):
-        return get_sha3_512_func_bytes(self.serialize())
+        return get_pynode_digest_bytes(self.serialize())
 
     def validate(self, *args, **kwargs):
         raise NotImplementedError()
@@ -152,7 +150,7 @@ class ImageData(TicketModelBase):
     }
 
     def get_artwork_hash(self):
-        return get_sha3_512_func_bytes(self.image)
+        return get_pynode_digest_bytes(self.image)
 
     def generate_fingerprints(self):
         fingerprints = DupeDetector().compute_deep_learning_features(self.image)
@@ -185,11 +183,11 @@ class ImageData(TicketModelBase):
     def get_luby_hashes(self):
         hashes = []
         for chunk in self.lubychunks:
-            hashes.append(get_sha3_512_func_bytes(chunk))
+            hashes.append(get_pynode_digest_bytes(chunk))
         return hashes
 
     def get_thumbnail_hash(self):
-        return get_sha3_512_func_bytes(self.thumbnail)
+        return get_pynode_digest_bytes(self.thumbnail)
 
     def validate(self):
         # verify luby chunks

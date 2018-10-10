@@ -7,7 +7,7 @@ from binascii import unhexlify, hexlify
 from decimal import Decimal, getcontext
 getcontext().prec = 16
 
-from core_modules.helpers import get_hexdigest, get_digest, require_true
+from core_modules.helpers import get_cnode_digest_hex, get_cnode_digest_bytes, require_true
 from core_modules.settings import NetWorkSettings
 
 FEEPERKB = Decimal(0.0001)
@@ -124,7 +124,7 @@ def store_data_in_utxo(jsonrpc, input_data):
     # print('Now storing preparing file for storage in blockchain. Original uncompressed file size in bytes: ' + str(
     #     uncompressed_file_size_in_bytes) + ' bytes')
 
-    input_data_hash = get_digest(input_data)
+    input_data_hash = get_cnode_digest_bytes(input_data)
 
     # TODO: remove unnecessary hashes
     compression_dictionary_file_hash = input_data_hash
@@ -211,7 +211,7 @@ def retrieve_data_from_utxo(jsonrpc, blockchain_transaction_id):
     reconstructed_encoded_zstd_compressed_data = reconstructed_encoded_zstd_compressed_data_padded[
                                                            0:-calculated_padding_length]
     output_data = unhexstr(reconstructed_encoded_zstd_compressed_data)
-    hash_of_output_data = get_hexdigest(output_data)
+    hash_of_output_data = get_cnode_digest_hex(output_data)
     require_true(hash_of_output_data == input_data_hash)
     # print('Successfully reconstructed and decompressed data!')
     return output_data

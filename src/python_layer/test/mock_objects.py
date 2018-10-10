@@ -1,7 +1,7 @@
 import pprint
 
 from collections import OrderedDict
-from core_modules.helpers import get_digest, get_hexdigest, get_intdigest, bytes_from_hex, bytes_to_hex
+from core_modules.helpers import get_cnode_digest_bytes, get_cnode_digest_hex, get_nodeid_from_pubkey, bytes_from_hex, bytes_to_hex
 
 
 class DummyTicket:
@@ -31,7 +31,7 @@ class MockChainWrapper:
         return abs(txids.index(atxid) - txids.index(btxid))
 
     def store_ticket(self, ticket):
-        txid = get_hexdigest(ticket.serialize())
+        txid = get_cnode_digest_hex(ticket.serialize())
         self.__storage[txid] = ticket
         return txid
 

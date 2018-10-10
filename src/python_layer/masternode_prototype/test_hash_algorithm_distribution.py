@@ -3,7 +3,7 @@ import hashlib
 
 from datetime import datetime as dt, timedelta as td
 
-from core_modules.helpers import get_digest, getrandbytes
+from core_modules.helpers import get_cnode_digest_bytes, getrandbytes
 
 NODE_SEED = b'/Q\xe0\xbftE+\xff4YpA\t\x96\xa1`\xc6)\xe2\xad\x0c\xf4\xa9\xf0\xa9_Ir\xc0\x8aw\xb0'
 KEY_SEED = b"\r\xfd\x9a\x84'\x06>\xf8\x0e\xb4[\xcc\x94\xb8\x08m\xfa\xd9\x0fV`\\s*\x87H>d\x95Y^$"
@@ -50,7 +50,7 @@ def main():
     print("[+] Generating replication DB")
     replication_db = {}
     for i in range(KEY_REPLICATION_FACTOR):
-        digest = get_digest(i.to_bytes(4, byteorder='big') + ALIAS_SEED)
+        digest = get_cnode_digest_bytes(i.to_bytes(4, byteorder='big') + ALIAS_SEED)
         replication_db[i] = int.from_bytes(digest, byteorder='big')
         print(" [+] Generated digest: %s" % replication_db[i])
 
@@ -58,7 +58,7 @@ def main():
     nodes = {}
     for node in range(NODE_NUM):
         node_key = NODE_SEED + node.to_bytes(8, byteorder='big')
-        nodeid = int.from_bytes(get_digest(node_key), byteorder='big')
+        nodeid = int.from_bytes(get_cnode_digest_bytes(node_key), byteorder='big')
         nodes[node] = nodeid
         print(" [+] Generated node: %s, nodeid: %s" % (node, nodeid))
 
@@ -66,7 +66,7 @@ def main():
     keys = []
     for i in range(KEY_NUM):
         data = getrandbytes(128)
-        data_digest = get_digest(data)
+        data_digest = get_cnode_digest_bytes(data)
         data_key = int.from_bytes(data_digest, byteorder='big')
         keys.append(data_key)
 

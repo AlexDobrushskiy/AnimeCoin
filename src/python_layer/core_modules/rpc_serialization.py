@@ -4,7 +4,8 @@ import msgpack
 
 from core_modules.blackbox_modules.signatures import pastel_id_write_signature_on_data_func,\
     pastel_id_verify_signature_with_public_key_func
-from core_modules.blackbox_modules.helpers import sleep_rand, get_sha3_512_func_bytes
+from core_modules.blackbox_modules.helpers import sleep_rand
+from core_modules.helpers import get_pynode_digest_bytes
 from core_modules.helpers_type import ensure_type, ensure_type_of_field
 from core_modules.helpers import require_true
 from core_modules.settings import NetWorkSettings
@@ -67,7 +68,7 @@ def verify_and_unpack(raw_message_contents, expected_receiver_id):
         tmp = container.copy()
         tmp["signature"] = b''
         sleep_rand()
-        raw_hash = get_sha3_512_func_bytes(msgpack.packb(tmp, use_bin_type=True))
+        raw_hash = get_pynode_digest_bytes(msgpack.packb(tmp, use_bin_type=True))
         verified = pastel_id_verify_signature_with_public_key_func(raw_hash, signature, sender_id)
         sleep_rand()
 
@@ -104,7 +105,7 @@ def pack_and_sign(privkey, pubkey, receiver_id, message_body, version=MAX_SUPPOR
         # serialize container, calculate hash and sign with private key
         # signature is None as this point as we can't know the signature without calculating it
         container_serialized = msgpack.packb(container, use_bin_type=True)
-        signature = pastel_id_write_signature_on_data_func(get_sha3_512_func_bytes(container_serialized), privkey, pubkey)
+        signature = pastel_id_write_signature_on_data_func(get_pynode_digest_bytes(container_serialized), privkey, pubkey)
 
         # TODO: serializing twice is not the best solution if we want to work with large messages
 

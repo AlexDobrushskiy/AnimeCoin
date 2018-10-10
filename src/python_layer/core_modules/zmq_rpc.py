@@ -4,10 +4,10 @@ import zmq
 import zmq.asyncio
 import uuid
 
-from core_modules.blackbox_modules.helpers import get_sha3_512_func_hex, get_sha3_512_func_int
+from core_modules.helpers import get_pynode_digest_hex
 from core_modules.logger import initlogging
 from core_modules.rpc_serialization import pack_and_sign, verify_and_unpack
-from core_modules.helpers import get_hexdigest, hex_to_int, chunkid_to_hex
+from core_modules.helpers import get_cnode_digest_hex, chunkid_to_hex
 
 
 class RPCException(Exception):
@@ -164,7 +164,7 @@ class RPCClient:
 
         # validate chunk
         if chunk is not None:
-            digest = get_sha3_512_func_hex(chunk)
+            digest = get_pynode_digest_hex(chunk)
             if digest != chunkid_str:
                 raise ValueError("Got chunk data that does not match the digest: %s != %s" % (digest, chunkid_str))
 

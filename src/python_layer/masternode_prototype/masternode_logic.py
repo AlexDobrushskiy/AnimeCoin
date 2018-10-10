@@ -10,14 +10,14 @@ from core_modules.masternode_ticketing import FinalActivationTicket
 from core_modules.zmq_rpc import RPCException, RPCServer
 from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_ticketing import ArtRegistrationServer
-from core_modules.helpers import get_hexdigest, get_intdigest, bytes_to_int, hex_to_int, require_true
+from core_modules.helpers import get_cnode_digest_hex, get_nodeid_from_pubkey, bytes_to_chunkid, hex_to_chunkid, require_true
 
 
 class MasterNodeLogic:
     def __init__(self, nodenum, chainwrapper, basedir, privkey, pubkey, ip, port, chunks):
         self.__name = "node%s" % nodenum
         self.__nodenum = nodenum
-        self.__nodeid = get_intdigest(pubkey)
+        self.__nodeid = get_nodeid_from_pubkey(pubkey)
         self.__basedir = basedir
         self.__privkey = privkey
         self.__pubkey = pubkey
@@ -105,7 +105,7 @@ class MasterNodeLogic:
                         # get the chunkids that we need to store
                         chunks = []
                         for chunkid_bytes in [regticket.thumbnailhash] + regticket.lubyhashes:
-                            chunkid = bytes_to_int(chunkid_bytes)
+                            chunkid = bytes_to_chunkid(chunkid_bytes)
                             chunks.append(chunkid)
 
                         # add this chunkid to chunkmanager
@@ -154,7 +154,7 @@ class MasterNodeLogic:
             itemtype, itemdata = todoitem
             if itemtype == "MISSING_CHUNK":
                 chunkid_hex = itemdata
-                chunkid = hex_to_int(chunkid_hex)
+                chunkid = hex_to_chunkid(chunkid_hex)
                 self.__logger.debug("Fetching chunk %s" % chunkid)
 
                 found = False

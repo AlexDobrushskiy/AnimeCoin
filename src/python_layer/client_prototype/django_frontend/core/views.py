@@ -6,7 +6,7 @@ from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
 from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
-from core_modules.helpers import bytes_to_int, hex_to_int
+from core_modules.helpers import bytes_to_chunkid, hex_to_chunkid
 
 from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager, aliasmanager, call_parallel_rpcs
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
@@ -233,7 +233,7 @@ def explorer(request, functionality, id=""):
 
 
 def chunk(request, chunkid_hex):
-    chunkid = hex_to_int(chunkid_hex)
+    chunkid = hex_to_chunkid(chunkid_hex)
 
     image_data = None
 

@@ -7,7 +7,7 @@ from datetime import datetime as dt, timedelta as td
 # PATH HACK
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../")
 
-from core_modules.helpers import get_digest, getrandbytes
+from core_modules.helpers import get_cnode_digest_bytes, getrandbytes
 
 HASHLISTSIZE = 1000*1000*10
 HASH_ENTRY_SIZE = 32

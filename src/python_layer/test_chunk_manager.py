@@ -9,7 +9,7 @@ import zmq.asyncio
 from datetime import datetime as dt
 
 from masternode_prototype.masternode_logic import MasterNodeLogic
-from core_modules.helpers import get_hexdigest, getrandbytes
+from core_modules.helpers import get_nodeid_from_pubkey, getrandbytes
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 
 
@@ -50,7 +50,7 @@ def generate_masternodes(num_mn, ip, port):
     ret = []
     for i in range(num_mn):
         privkey, pubkey = id_keypair_generation_func()
-        mn = (get_hexdigest(getrandbytes(1024)), ip, port+i, privkey, pubkey)
+        mn = (get_nodeid_from_pubkey(getrandbytes(1024)), ip, port + i, privkey, pubkey)
         ret.append(mn)
     return ret
 

@@ -5,7 +5,7 @@ import logging
 from django.conf import settings
 from core_modules.blockchain import BlockChain
 from core_modules.chainwrapper import ChainWrapper
-from core_modules.helpers import get_intdigest
+from core_modules.helpers import get_nodeid_from_pubkey
 from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_discovery import read_settings_file
 from core_modules.chunkmanager_modules.aliasmanager import AliasManager
@@ -65,7 +65,7 @@ pubkey = open(settings.PASTEL_PUBKEY, "rb").read()
 # TODO: remove this hack
 PASTEL_TEST_NODES_DIR = os.path.dirname(settings.PASTEL_BASEDIR)
 NODENUM = int(os.path.basename(settings.PASTEL_BASEDIR).lstrip("node"))
-NODEID = get_intdigest(pubkey)
+NODEID = get_nodeid_from_pubkey(pubkey)
 
 nodemanager = NodeManager(NODENUM, privkey, pubkey)
 nodemanager.update_masternode_list(PASTEL_TEST_NODES_DIR)

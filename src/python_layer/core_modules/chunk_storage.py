@@ -1,7 +1,7 @@
 import os
 
-from core_modules.blackbox_modules.helpers import get_sha3_512_func_int
-from .helpers import chunkid_to_hex, hex_to_int
+from core_modules.helpers import get_pynode_digest_int
+from .helpers import chunkid_to_hex, hex_to_chunkid
 
 
 class ChunkStorage:
@@ -72,7 +72,7 @@ class ChunkStorage:
         except FileNotFoundError:
             return False
 
-        digest = get_sha3_512_func_int(data)
+        digest = get_pynode_digest_int(data)
         return chunkname == digest
 
     def index(self):
@@ -82,6 +82,6 @@ class ChunkStorage:
                     fullpath = os.path.join(dir1, dir2, dirent.name)
 
                     if dirent.is_file():
-                        yield hex_to_int(dirent.name)
+                        yield hex_to_chunkid(dirent.name)
                     else:
                         raise ValueError("Invalid entity found in filesystem, not file or directory: %s" % fullpath)

@@ -2,8 +2,7 @@ import random
 import asyncio
 
 from core_modules.zmq_rpc import RPCException
-from core_modules.blackbox_modules.helpers import get_sha3_512_func_int, get_sha3_512_func_bytes, get_sha3_512_func_hex
-from core_modules.helpers import hex_to_int, chunkid_to_hex, require_true, get_hexdigest
+from core_modules.helpers import hex_to_chunkid, chunkid_to_hex, require_true, get_pynode_digest_hex
 from core_modules.logger import initlogging
 from core_modules.settings import NetWorkSettings
 
@@ -32,7 +31,7 @@ class ChunkManagerRPC:
                 end = start + 1024
 
                 # calculate digest
-                digest = get_hexdigest(data[start:end])
+                digest = get_pynode_digest_hex(data[start:end])
                 self.__logger.debug("Digest for range %s - %s is: %s" % (start, end, digest))
 
                 # find owners for all the alt keys who are not us
@@ -71,7 +70,7 @@ class ChunkManagerRPC:
                 if not isinstance(v, str):
                     raise TypeError("Invalid type for key %s in spotcheck" % k)
 
-        chunkid = hex_to_int(data["chunkid"])
+        chunkid = hex_to_chunkid(data["chunkid"])
         start = data["start"]
         end = data["end"]
 
@@ -88,7 +87,7 @@ class ChunkManagerRPC:
 
         # generate digest
         data = chunk[start:end]
-        digest = get_sha3_512_func_hex(data)
+        digest = get_pynode_digest_hex(data)
 
         return {"digest": digest}
 
@@ -103,7 +102,7 @@ class ChunkManagerRPC:
         if not isinstance(data["chunkid"], str):
             raise TypeError("Invalid type for key chunkid in spotcheck")
 
-        chunkid = hex_to_int(data["chunkid"])
+        chunkid = hex_to_chunkid(data["chunkid"])
 
         # TODO: error handling
         chunk = self.__chunkmanager.get_chunk(chunkid)

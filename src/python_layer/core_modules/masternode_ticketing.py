@@ -5,7 +5,7 @@ from .ticket_models import RegistrationTicket, Signature, FinalRegistrationTicke
 from core_modules.blackbox_modules.signatures import\
     pastel_id_write_signature_on_data_func
 from core_modules.settings import NetWorkSettings
-from core_modules.helpers import require_true, bytes_to_int
+from core_modules.helpers import require_true, bytes_to_chunkid
 
 
 class ArtRegistrationServer:
@@ -94,11 +94,11 @@ class ArtRegistrationServer:
         final_regticket.validate(self.__chainwrapper)
 
         # store thumbnail
-        self.__chunkmanager.store_chunk_provisionally(bytes_to_int(image_hash), imagedata.thumbnail)
+        self.__chunkmanager.store_chunk_provisionally(bytes_to_chunkid(image_hash), imagedata.thumbnail)
 
         # store chunks
         for chunkhash, chunkdata in zip(imagedata.get_luby_hashes(), imagedata.lubychunks):
-            chunkhash_int = bytes_to_int(chunkhash)
+            chunkhash_int = bytes_to_chunkid(chunkhash)
             self.__chunkmanager.store_chunk_provisionally(chunkhash_int, chunkdata)
 
 

@@ -2,7 +2,7 @@ import random
 
 
 from core_modules.zmq_rpc import RPCClient
-from core_modules.helpers import get_intdigest, hex_to_int
+from core_modules.helpers import get_nodeid_from_pubkey
 from core_modules.masternode_discovery import discover_nodes
 from core_modules.settings import NetWorkSettings
 from core_modules.logger import initlogging
@@ -52,7 +52,7 @@ class NodeManager:
         new_mn_list = {}
         for settings in settings_list:
             pubkey = open(settings["pubkey"], "rb").read()
-            nodeid = get_intdigest(pubkey)
+            nodeid = get_nodeid_from_pubkey(pubkey)
             new_mn_list[nodeid] = RPCClient(self.__nodenum, self.__privkey, self.__pubkey,
                                             nodeid, settings["ip"], settings["pyrpcport"], pubkey)
 

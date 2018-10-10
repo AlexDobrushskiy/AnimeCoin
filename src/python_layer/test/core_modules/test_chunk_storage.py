@@ -6,7 +6,7 @@ import shutil
 import tempfile
 
 from core_modules.chunk_storage import ChunkStorage
-from core_modules.blackbox_modules.helpers import get_sha3_512_func_int
+from core_modules.helpers import get_pynode_digest_int
 
 
 class TestChunkStorageInit(unittest.TestCase):
@@ -25,7 +25,7 @@ class TestChunkStorageInterface(unittest.TestCase):
 
         random.seed(236823823)
         self.chunk_data = random.getrandbits(CHUNK_SIZE * 8).to_bytes(CHUNK_SIZE, byteorder="big")
-        self.chunk_digest = get_sha3_512_func_int(self.chunk_data)
+        self.chunk_digest = get_pynode_digest_int(self.chunk_data)
 
         self.test_dir = tempfile.mkdtemp()
         self.cs = ChunkStorage(self.test_dir, mode=0o0700)

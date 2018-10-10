@@ -1,9 +1,9 @@
 import os
 import random
 
-from core_modules.blackbox_modules.helpers import get_sha3_512_func_bytes, get_sha3_512_func_hex, get_sha3_512_func_int
+from core_modules.helpers import get_pynode_digest_int
 from core_modules.chunk_storage import ChunkStorage
-from core_modules.helpers import hex_to_int, chunkid_to_hex
+from core_modules.helpers import hex_to_chunkid, chunkid_to_hex
 from core_modules.logger import initlogging
 
 
@@ -44,7 +44,7 @@ class ChunkManager:
         self.__file_db = {}
 
         # table of every chunk we know of
-        self.__chunk_table = set((hex_to_int(x) for x in chunks))
+        self.__chunk_table = set((hex_to_chunkid(x) for x in chunks))
 
         # tmp storage
         self.__tmpstoragedir = os.path.join(basedir, "tmpstorage")
@@ -210,13 +210,13 @@ class ChunkManager:
         self.dump_internal_stats("DB STAT After")
 
     def store_chunk_provisionally(self, chunkid, data):
-        if chunkid != get_sha3_512_func_int(data):
+        if chunkid != get_pynode_digest_int(data):
             raise ValueError("data does not match chunkid!")
 
         self.__tmpstorage.put(chunkid, data)
 
     def store_missing_chunk(self, chunkid, data):
-        if chunkid != get_sha3_512_func_int(data):
+        if chunkid != get_pynode_digest_int(data):
             raise ValueError("data does not match chunkid!")
 
         if chunkid not in self.__chunk_table:
