@@ -24,45 +24,6 @@ class MNDeamonSettings:
         self.pubkey = ensure_type_of_field(settings, "pubkey", str)
 
 
-# CONFIG_FILE_NAME = "masternode.cfg"
-# DEFAULT_SETTINGS = {
-#     "blockchain": {
-#         "rpcuser": "test",
-#         "rpcpassword": "testpw",
-#         "rpcport": "10340",
-#         "port": "12340",
-#     }
-# }
-#
-# class MasterNodeConfigParser:
-#     def __init__(self, basedir):
-#         self.__basedir = basedir
-#         self.__configname = os.path.join(self.__basedir, CONFIG_FILE_NAME)
-#         self.settings = None
-#
-#         self.__load_config_file()
-#
-#     def __load_config_file(self):
-#         try:
-#             settings = json.load(open(self.__configname))
-#         except FileNotFoundError:
-#             print("Config file not found, generating a default one")
-#             settings = {}
-#
-#         # set fields from default if they doesn't exist
-#         merged_settings = DEFAULT_SETTINGS.copy()
-#         for k, v in settings.items():
-#             # ignore keys we no longer use
-#             if k not in merged_settings:
-#                 print("Config key %s is no longer supported!" % k)
-#             merged_settings[k] = v
-#         self.settings = merged_settings
-#         self.save()
-#
-#     def save(self):
-#         json.dump(self.settings, open(self.__configname, "w"), indent=4, sort_keys=True)
-
-
 # NETWORK SETTINGS - global settings for everyone
 class __NetworkSettings:
     pass
@@ -77,28 +38,21 @@ if NetWorkSettings.DEBUG:
 else:
     NetWorkSettings.VALIDATE_MN_SIGNATURES = True
 
-NetWorkSettings.BLOCKCHAIN = "animecoind"
-if NetWorkSettings.BLOCKCHAIN == "bitcoind":
-    NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/tmp/bitcoind_old/bitcoin/src/bitcoind"
-    NetWorkSettings.BASE_TRANSACTION_AMOUNT = 0.000001
-    NetWorkSettings.COIN = 100000000  # satoshis in 1 btc
-    NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
-else:
-    # animecoind
-    NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
-    NetWorkSettings.COIN = 100000
-    NetWorkSettings.BASE_TRANSACTION_AMOUNT = 300.0/NetWorkSettings.COIN  #0.00300
-    NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
+NetWorkSettings.PYTHONPATH = "python"
+NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", ".."))
+NetWorkSettings.NSFW_MODEL_FILE = os.path.join(NetWorkSettings.BASEDIR, "misc", "nsfw_trained_model.pb")
+NetWorkSettings.DJANGO_ROOT = os.path.join(NetWorkSettings.BASEDIR, "client_prototype", "django_frontend")
+
+NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
+NetWorkSettings.COIN = 100000
+NetWorkSettings.BASE_TRANSACTION_AMOUNT = 300.0/NetWorkSettings.COIN  #0.00300
+NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
 
 
 if NetWorkSettings.DEBUG:
     NetWorkSettings.REQUIRED_CONFIRMATIONS = 1
 else:
     NetWorkSettings.REQUIRED_CONFIRMATIONS = 10
-
-NetWorkSettings.PYTHONPATH = "python"
-NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", ".."))
-NetWorkSettings.DJANGO_ROOT = os.path.join(NetWorkSettings.BASEDIR, "client_prototype", "django_frontend")
 
 NetWorkSettings.ALIAS_SEED = b'd\xad`n\xdc\x89\xc2/\xf6\xcd\xd6\xec\xcc\x1c\xc7\xd4\x83B9\x01\xb4\x06\xa2\xc9=\xf8_\x98\xa1p\x01&'
 NetWorkSettings.CNODE_HASH_ALGO = hashlib.sha256
@@ -125,7 +79,6 @@ NetWorkSettings.MAX_LUBY_CHUNKS = math.ceil((NetWorkSettings.IMAGE_MAX_SIZE / Ne
                                   * NetWorkSettings.LUBY_REDUNDANCY_FACTOR)
 
 
-NetWorkSettings.NSFW_MODEL_FILE = "/home/synapse/tmp/animecoin/nsfw/nsfw_trained_model.pb"
 if NetWorkSettings.DEBUG:
     NetWorkSettings.NSFW_THRESHOLD = 0.999
 else:
