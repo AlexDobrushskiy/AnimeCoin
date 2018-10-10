@@ -19,7 +19,7 @@ class RPCClient:
         if type(nodeid) is not int:
             raise TypeError("nodeid must be int!")
 
-        self.__logger = initlogging(nodenum, __name__)
+        self.__logger = initlogging(nodenum, __name__, level="debug")
 
         # variables of the client
         self.__privkey = privkey

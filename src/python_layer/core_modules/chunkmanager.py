@@ -64,9 +64,9 @@ class ChunkManager:
 
         # initializations
         self.__recalculate_ownership_of_all_chunks()
-        self.__purge_orphaned_storage_entries()
-        self.__purge_orphaned_db_entries()
-        self.__purge_orphaned_files()
+        # self.__purge_orphaned_storage_entries()
+        # self.__purge_orphaned_db_entries()
+        # self.__purge_orphaned_files()
         self.dump_internal_stats()
 
     def __recalculate_ownership_of_all_chunks(self):
@@ -108,21 +108,20 @@ class ChunkManager:
 
                 # do we have it locally? - this can happen if we just booted up
                 if self.__storage.verify(chunkid):
-                    self.__logger.debug("Found chunk %s locally" % chunkid_to_hex(chunkid))
+                    # self.__logger.debug("Found chunk %s locally" % chunkid_to_hex(chunkid))
                     data = self.__storage.get(chunkid)
 
                 # do we have it in tmp storage?
                 if data is None:
                     if self.__tmpstorage.verify(chunkid):
                         data = self.__tmpstorage.get(chunkid)
-                        self.__logger.debug("Found chunk %s in temporary storage" % chunkid_to_hex(chunkid))
+                        # self.__logger.debug("Found chunk %s in temporary storage" % chunkid_to_hex(chunkid))
 
                 # did we find the data?
                 if data is not None:
                     self.store_missing_chunk(chunkid, data)
                 else:
                     # we need to fetch the chunk using RPC
-                    self.__logger.info("Chunk %s missing, added to todolist" % chunkid_to_hex((chunkid)))
                     self.__add_missing_chunk_to_todolist(chunkid)
         else:
             # maintain file db
@@ -135,6 +134,7 @@ class ChunkManager:
         return actual_chunk_is_ours
 
     def __add_missing_chunk_to_todolist(self, chunkid):
+        self.__logger.info("Chunk %s missing, added to todolist" % chunkid_to_hex((chunkid)))
         self.__todolist.put_nowait(("MISSING_CHUNK", chunkid_to_hex(chunkid)))
 
     def __purge_orphaned_storage_entries(self):
@@ -198,8 +198,8 @@ class ChunkManager:
             self.__logger.info("MN list has changed -> added: %s, removed: %s" % (added, removed))
             self.dump_internal_stats("DB STAT Before")
             self.__recalculate_ownership_of_all_chunks()
-            self.__purge_orphaned_storage_entries()
-            self.__purge_orphaned_db_entries()
+            # self.__purge_orphaned_storage_entries()
+            # self.__purge_orphaned_db_entries()
             self.dump_internal_stats("DB STAT After")
 
     def add_chunks(self, chunks):
@@ -233,7 +233,7 @@ class ChunkManager:
         chunk.verified = True
         chunk.is_ours = True
 
-        self.__logger.debug("Chunk %s is loaded" % chunkid)
+        # self.__logger.debug("Chunk %s is loaded" % chunkid)
 
     # def load_full_chunks(self, chunks):
     #     # helper function to load chunks with data
@@ -253,6 +253,15 @@ class ChunkManager:
     #     else:
     #         return False
 
+    def check_chunk_availability(self, chunkid):
+        chunk = self.__file_db.get(chunkid)
+
+        # try to find chunk in chunkstorage
+        if chunk is not None and chunk.exists and chunk.verified:
+            return True
+
+        return False
+
     def get_chunk(self, chunkid):
         if not self.__alias_manager.we_own_chunk(chunkid):
             raise ValueError("We don't own this chunk!")
@@ -270,7 +279,6 @@ class ChunkManager:
             return self.__tmpstorage.get(chunkid)
 
         # we have failed to find the chunk, add an item for our todolist
-        self.__logger.warning("We don't have a chunk available that we should have: %s" % chunkid_to_hex(chunkid))
         self.__add_missing_chunk_to_todolist(chunkid)
 
     # DEBUG FUNCTIONS

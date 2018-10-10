@@ -155,33 +155,38 @@ class MasterNodeLogic:
             if itemtype == "MISSING_CHUNK":
                 chunkid_hex = itemdata
                 chunkid = hex_to_chunkid(chunkid_hex)
-                self.__logger.debug("Fetching chunk %s" % chunkid)
 
-                found = False
-                for owner in self.__aliasmanager.find_other_owners_for_chunk(chunkid):
-                    mn = self.__mn_manager.get(owner)
+                # check if we received this chunk in the meantime
+                if not self.__chunkmanager.check_chunk_availability(chunkid):
+                    # we need to fetch it
+                    found = False
+                    for owner in self.__aliasmanager.find_other_owners_for_chunk(chunkid):
+                        mn = self.__mn_manager.get(owner)
 
-                    try:
-                        chunk = await mn.send_rpc_fetchchunk(chunkid)
-                    except RPCException as exc:
-                        self.__logger.info("FETCHCHUNK RPC FAILED for node %s with exception %s" % (owner, exc))
-                        continue
+                        try:
+                            chunk = await mn.send_rpc_fetchchunk(chunkid)
+                        except RPCException as exc:
+                            self.__logger.info("FETCHCHUNK RPC FAILED for node %s with exception %s" % (owner, exc))
+                            continue
 
-                    if chunk is None:
-                        # chunk was not found
-                        continue
+                        if chunk is None:
+                            # chunk was not found
+                            continue
 
-                    found = True
-                    break
+                        found = True
+                        break
 
-                # nobody has this chunk
-                if not found:
-                    # TODO: fall back to reconstruct it from luby blocks
-                    self.__logger.error("Unable to fetch chunk %s, luby reconstruction is not yet implemented!" % chunkid)
-                    # raise RuntimeError("Unable to fetch chunk %s!" % chunkid)
+                    # nobody has this chunk
+                    if not found:
+                        # TODO: fall back to reconstruct it from luby blocks
+                        self.__logger.error("Unable to fetch chunk %s, luby reconstruction is not yet implemented!" % chunkid)
+                        # raise RuntimeError("Unable to fetch chunk %s!" % chunkid)
+                    else:
+                        # we have the chunk, store it!
+                        self.__chunkmanager.store_missing_chunk(chunkid, chunk)
                 else:
                     # we have the chunk, store it!
-                    self.__logger.debug("Fetched chunk %s!" % chunkid)
+                    chunk = self.__chunkmanager.get_chunk(chunkid)
                     self.__chunkmanager.store_missing_chunk(chunkid, chunk)
 
                 # mark entry as done
