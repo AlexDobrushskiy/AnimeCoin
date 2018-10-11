@@ -19,11 +19,11 @@ class ChunkManagerRPC:
             await asyncio.sleep(waittime)
 
             chunks = self.__chunkmanager.select_random_chunks_we_have(number_of_chunks)
-            for chunkid in chunks:
-                self.__logger.debug("Selected chunk %s for random check" % chunkid_to_hex(chunkid))
+            for chunk in chunks:
+                self.__logger.debug("Selected chunk %s for random check" % chunkid_to_hex(chunk.chunkid))
 
                 # get chunk
-                data = self.__chunkmanager.get_chunk(chunkid)
+                data = self.__chunkmanager.get_chunk(chunk)
 
                 # pick a random range
                 require_true(len(data) > 1024)
@@ -35,14 +35,14 @@ class ChunkManagerRPC:
                 self.__logger.debug("Digest for range %s - %s is: %s" % (start, end, digest))
 
                 # find owners for all the alt keys who are not us
-                owners = self.__aliasmanager.find_other_owners_for_chunk(chunkid)
+                owners = self.__aliasmanager.find_other_owners_for_chunk(chunk.chunkid)
 
                 # call RPC on all other MNs
                 for owner in owners:
                     mn = self.__mn_manager.get(owner)
 
                     try:
-                        response_digest = await mn.send_rpc_spotcheck(chunkid, start, end)
+                        response_digest = await mn.send_rpc_spotcheck(chunk.chunkid, start, end)
                     except RPCException as exc:
                         self.__logger.info("SPOTCHECK RPC FAILED for node %s with exception %s" % (owner, exc))
                     else:
@@ -83,11 +83,15 @@ class ChunkManagerRPC:
             raise ValueError("start > CHUNKSIZE or end > CHUNKSIZE")
 
         # we don't actually need the full chunk here, but we get it anyway as we are running verify() on it
-        chunk = self.__chunkmanager.get_chunk(chunkid)
-
-        # generate digest
-        data = chunk[start:end]
-        digest = get_pynode_digest_hex(data)
+        chunk = self.__chunkmanager.get_chunk_if_we_have_it(chunkid)
+        if chunk is not None:
+            # generate digest
+            data = chunk[start:end]
+            digest = get_pynode_digest_hex(data)
+        else:
+            self.__logger.info("We failed spotcheck for chunk %s" % chunkid_to_hex(chunkid))
+            # return a bogus hash
+            digest = get_pynode_digest_hex(b'DATA WAS NOT FOUND')
 
         return {"digest": digest}
 
@@ -104,7 +108,6 @@ class ChunkManagerRPC:
 
         chunkid = hex_to_chunkid(data["chunkid"])
 
-        # TODO: error handling
-        chunk = self.__chunkmanager.get_chunk(chunkid)
+        chunk = self.__chunkmanager.get_chunk_if_we_have_it(chunkid)
 
         return {"chunk": chunk}

@@ -64,6 +64,8 @@ NetWorkSettings.RPC_MSG_SIZELIMIT = 100*1024*1024        # 100MB
 
 NetWorkSettings.REPLICATION_FACTOR = 15
 NetWorkSettings.CHUNKSIZE = 1 * 1024*1024                # 1MB
+NetWorkSettings.CHUNK_REFETCH_INTERVAL = 60              # do not retry to fetch chunk unless this many seconds elapsed
+NetWorkSettings.CHUNK_FETCH_PARALLELISM = 15             # we will fetch this many chunks simultaneously in coroutines
 
 NetWorkSettings.MAX_TICKET_SIZE = 75 * 1024              # 75kbyte
 NetWorkSettings.IMAGE_MAX_SIZE = 100 * 1024*1024         # 100MB
