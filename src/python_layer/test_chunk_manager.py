@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     for mn in masternodes:
         loop.create_task(mn.issue_random_tests_forever(1))
-        loop.create_task(mn.run_workers_forever())
+        loop.create_task(mn.run_chunk_fetcher_forever())
 
     loop.run_forever()
 

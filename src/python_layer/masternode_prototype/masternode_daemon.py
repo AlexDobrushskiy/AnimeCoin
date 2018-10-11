@@ -51,8 +51,7 @@ class MasterNodeDaemon:
                                      privkey=self.__privkey,
                                      pubkey=self.__pubkey,
                                      ip=self.__settings.ip,
-                                     port=self.__settings.pyrpcport,
-                                     chunks=[])
+                                     port=self.__settings.pyrpcport)
 
     def __load_keys(self):
         # TODO: rethink key generation and audit storage process
@@ -153,10 +152,10 @@ class MasterNodeDaemon:
         loop.create_task(self.logic.zmq_run_forever())
         loop.create_task(self.logic.run_masternode_parser())
         loop.create_task(self.logic.run_ticket_parser())
-        # loop.create_task(mn.logic.run_heartbeat_forever())
+        loop.create_task(self.logic.run_heartbeat_forever())
         # loop.create_task(self.logic.run_ping_test_forever())
-        # loop.create_task(mn.logic.issue_random_tests_forever(1))
-        loop.create_task(self.logic.run_workers_forever())
+        loop.create_task(self.logic.issue_random_tests_forever(1))
+        loop.create_task(self.logic.run_chunk_fetcher_forever())
 
         try:
             loop.run_forever()

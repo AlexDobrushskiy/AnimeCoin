@@ -10,11 +10,12 @@ from core_modules.masternode_ticketing import FinalActivationTicket
 from core_modules.zmq_rpc import RPCException, RPCServer
 from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_ticketing import ArtRegistrationServer
-from core_modules.helpers import get_cnode_digest_hex, get_nodeid_from_pubkey, bytes_to_chunkid, hex_to_chunkid, require_true
+from core_modules.settings import NetWorkSettings
+from core_modules.helpers import get_pynode_digest_int, get_nodeid_from_pubkey, bytes_to_chunkid, chunkid_to_hex
 
 
 class MasterNodeLogic:
-    def __init__(self, nodenum, chainwrapper, basedir, privkey, pubkey, ip, port, chunks):
+    def __init__(self, nodenum, chainwrapper, basedir, privkey, pubkey, ip, port):
         self.__name = "node%s" % nodenum
         self.__nodenum = nodenum
         self.__nodeid = get_nodeid_from_pubkey(pubkey)
@@ -27,8 +28,6 @@ class MasterNodeLogic:
         self.__logger = initlogging(self.__nodenum, __name__)
         self.__chainwrapper = chainwrapper
 
-        self.__todolist = asyncio.Queue()
-
         # masternode manager
         self.__mn_manager = NodeManager(self.__nodenum, self.__privkey, self.__pubkey)
 
@@ -36,10 +35,7 @@ class MasterNodeLogic:
         self.__aliasmanager = AliasManager(self.__nodenum, self.__nodeid, self.__mn_manager)
 
         # chunk manager
-        self.__chunkmanager = ChunkManager(self.__nodenum, self.__nodeid,
-                                           basedir,
-                                           chunks,
-                                           self.__aliasmanager, self.__todolist)
+        self.__chunkmanager = ChunkManager(self.__nodenum, self.__nodeid, basedir, self.__aliasmanager)
 
         # refresh masternode list
         self.__refresh_masternode_list()
@@ -109,7 +105,7 @@ class MasterNodeLogic:
                             chunks.append(chunkid)
 
                         # add this chunkid to chunkmanager
-                        self.__chunkmanager.add_chunks(chunks)
+                        self.__chunkmanager.add_new_chunks(chunks)
             except NotEnoughConfirmations:
                 # this block hasn't got enough confirmations yet
                 await asyncio.sleep(1)
@@ -121,7 +117,7 @@ class MasterNodeLogic:
     async def run_heartbeat_forever(self):
         while True:
             await asyncio.sleep(1)
-            self.__logger.debug("HB")
+            self.__chunkmanager.dump_internal_stats("HEARTBEAT")
 
     async def run_ping_test_forever(self):
         while True:
@@ -145,54 +141,58 @@ class MasterNodeLogic:
 
                 # TODO: track successes/errors
 
-    async def run_workers_forever(self):
-        # TODO: speed this up (multiple coroutines perhaps?)
+    async def run_chunk_fetcher_forever(self):
+        async def fetch_single_chunk_via_rpc(chunkid):
+            # we need to fetch it
+            found = False
+            for owner in self.__aliasmanager.find_other_owners_for_chunk(chunkid):
+                mn = self.__mn_manager.get(owner)
+
+                try:
+                    data = await mn.send_rpc_fetchchunk(chunkid)
+                except RPCException as exc:
+                    self.__logger.info("FETCHCHUNK RPC FAILED for node %s with exception %s" % (owner, exc))
+                    continue
+
+                if data is None:
+                    self.__logger.info("MN %s returned None for fetchchunk %s" % (owner, chunkid))
+                    # chunk was not found
+                    continue
+
+                # verify that digest matches
+                digest = get_pynode_digest_int(data)
+                if chunkid != digest:
+                    self.__logger.info("MN %s returned bad chunk for fetchchunk %s, mismatched digest: %s" % (
+                        owner, chunkid, digest))
+                    continue
+
+                # we have the chunk, store it!
+                self.__chunkmanager.store_missing_chunk(chunkid, data)
+                break
+
+            # nobody has this chunk
+            if not found:
+                # TODO: fall back to reconstruct it from luby blocks
+                self.__logger.error("Unable to fetch chunk %s, luby reconstruction is not yet implemented!" %
+                                    chunkid_to_hex(chunkid))
+                self.__chunkmanager.failed_to_fetch_chunk(chunkid)
+
         while True:
-            self.__logger.debug("TODOLIST: queue size: %s" % self.__todolist.qsize())
-            todoitem = await self.__todolist.get()
+            await asyncio.sleep(0)
 
-            itemtype, itemdata = todoitem
-            if itemtype == "MISSING_CHUNK":
-                chunkid_hex = itemdata
-                chunkid = hex_to_chunkid(chunkid_hex)
+            missing_chunks = self.__chunkmanager.get_random_missing_chunks(NetWorkSettings.CHUNK_FETCH_PARALLELISM)
 
-                # check if we received this chunk in the meantime
-                if not self.__chunkmanager.check_chunk_availability(chunkid):
-                    # we need to fetch it
-                    found = False
-                    for owner in self.__aliasmanager.find_other_owners_for_chunk(chunkid):
-                        mn = self.__mn_manager.get(owner)
+            if len(missing_chunks) == 0:
+                # nothing to do, sleep a little
+                await asyncio.sleep(1)
+                continue
 
-                        try:
-                            chunk = await mn.send_rpc_fetchchunk(chunkid)
-                        except RPCException as exc:
-                            self.__logger.info("FETCHCHUNK RPC FAILED for node %s with exception %s" % (owner, exc))
-                            continue
+            tasks = []
+            for missing_chunk in missing_chunks:
+                tasks.append(fetch_single_chunk_via_rpc(missing_chunk))
 
-                        if chunk is None:
-                            # chunk was not found
-                            continue
-
-                        found = True
-                        break
-
-                    # nobody has this chunk
-                    if not found:
-                        # TODO: fall back to reconstruct it from luby blocks
-                        self.__logger.error("Unable to fetch chunk %s, luby reconstruction is not yet implemented!" % chunkid)
-                        # raise RuntimeError("Unable to fetch chunk %s!" % chunkid)
-                    else:
-                        # we have the chunk, store it!
-                        self.__chunkmanager.store_missing_chunk(chunkid, chunk)
-                else:
-                    # we have the chunk, store it!
-                    chunk = self.__chunkmanager.get_chunk(chunkid)
-                    self.__chunkmanager.store_missing_chunk(chunkid, chunk)
-
-                # mark entry as done
-                self.__todolist.task_done()
-            else:
-                raise ValueError("Invalid todo type: %s" % itemtype)
+            await asyncio.gather(*tasks)
+            await asyncio.sleep(1)
 
     async def zmq_run_forever(self):
         await self.__rpcserver.zmq_run_forever()

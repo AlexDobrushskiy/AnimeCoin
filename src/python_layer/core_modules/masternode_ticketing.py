@@ -94,12 +94,12 @@ class ArtRegistrationServer:
         final_regticket.validate(self.__chainwrapper)
 
         # store thumbnail
-        self.__chunkmanager.store_chunk_provisionally(bytes_to_chunkid(image_hash), imagedata.thumbnail)
+        self.__chunkmanager.store_chunk_in_temp_storage(bytes_to_chunkid(image_hash), imagedata.thumbnail)
 
         # store chunks
         for chunkhash, chunkdata in zip(imagedata.get_luby_hashes(), imagedata.lubychunks):
             chunkhash_int = bytes_to_chunkid(chunkhash)
-            self.__chunkmanager.store_chunk_provisionally(chunkhash_int, chunkdata)
+            self.__chunkmanager.store_chunk_in_temp_storage(chunkhash_int, chunkdata)
 
 
 class ArtRegistrationClient:

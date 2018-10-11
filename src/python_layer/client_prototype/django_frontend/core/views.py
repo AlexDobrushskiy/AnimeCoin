@@ -245,6 +245,8 @@ def chunk(request, chunkid_hex):
         tasks = []
         tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
 
+        # TODO: validate that fetchchunk actually returned the chunk we wanted
+
         results = call_parallel_rpcs(tasks)
         image_data = results[0][1]
         if image_data is not None:

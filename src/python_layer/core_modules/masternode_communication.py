@@ -20,7 +20,7 @@ class NodeManager:
         return self.__masternodes[nodeid]
 
     def get_all(self):
-        return list(self.__masternodes.values())
+        return tuple(self.__masternodes.values())
 
     def get_random(self):
         try:

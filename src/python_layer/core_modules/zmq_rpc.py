@@ -19,7 +19,7 @@ class RPCClient:
         if type(nodeid) is not int:
             raise TypeError("nodeid must be int!")
 
-        self.__logger = initlogging(nodenum, __name__, level="debug")
+        self.__logger = initlogging(nodenum, __name__, level="info")
 
         # variables of the client
         self.__privkey = privkey
@@ -161,12 +161,6 @@ class RPCClient:
             raise TypeError("chunk is not bytes or None: %s" % type(response_data["chunk"]))
 
         chunk = response_data["chunk"]
-
-        # validate chunk
-        if chunk is not None:
-            digest = get_pynode_digest_hex(chunk)
-            if digest != chunkid_str:
-                raise ValueError("Got chunk data that does not match the digest: %s != %s" % (digest, chunkid_str))
 
         return chunk
 
