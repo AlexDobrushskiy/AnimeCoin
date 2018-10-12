@@ -66,8 +66,7 @@ class MasterNodeLogic:
         self.issue_random_tests_forever = self.__chunkmanager_rpc.issue_random_tests_forever
 
     def __refresh_masternode_list(self):
-        dirname = os.path.dirname(os.path.dirname(self.__basedir))
-        added, removed = self.__mn_manager.update_masternode_list(dirname)
+        added, removed = self.__mn_manager.update_masternode_list()
         self.__chunkmanager.update_mn_list(added, removed)
 
     async def run_masternode_parser(self):

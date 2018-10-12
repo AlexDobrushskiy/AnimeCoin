@@ -44,17 +44,17 @@ class NodeManager:
             mnlist = self.get_all()[1:4]
             return mnlist
 
-    def update_masternode_list(self, configdir):
+    def update_masternode_list(self):
         # TODO: this list should come from cNode
-        settings_list = discover_nodes(configdir)
+        if not NetWorkSettings.DEBUG:
+            raise NotImplementedError()
 
         # parse new list
         new_mn_list = {}
-        for settings in settings_list:
-            pubkey = open(settings["pubkey"], "rb").read()
+        for pubkey, ip, pyrpcport in NetWorkSettings.MASTERNODE_LIST:
             nodeid = get_nodeid_from_pubkey(pubkey)
             new_mn_list[nodeid] = RPCClient(self.__nodenum, self.__privkey, self.__pubkey,
-                                            nodeid, settings["ip"], settings["pyrpcport"], pubkey)
+                                            nodeid, ip, pyrpcport, pubkey)
 
         old = set(self.__masternodes.keys())
         new = set(new_mn_list.keys())

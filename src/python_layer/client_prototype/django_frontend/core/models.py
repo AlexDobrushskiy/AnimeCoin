@@ -70,11 +70,10 @@ privkey = open(settings.PASTEL_PRIVKEY, "rb").read()
 pubkey = open(settings.PASTEL_PUBKEY, "rb").read()
 
 # TODO: remove this hack
-PASTEL_TEST_NODES_DIR = os.path.dirname(settings.PASTEL_BASEDIR)
 NODENUM = int(os.path.basename(settings.PASTEL_BASEDIR).lstrip("node"))
 NODEID = get_nodeid_from_pubkey(pubkey)
 
 nodemanager = NodeManager(NODENUM, privkey, pubkey)
-nodemanager.update_masternode_list(PASTEL_TEST_NODES_DIR)
+nodemanager.update_masternode_list()
 
 aliasmanager = AliasManager(NODENUM, NODEID, nodemanager)
