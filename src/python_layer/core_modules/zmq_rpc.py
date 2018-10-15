@@ -33,8 +33,8 @@ class RPCClient:
 
         self.__zmq = None
 
-        # pubkey and nodeid should be public for convenience
-        self.pubkey = self.__pubkey
+        # pubkey and nodeid should be public for convenience, so that we can identify which server this is
+        self.pubkey = self.__server_pubkey
         self.nodeid = nodeid
 
         # TODO
