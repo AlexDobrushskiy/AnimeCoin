@@ -22,7 +22,7 @@
                 {% endfor %}
             </table>
         {% else %}
-            <h5>regticket: {{ regticket }}</h5>
+            <h5>regticket: {{ regticket|pprint }}</h5>
             <p><a href="/chunk/{{ regticket["thumbnailhash"].hex() }}">{{ regticket["thumbnailhash"].hex() }}</a></p>
             <img src="/chunk/{{ regticket["thumbnailhash"].hex() }}" />
             {# <table>
