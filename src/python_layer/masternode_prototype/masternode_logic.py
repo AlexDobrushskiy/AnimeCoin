@@ -3,6 +3,7 @@ import asyncio
 
 from core_modules.logger import initlogging
 from core_modules.artregistry import ArtRegistry
+from core_modules.djangointerface import DjangoInterface
 from core_modules.chainwrapper import NotEnoughConfirmations
 from core_modules.chunkmanager import ChunkManager
 from core_modules.chunkmanager_modules.chunkmanager_rpc import ChunkManagerRPC
@@ -16,7 +17,7 @@ from core_modules.helpers import get_pynode_digest_int, get_nodeid_from_pubkey, 
 
 
 class MasterNodeLogic:
-    def __init__(self, nodenum, chainwrapper, basedir, privkey, pubkey, ip, port):
+    def __init__(self, nodenum, blockchain, chainwrapper, basedir, privkey, pubkey, ip, port):
         self.__name = "node%s" % nodenum
         self.__nodenum = nodenum
         self.__nodeid = get_nodeid_from_pubkey(pubkey)
@@ -27,6 +28,7 @@ class MasterNodeLogic:
         self.__port = port
 
         self.__logger = initlogging(self.__nodenum, __name__)
+        self.__blockchain = blockchain
         self.__chainwrapper = chainwrapper
 
         # the art registry
@@ -51,6 +53,12 @@ class MasterNodeLogic:
         self.__artregistrationserver = ArtRegistrationServer(self.__privkey, self.__pubkey,
                                                              self.__chainwrapper, self.__chunkmanager)
 
+        # django interface
+        self.__djangointerface = DjangoInterface(self.__privkey, self.__pubkey, self.__nodenum,
+                                                 self.__artregistry, self.__chunkmanager,
+                                                 self.__blockchain, self.__chainwrapper, self.__aliasmanager,
+                                                 self.__mn_manager)
+
         # functions exposed from chunkmanager
         # self.load_full_chunks = self.__chunkmanager.load_full_chunks
 
@@ -66,6 +74,7 @@ class MasterNodeLogic:
                                       self.__chunkmanager_rpc.receive_rpc_fetchchunk)
 
         self.__artregistrationserver.register_rpcs(self.__rpcserver)
+        self.__djangointerface.register_rpcs(self.__rpcserver)
 
         self.issue_random_tests_forever = self.__chunkmanager_rpc.issue_random_tests_forever
 

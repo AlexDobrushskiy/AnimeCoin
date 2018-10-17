@@ -58,6 +58,9 @@ class BlockChain:
 
         return ret
 
+    def help(self):
+        return self.__call_jsonrpc("help")
+
     def addnode(self, node, mode):
         return self.__call_jsonrpc("addnode", node, mode)
 

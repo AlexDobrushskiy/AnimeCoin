@@ -197,8 +197,8 @@ class RPCServer:
         # add our only call
         self.add_callback("PING_REQ", "PING_RESP", self.__receive_rpc_ping)
 
-    def add_callback(self, callback_req, callback_resp, callback_function):
-        self.__RPCs[callback_req] = [callback_resp, callback_function]
+    def add_callback(self, callback_req, callback_resp, callback_function, coroutine=False):
+        self.__RPCs[callback_req] = [callback_resp, callback_function, coroutine]
 
     def __receive_rpc_ping(self, data):
         if not isinstance(data, bytes):
@@ -212,7 +212,7 @@ class RPCServer:
                                         sender_id, msg)
         return response_packet
 
-    def __process_local_rpc(self, sender_id, rpcname, data):
+    async def __process_local_rpc(self, sender_id, rpcname, data):
         self.__logger.debug("Received RPC %s" % (rpcname))
         # get the appropriate rpc function or send back an error
         rpc = self.__RPCs.get(rpcname)
@@ -220,9 +220,13 @@ class RPCServer:
             self.__logger.info("RPC %s is not implemented, ignoring packet!" % rpcname)
 
         # call the RPC function, catch all exceptions
-        response_name, fn = self.__RPCs.get(rpcname)
+        response_name, fn, coroutine = self.__RPCs.get(rpcname)
         try:
-            ret = fn(data)
+            # handle callback depending on whether or not it's old-style blocking or new-style coroutine
+            if not coroutine:
+                ret = fn(data)
+            else:
+                ret = await fn(data)
         except Exception as exc:
             self.__logger.exception("Exception received while doing RPC: %s" % exc)
             msg = [response_name, "ERROR", "RPC ERRROR happened: %s" % exc]
@@ -239,7 +243,7 @@ class RPCServer:
         sender_id, received_msg = verify_and_unpack(msg, self.__pubkey)
         rpcname, data = received_msg
 
-        reply_packet = self.__process_local_rpc(sender_id, rpcname, data)
+        reply_packet = await self.__process_local_rpc(sender_id, rpcname, data)
 
         while True:
             try:

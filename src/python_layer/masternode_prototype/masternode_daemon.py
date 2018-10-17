@@ -1,6 +1,6 @@
+import base64
 import asyncio
 import signal
-import logging
 import time
 import os
 import subprocess
@@ -29,6 +29,9 @@ class MasterNodeDaemon:
         self.__cmnprocess = None
         self.__djangoprocess = None
 
+        # load or generate keys
+        self.__load_keys()
+
         # start actual blockchain daemon process
         self.__start_cmn()
 
@@ -41,11 +44,9 @@ class MasterNodeDaemon:
         # set up ChainWrapper
         self.chainwrapper = ChainWrapper(self.__nodenum, self.blockchain)
 
-        # load or generate keys
-        self.__load_keys()
-
         # spawn logic
         self.logic = MasterNodeLogic(nodenum=self.__nodenum,
+                                     blockchain=self.blockchain,
                                      chainwrapper=self.chainwrapper,
                                      basedir=self.__settings.basedir,
                                      privkey=self.__privkey,
@@ -76,6 +77,9 @@ class MasterNodeDaemon:
     def __start_django(self):
         env = os.environ.copy()
         env["PASTEL_BASEDIR"] = self.__settings.datadir
+        env["PASTEL_RPC_IP"] = self.__settings.ip
+        env["PASTEL_RPC_PORT"] = str(self.__settings.pyrpcport)
+        env["PASTEL_RPC_PUBKEY"] = base64.b64encode(self.__pubkey)
 
         cmdline = [
             NetWorkSettings.PYTHONPATH,
@@ -152,9 +156,9 @@ class MasterNodeDaemon:
         loop.create_task(self.logic.zmq_run_forever())
         loop.create_task(self.logic.run_masternode_parser())
         loop.create_task(self.logic.run_ticket_parser())
-        loop.create_task(self.logic.run_heartbeat_forever())
+        # loop.create_task(self.logic.run_heartbeat_forever())
         # loop.create_task(self.logic.run_ping_test_forever())
-        loop.create_task(self.logic.issue_random_tests_forever(1))
+        # loop.create_task(self.logic.issue_random_tests_forever(1))
         loop.create_task(self.logic.run_chunk_fetcher_forever())
 
         try:

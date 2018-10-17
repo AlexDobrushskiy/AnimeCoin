@@ -29,6 +29,8 @@
 
             {% if identity_ticket == none %}
                 Your identity is not yet established!
+            {% else %}
+                Your identity is established, but you can add another one:
                 <form method="post">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
                     <table class="table">
@@ -36,10 +38,9 @@
                     </table>
                     <button type="submit" class="btn btn-success btn-center">Establish identity</button>
                 </form>
-            {% else %}
-                txid: {{ identity_txid }}
-                ticket: {{ identity_ticket.to_dict()|pprint }}
             {% endif %}
+            txid: {{ identity_txid }}
+            ticket: {{ identity_ticket|pprint }}
     </div>
 </div>
 {% endblock %}

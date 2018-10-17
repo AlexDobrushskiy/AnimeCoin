@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import sys
+import base64
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -140,5 +141,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../../../../pytho
 
 # we need this to be filled out
 PASTEL_BASEDIR = os.environ["PASTEL_BASEDIR"]
+PASTEL_NODENUM = int(os.path.basename(PASTEL_BASEDIR).lstrip("node"))
 PASTEL_PRIVKEY = os.path.join(PASTEL_BASEDIR, "pymn", "config", "private.key")
 PASTEL_PUBKEY = os.path.join(PASTEL_BASEDIR, "pymn", "config", "public.key")
+
+PASTEL_RPC_IP = os.environ["PASTEL_RPC_IP"]
+PASTEL_RPC_PORT = int(os.environ["PASTEL_RPC_PORT"])
+PASTEL_RPC_PUBKEY = base64.b64decode(os.environ["PASTEL_RPC_PUBKEY"])

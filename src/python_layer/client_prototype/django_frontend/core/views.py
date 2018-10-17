@@ -1,39 +1,21 @@
-import asyncio
-
-from bitcoinrpc.authproxy import JSONRPCException
-
 from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
 
-from core_modules.artregistry import ArtRegistry
-from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
-from core_modules.helpers import bytes_to_chunkid, hex_to_chunkid
-
-from core.models import get_blockchain, get_chainwrapper, pubkey, privkey, nodemanager, aliasmanager, call_parallel_rpcs
+from core.models import pubkey, privkey, rpcclient, call_rpc
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
 
 
 def index(request):
-    blockchain = get_blockchain()
-    infos = {}
-    for name in ["getblockchaininfo", "getmempoolinfo", "gettxoutsetinfo", "getmininginfo",
-                 "getnetworkinfo", "getpeerinfo", "getwalletinfo"]:
-        infos[name] = getattr(blockchain, name)()
-
-    infos["mnsync"] = blockchain.mnsync("status")
+    infos = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_info"]))
 
     return render(request, "views/index.tpl", {"infos": infos,
                                                "pastel_basedir": settings.PASTEL_BASEDIR})
 
 
 def walletinfo(request):
-    blockchain = get_blockchain()
-
-    receivingaddress = blockchain.getaccountaddress("")
-    balance = blockchain.getbalance()
-
-    listunspent = blockchain.listunspent()
+    listunspent, receivingaddress, balance = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
+                                                                                ["get_wallet_info"]))
 
     form = SendCoinsForm()
     if request.method == "POST":
@@ -41,10 +23,12 @@ def walletinfo(request):
         if form.is_valid():
             address = form.cleaned_data["recipient_wallet"]
             amount = form.cleaned_data["amount"]
-            try:
-                blockchain.sendtoaddress(address, amount)
-            except JSONRPCException as exc:
-                form.add_error(None, str(exc))
+
+            ret = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
+                                                     ["send_to_address", address, amount]))
+
+            if ret is not None:
+                form.add_error(None, ret)
             else:
                 return redirect("/walletinfo/")
 
@@ -53,16 +37,8 @@ def walletinfo(request):
 
 
 def identity(request):
-    blockchain = get_blockchain()
-    chainwrapper = get_chainwrapper(blockchain)
-
-    addresses = []
-    for unspent  in blockchain.listunspent():
-        if unspent["address"] not in addresses:
-            addresses.append(unspent["address"])
-
-    identity_txid, identity_ticket = chainwrapper.get_identity_ticket(pubkey)
-    all_identities = chainwrapper.get_tickets_by_type("identity")
+    ret = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_identities", pubkey]))
+    addresses, all_identities, identity_txid, identity_ticket = ret
 
     form = IdentityRegistrationForm()
     if request.method == "POST":
@@ -72,8 +48,7 @@ def identity(request):
             if address not in addresses:
                 form.add_error(None, "Addess does not belong to us!")
             else:
-                regclient = IDRegistrationClient(privkey, pubkey, chainwrapper)
-                regclient.register_id(address)
+                call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_identity", address]))
                 return redirect("/identity")
 
     return render(request, "views/identity.tpl", {"addresses": addresses,
@@ -84,19 +59,11 @@ def identity(request):
 
 def portfolio(request):
     resp = "TODO"
-    artregistry = ArtRegistry(0)
-
     return render(request, "views/portfolio.tpl", {"resp": resp})
 
 
 def exchange(request):
-    masternodes = nodemanager.get_all()
-
-    tasks = []
-    for mn in masternodes:
-        tasks.append((str(mn), mn.send_rpc_ping(b'PING')))
-    results = call_parallel_rpcs(tasks)
-
+    results = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["ping_masternodes"]))
     return render(request, "views/exchange.tpl", {"results": results})
 
 
@@ -106,32 +73,13 @@ def trending(request):
 
 
 def browse(request, txid=""):
-    blockchain = get_blockchain()
-    chainwrapper = get_chainwrapper(blockchain)
-
-    tickets, regticket, lubyhashes = [], None, []
-    if txid == "":
-        for tmptxid, final_actticket in chainwrapper.get_tickets_by_type("actticket"):
-            final_actticket.validate(chainwrapper)
-            final_regticket = chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
-            final_regticket.validate(chainwrapper)
-            regticket = final_regticket.ticket
-            tickets.append((tmptxid, regticket))
-
-    else:
-        # get and process ticket as new node
-        final_actticket = chainwrapper.retrieve_ticket(txid)
-        final_actticket.validate(chainwrapper)
-        final_regticket = chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
-        final_regticket.validate(chainwrapper)
-        regticket = final_regticket.ticket
+    tickets, regticket = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["browse", txid]))
 
     return render(request, "views/browse.tpl", {"tickets": tickets, "txid": txid, "regticket": regticket})
 
 
 def register(request):
     form = ArtworkRegistrationForm()
-    chainwrapper = get_chainwrapper(get_blockchain())
 
     final_actticket, actticket_txid = None, None
 
@@ -141,69 +89,45 @@ def register(request):
             # get the actual image data from the form field
             image_field = form.cleaned_data["image_data"]
             image_data = image_field.read()
+            image_name = image_field.name
 
-            # get the registration object
-            artreg = ArtRegistrationClient(privkey, pubkey, chainwrapper, nodemanager)
-
-            # register image
-            # TODO: fill these out properly
-            task = artreg.register_image(
-                image_data=image_data,
-                artist_name="Example Artist",
-                artist_website="exampleartist.com",
-                artist_written_statement="This is only a test",
-                artwork_title=image_field.name,
-                artwork_series_name="Examples and Tests collection",
-                artwork_creation_video_youtube_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                artwork_keyword_set="example, testing, sample",
-                total_copies=10
-            )
-
-            # TODO: this interface is very awkward
-            results = call_parallel_rpcs([("dummy", task)])
-            actticket_txid = results[0][1]
-            final_actticket = chainwrapper.retrieve_ticket(actticket_txid, validate=True)
+            actticket_txid, final_actticket = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
+                                                                                 ["register_image", image_name,
+                                                                                  image_data]))
 
     return render(request, "views/register.tpl", {"form": form, "actticket_txid": actticket_txid,
                                                   "final_actticket": final_actticket})
 
 
 def console(request):
-    blockchain = get_blockchain()
     form = ConsoleCommandForm()
     output = ""
     if request.method == "POST":
         form = ConsoleCommandForm(request.POST)
         if form.is_valid():
             command = form.cleaned_data["command"].split(" ")
-            commandname, args = command[0], command[1:]
-            command_rpc = getattr(blockchain, commandname)
-            try:
-                result = command_rpc(*args)
-            except JSONRPCException as exc:
-                output = "EXCEPTION: %s" % exc
-            else:
-                output = result
+
+            error, result = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
+                                                               ["execute_console_command", *command]))
+            output = result
+
     return render(request, "views/console.tpl", {"form": form, "output": output})
 
 
 def explorer(request, functionality, id=""):
-    blockchain = get_blockchain()
     if functionality == "chaininfo":
-        chaininfo = blockchain.getblockchaininfo()
+        chaininfo = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["explorer_get_chaininfo"]))
         return render(request, "views/explorer_chaininfo.tpl", {"chaininfo": chaininfo})
     elif functionality == "block":
-        blockcount = blockchain.getblockcount()-1
+        blockcount, block = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["explorer_get_block", id]))
+
         if id == "":
             return redirect("/explorer/block/%s" % blockcount)
 
-        try:
-            block = blockchain.getblock(id)
-        except JSONRPCException:
+        if block is None:
             raise Http404("Block does not exist")
 
         # we need a paginator min and max
-
         if type(id) == str:
             blocknum = int(block["height"])
         else:
@@ -215,21 +139,13 @@ def explorer(request, functionality, id=""):
                                                             "pages": pages,
                                                             "blockcount": blockcount})
     elif functionality == "transaction":
-        try:
-            if id == "":
-                transaction = blockchain.listsinceblock()["transactions"][-1]
-            else:
-                transaction = blockchain.gettransaction(id)
-        except JSONRPCException:
-            raise Http404("Transaction does not exist")
+        transaction = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["explorer_gettransaction", id]))
+        if transaction is None:
+            raise Http404("Address does not exist")
         return render(request, "views/explorer_transaction.tpl", {"transaction": transaction})
     elif functionality == "address":
-        try:
-            if id != "":
-                transactions = blockchain.listunspent(1, 999999999, [id])
-            else:
-                transactions = blockchain.listunspent(1, 999999999)
-        except JSONRPCException:
+        transactions = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["explorer_getaddresses", id]))
+        if transactions is None:
             raise Http404("Address does not exist")
         return render(request, "views/explorer_addresses.tpl", {"id": id, "transactions": transactions})
     else:
@@ -237,24 +153,7 @@ def explorer(request, functionality, id=""):
 
 
 def chunk(request, chunkid_hex):
-    chunkid = hex_to_chunkid(chunkid_hex)
-
-    image_data = None
-
-    # find MNs that have this chunk
-    owners = aliasmanager.find_other_owners_for_chunk(chunkid)
-    for owner in owners:
-        mn = nodemanager.get(owner)
-
-        tasks = []
-        tasks.append(("%s from %s" % (chunkid, str(mn)), mn.send_rpc_fetchchunk(chunkid)))
-
-        # TODO: validate that fetchchunk actually returned the chunk we wanted
-
-        results = call_parallel_rpcs(tasks)
-        image_data = results[0][1]
-        if image_data is not None:
-            break
+    image_data = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_chunk", chunkid_hex]))
 
     if image_data is None:
         raise Http404
