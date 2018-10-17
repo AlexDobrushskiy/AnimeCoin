@@ -310,6 +310,9 @@ class ActivationTicket(TicketModelBase):
         # validate registration ticket
         regticket = final_regticket.ticket
 
+        # validate that the authors match
+        require_true(regticket.author == self.author)
+
         # validate that imagehash, fingerprints, lubyhashes and thumbnailhash indeed belong to the image
         require_true(regticket.fingerprints == image.generate_fingerprints())  # TODO: is this deterministic?
         require_true(regticket.lubyhashes == image.get_luby_hashes())
@@ -338,19 +341,40 @@ class OrderTicket(TicketModelBase):
     }
 
     def validate(self):
+        # TODO
         pass
 
 
 class TransferTicket(TicketModelBase):
     methods = {
         "author": PubkeyField(),
-        "artwork_txid": TXIDField(),
-        "count": IntegerField(minsize=0, maxsize=1000),
-        "registration_ticket_txid": TXIDField(),
+        "recipient": PubkeyField(),
+        "imagedata_hash": SHA3512Field,
+        "final_actticket_txid": TXIDField(),
+        "copies": IntegerField(minsize=0, maxsize=1000),
     }
 
-    def validate(self):
-        pass
+    def validate(self, chainwrapper, artregistry):
+        # TODO: audit this
+
+        # make sure artwork is properly registered
+        final_actticket = chainwrapper.retrieve_ticket(self.final_actticket_txid)
+        final_actticket.validate(chainwrapper)
+
+        actticket = final_actticket.ticket
+
+        final_regticket = chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
+
+        regticket = final_regticket.ticket
+
+        # make sure final_actticket_txid and imagedata_hash belongs to the same artwork
+        require_true(regticket.imagedata_hash == self.imagedata_hash)
+
+        # make sure author owns the artwork
+        require_true(actticket.author == self.author)
+
+        # make sure enough remaining copies left
+        require_true(artregistry.enough_copies_left(regticket.imagedata_hash, self.author, self.copies))
 
 
 class IDTicket(TicketModelBase):
@@ -426,6 +450,14 @@ class SelfSignedTicket(TicketModelBase):
 class FinalIDTicket(SelfSignedTicket):
     methods = {
         "ticket": IDTicket,
+        "signature": Signature,
+    }
+
+
+class FinalTransferTicket(SelfSignedTicket):
+    # TODO: this should be a MasterNodeSignedTicket, although that provides no tangible benefits here
+    methods = {
+        "ticket": TransferTicket,
         "signature": Signature,
     }
 

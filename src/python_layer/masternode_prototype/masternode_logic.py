@@ -2,11 +2,12 @@ import os
 import asyncio
 
 from core_modules.logger import initlogging
+from core_modules.artregistry import ArtRegistry
 from core_modules.chainwrapper import NotEnoughConfirmations
 from core_modules.chunkmanager import ChunkManager
 from core_modules.chunkmanager_modules.chunkmanager_rpc import ChunkManagerRPC
 from core_modules.chunkmanager_modules.aliasmanager import AliasManager
-from core_modules.masternode_ticketing import FinalActivationTicket
+from core_modules.ticket_models import FinalActivationTicket, FinalTransferTicket
 from core_modules.zmq_rpc import RPCException, RPCServer
 from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_ticketing import ArtRegistrationServer
@@ -27,6 +28,9 @@ class MasterNodeLogic:
 
         self.__logger = initlogging(self.__nodenum, __name__)
         self.__chainwrapper = chainwrapper
+
+        # the art registry
+        self.__artregistry = ArtRegistry(self.__nodenum)
 
         # masternode manager
         self.__mn_manager = NodeManager(self.__nodenum, self.__privkey, self.__pubkey)
@@ -105,6 +109,19 @@ class MasterNodeLogic:
 
                         # add this chunkid to chunkmanager
                         self.__chunkmanager.add_new_chunks(chunks)
+
+                        # add ticket to artregistry
+                        self.__artregistry.add_artwork(regticket)
+                    elif type(ticket) == FinalTransferTicket:
+                        # validate ticket
+                        ticket.validate(self.__chainwrapper)
+
+                        # get the transfer ticket
+                        transfer_ticket = ticket.ticket
+                        transfer_ticket.validate()
+
+                        # add ticket to artregistry
+                        self.__artregistry.add_trade_ticket(transfer_ticket)
             except NotEnoughConfirmations:
                 # this block hasn't got enough confirmations yet
                 await asyncio.sleep(1)

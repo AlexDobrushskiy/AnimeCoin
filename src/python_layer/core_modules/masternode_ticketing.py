@@ -1,7 +1,7 @@
 import time
 
 from .ticket_models import RegistrationTicket, Signature, FinalRegistrationTicket, ActivationTicket,\
-    FinalActivationTicket, ImageData, IDTicket, FinalIDTicket
+    FinalActivationTicket, ImageData, IDTicket, FinalIDTicket, TransferTicket, FinalTransferTicket
 from core_modules.blackbox_modules.signatures import\
     pastel_id_write_signature_on_data_func
 from core_modules.settings import NetWorkSettings
@@ -290,6 +290,38 @@ class IDRegistrationClient:
 
         finalticket = FinalIDTicket(dictionary={
             "ticket": idticket.to_dict(),
+            "signature": signature.to_dict(),
+        })
+        finalticket.validate()
+
+        self.__chainwrapper.store_ticket(finalticket)
+
+
+class TransferRegistrationClient:
+    def __init__(self, privkey, pubkey, chainwrapper, artregistry):
+        self.__privkey = privkey
+        self.__pubkey = pubkey
+        self.__chainwrapper = chainwrapper
+        self.__artregistry = artregistry
+
+    def register_transfer(self, recipient_pubkey, imagedata_hash, final_actticket_txid, copies):
+        transferticket = TransferTicket(dictionary={
+            "author": self.__pubkey,
+            "recipient": recipient_pubkey,
+            "imagedata_hash": imagedata_hash,
+            "final_actticket_txid": final_actticket_txid,
+            "copies": copies,
+        })
+        transferticket.validate(self.__chainwrapper, self.__artregistry)
+
+        signature = Signature(dictionary={
+            "signature": pastel_id_write_signature_on_data_func(transferticket.serialize(), self.__privkey, self.__pubkey),
+            "pubkey": self.__pubkey,
+        })
+        signature.validate(transferticket)
+
+        finalticket = FinalTransferTicket(dictionary={
+            "ticket": transferticket.to_dict(),
             "signature": signature.to_dict(),
         })
         finalticket.validate()
