@@ -19,7 +19,7 @@ class RPCClient:
         if type(nodeid) is not int:
             raise TypeError("nodeid must be int!")
 
-        self.__logger = initlogging(nodenum, __name__, level="info")
+        self.__logger = initlogging(nodenum, __name__, level="debug")
 
         # variables of the client
         self.__privkey = privkey
@@ -187,7 +187,9 @@ class RPCServer:
         # our RPC socket
         self.__zmq = zmq.asyncio.Context().socket(zmq.ROUTER)
         self.__zmq.setsockopt(zmq.IDENTITY, bytes(str(self.__nodenum), "utf-8"))
-        self.__zmq.bind("tcp://%s:%s" % (self.__ip, self.__port))
+        bindaddr = "tcp://%s:%s" % (self.__ip, self.__port)
+        self.__zmq.bind(bindaddr)
+        self.__logger.debug("RPC listening on %s" % bindaddr)
 
         # define our RPCs
         self.__RPCs = {}

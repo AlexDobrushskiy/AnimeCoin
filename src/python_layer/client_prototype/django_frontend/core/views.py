@@ -5,6 +5,7 @@ from bitcoinrpc.authproxy import JSONRPCException
 from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
+
 from core_modules.artregistry import ArtRegistry
 from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
 from core_modules.helpers import bytes_to_chunkid, hex_to_chunkid

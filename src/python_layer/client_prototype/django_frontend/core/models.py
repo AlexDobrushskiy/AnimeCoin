@@ -3,6 +3,7 @@ import asyncio
 import logging
 
 from django.conf import settings
+from core_modules.zmq_rpc import RPCClient
 from core_modules.blockchain import BlockChain
 from core_modules.chainwrapper import ChainWrapper
 from core_modules.helpers import get_nodeid_from_pubkey
@@ -77,3 +78,5 @@ nodemanager = NodeManager(NODENUM, privkey, pubkey)
 nodemanager.update_masternode_list()
 
 aliasmanager = AliasManager(NODENUM, NODEID, nodemanager)
+
+rpcclient = RPCClient(NODENUM, privkey, pubkey, NODEID, SERVER_IP, SERVER_PORT, MNPUBKEY)
