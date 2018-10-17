@@ -2,6 +2,8 @@ import nacl.utils
 import time
 import msgpack
 
+from decimal import Decimal
+
 from core_modules.blackbox_modules.signatures import pastel_id_write_signature_on_data_func,\
     pastel_id_verify_signature_with_public_key_func
 from core_modules.blackbox_modules.helpers import sleep_rand
@@ -15,6 +17,23 @@ NONCE_LENGTH = 32
 
 
 VALID_CONTAINER_KEYS_v1 = {"version", "sender_id", "receiver_id", "data", "nonce", "timestamp", "signature"}
+
+
+# START MSGPACK EXT TYPES
+# NOTE: Be very careful here when adding new types. Deserializing data from the wire can
+#       introduce arbitrary code execution and other nasty things!
+#       Decimal, however is not vulnerable to this.
+def default(obj):
+    if isinstance(obj, Decimal):
+        return msgpack.ExtType(0, str(obj).encode("utf-8"))
+    raise TypeError("Unknown type: %r" % (obj,))
+
+
+def ext_hook(code, data):
+    if code == 0:
+        return Decimal(data.decode("utf-8"))
+    return msgpack.ExtType(code, data)
+# END MSGPACK EXT TYPES
 
 
 def ensure_types_for_v1(container):
@@ -35,7 +54,7 @@ def verify_and_unpack(raw_message_contents, expected_receiver_id):
                                                                          NetWorkSettings.RPC_MSG_SIZELIMIT))
 
     # raw=False makes this unpack to utf-8 strings
-    container = msgpack.unpackb(raw_message_contents, raw=False)
+    container = msgpack.unpackb(raw_message_contents, ext_hook=ext_hook, raw=False)
     ensure_type(container, dict)
 
     if container.get("version") is None:
@@ -68,7 +87,7 @@ def verify_and_unpack(raw_message_contents, expected_receiver_id):
         tmp = container.copy()
         tmp["signature"] = b''
         sleep_rand()
-        raw_hash = get_pynode_digest_bytes(msgpack.packb(tmp, use_bin_type=True))
+        raw_hash = get_pynode_digest_bytes(msgpack.packb(tmp, default=default, use_bin_type=True))
         verified = pastel_id_verify_signature_with_public_key_func(raw_hash, signature, sender_id)
         sleep_rand()
 
@@ -104,14 +123,14 @@ def pack_and_sign(privkey, pubkey, receiver_id, message_body, version=MAX_SUPPOR
 
         # serialize container, calculate hash and sign with private key
         # signature is None as this point as we can't know the signature without calculating it
-        container_serialized = msgpack.packb(container, use_bin_type=True)
+        container_serialized = msgpack.packb(container, default=default, use_bin_type=True)
         signature = pastel_id_write_signature_on_data_func(get_pynode_digest_bytes(container_serialized), privkey, pubkey)
 
         # TODO: serializing twice is not the best solution if we want to work with large messages
 
         # fill signature field in and serialize again
         container["signature"] = signature
-        final = msgpack.packb(container, use_bin_type=True)
+        final = msgpack.packb(container, default=default, use_bin_type=True)
 
         if len(final) > NetWorkSettings.RPC_MSG_SIZELIMIT:
             raise ValueError("raw_message_contents is too large: %s > %s" % (len(final),
