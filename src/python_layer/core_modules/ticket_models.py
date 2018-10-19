@@ -347,10 +347,9 @@ class OrderTicket(TicketModelBase):
 
 class TransferTicket(TicketModelBase):
     methods = {
-        "author": PubkeyField(),
+        "public_key": PubkeyField(),
         "recipient": PubkeyField(),
-        "imagedata_hash": SHA3512Field,
-        "final_actticket_txid": TXIDField(),
+        "imagedata_hash": SHA3512Field(),
         "copies": IntegerField(minsize=0, maxsize=1000),
     }
 
@@ -358,7 +357,7 @@ class TransferTicket(TicketModelBase):
         # TODO: audit this
 
         # make sure artwork is properly registered
-        final_actticket = chainwrapper.retrieve_ticket(self.final_actticket_txid)
+        final_actticket = artregistry.get_ticket_for_artwork(self.imagedata_hash)
         final_actticket.validate(chainwrapper)
 
         actticket = final_actticket.ticket
@@ -371,10 +370,10 @@ class TransferTicket(TicketModelBase):
         require_true(regticket.imagedata_hash == self.imagedata_hash)
 
         # make sure author owns the artwork
-        require_true(actticket.author == self.author)
+        require_true(actticket.author == self.public_key)
 
         # make sure enough remaining copies left
-        require_true(artregistry.enough_copies_left(regticket.imagedata_hash, self.author, self.copies))
+        require_true(artregistry.enough_copies_left(regticket.imagedata_hash, self.public_key, self.copies))
 
 
 class IDTicket(TicketModelBase):

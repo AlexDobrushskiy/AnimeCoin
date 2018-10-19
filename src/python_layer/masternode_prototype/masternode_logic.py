@@ -4,7 +4,7 @@ import asyncio
 from core_modules.logger import initlogging
 from core_modules.artregistry import ArtRegistry
 from core_modules.djangointerface import DjangoInterface
-from core_modules.chainwrapper import NotEnoughConfirmations
+from core_modules.blockchain import NotEnoughConfirmations
 from core_modules.chunkmanager import ChunkManager
 from core_modules.chunkmanager_modules.chunkmanager_rpc import ChunkManagerRPC
 from core_modules.chunkmanager_modules.aliasmanager import AliasManager
@@ -120,14 +120,14 @@ class MasterNodeLogic:
                         self.__chunkmanager.add_new_chunks(chunks)
 
                         # add ticket to artregistry
-                        self.__artregistry.add_artwork(regticket)
+                        self.__artregistry.add_artwork(txid, ticket, regticket)
                     elif type(ticket) == FinalTransferTicket:
                         # validate ticket
-                        ticket.validate(self.__chainwrapper)
+                        ticket.validate()
 
                         # get the transfer ticket
                         transfer_ticket = ticket.ticket
-                        transfer_ticket.validate()
+                        transfer_ticket.validate(self.__chainwrapper, self.__artregistry)
 
                         # add ticket to artregistry
                         self.__artregistry.add_trade_ticket(transfer_ticket)

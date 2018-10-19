@@ -1,9 +1,9 @@
 from bitcoinrpc.authproxy import JSONRPCException
 
 from core_modules.logger import initlogging
-from core_modules.blockchain import NotEnoughConfirmations
 from core_modules.helpers import bytes_from_hex, bytes_to_hex
-from core_modules.ticket_models import FinalIDTicket, FinalActivationTicket, FinalRegistrationTicket
+from core_modules.ticket_models import FinalIDTicket, FinalActivationTicket, FinalRegistrationTicket,\
+    FinalTransferTicket
 from core_modules.settings import NetWorkSettings
 
 
@@ -19,7 +19,7 @@ class ChainWrapper:
         self.__blockchain = blockchain
 
     def get_tickets_by_type(self, tickettype):
-        if tickettype not in ["identity", "regticket", "actticket"]:
+        if tickettype not in ["identity", "regticket", "actticket", "transticket"]:
             raise ValueError("%s is not a valid ticket type!" % tickettype)
 
         for txid, ticket in self.all_ticket_iterator():
@@ -31,6 +31,9 @@ class ChainWrapper:
                     yield txid, ticket
             elif tickettype == "actticket":
                 if type(ticket) == FinalActivationTicket:
+                    yield txid, ticket
+            elif tickettype == "transticket":
+                if type(ticket) == FinalTransferTicket:
                     yield txid, ticket
 
     def get_identity_ticket(self, pubkey):
@@ -62,6 +65,8 @@ class ChainWrapper:
             identifier = b'regticket'
         elif type(ticket) == FinalActivationTicket:
             identifier = b'actticket'
+        elif type(ticket) == FinalTransferTicket:
+            identifier = b'transticket'
         else:
             raise TypeError("Ticket type invalid: %s" % type(ticket))
 
@@ -91,6 +96,10 @@ class ChainWrapper:
             ticket = FinalActivationTicket(serialized=raw_ticket_data[len(b'actticket'):])
             if validate:
                 ticket.validate(self)
+        elif raw_ticket_data.startswith(b'transticket'):
+            ticket = FinalTransferTicket(serialized=raw_ticket_data[len(b'transticket'):])
+            if validate:
+                ticket.validate()
         else:
             raise ValueError("TXID %s is not a valid ticket: %s" % (txid, raw_ticket_data))
 

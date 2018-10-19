@@ -52,6 +52,10 @@ def hex_to_chunkid(digest):
     return int(digest, 16)
 
 
+def hex_to_pubkey(digest):
+    return int(digest, 16)
+
+
 def chunkid_to_hex(digest):
     return SHA3_HEXFORMAT % digest
 

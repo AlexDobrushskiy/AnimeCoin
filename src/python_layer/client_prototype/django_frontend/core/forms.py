@@ -24,3 +24,9 @@ class ArtworkRegistrationForm(forms.Form):
     # artwork_creation_video_youtube_url = forms.CharField(label='youtube video url', max_length=200)
     # artwork_keyword_set = forms.CharField(label='Keywords', max_length=200)
     # total_copies = forms.FloatField(label='Total Copies')
+
+
+class TransferRegistraionForm(forms.Form):
+    recipient_pubkey = forms.CharField(label='Recipient\'s public key', max_length=200)
+    imagedata_hash = forms.CharField(label='Image hash', max_length=200)
+    copies = forms.IntegerField(label='copies')

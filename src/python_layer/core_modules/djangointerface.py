@@ -2,9 +2,9 @@ import asyncio
 
 from bitcoinrpc.authproxy import JSONRPCException
 
-from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient
+from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient, TransferRegistrationClient
 from core_modules.logger import initlogging
-from core_modules.helpers import bytes_to_chunkid, hex_to_chunkid
+from core_modules.helpers import bytes_to_chunkid, hex_to_chunkid, bytes_from_hex
 
 
 class DjangoInterface:
@@ -30,7 +30,6 @@ class DjangoInterface:
     async def process_django_request(self, data):
         rpcname = data[0]
         args = data[1:]
-        self.__logger.debug("Received Django RPC: %s, args: %s" % (rpcname, args))
 
         if rpcname == "get_info":
             return self.__get_infos()
@@ -60,6 +59,10 @@ class DjangoInterface:
             return self.__explorer_gettransaction(args[0])
         elif rpcname == "explorer_getaddresses":
             return self.__explorer_getaddresses(args[0])
+        elif rpcname == "get_artworks_owned_by_me":
+            return self.__get_artworks_owned_by_me()
+        elif rpcname == "register_transfer_ticket":
+            return self.__register_transfer_ticket(*args)
         else:
             raise ValueError("Invalid RPC: %s" % rpcname)
 
@@ -215,3 +218,12 @@ class DjangoInterface:
         except JSONRPCException:
             pass
         return transactions
+
+    def __get_artworks_owned_by_me(self):
+        return self.__artregistry.get_art_owned_by(self.__pubkey)
+
+    def __register_transfer_ticket(self, recipient_pubkey_hex, imagedata_hash_hex, copies):
+        recipient_pubkey = bytes_from_hex(recipient_pubkey_hex)
+        imagedata_hash = bytes_from_hex(imagedata_hash_hex)
+        transreg = TransferRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
+        transreg.register_transfer(recipient_pubkey, imagedata_hash, copies)

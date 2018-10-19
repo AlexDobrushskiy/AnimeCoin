@@ -3,7 +3,8 @@ from django.shortcuts import render, redirect, Http404, HttpResponse
 
 
 from core.models import pubkey, privkey, rpcclient, call_rpc
-from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm
+from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm,\
+    TransferRegistraionForm
 
 
 def index(request):
@@ -58,8 +59,21 @@ def identity(request):
 
 
 def portfolio(request):
-    resp = "TODO"
-    return render(request, "views/portfolio.tpl", {"resp": resp})
+    resp = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_artworks_owned_by_me"]))
+
+    form = TransferRegistraionForm()
+    if request.method == "POST":
+        form = TransferRegistraionForm(request.POST)
+        if form.is_valid():
+            recipient_pubkey = form.cleaned_data["recipient_pubkey"]
+            imagedata_hash = form.cleaned_data["imagedata_hash"]
+            copies = form.cleaned_data["copies"]
+            call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_transfer_ticket",
+                                                                             recipient_pubkey, imagedata_hash,
+                                                                             copies]))
+            return redirect("/portfolio")
+
+    return render(request, "views/portfolio.tpl", {"resp": resp, "form": form, "pubkey": pubkey})
 
 
 def exchange(request):

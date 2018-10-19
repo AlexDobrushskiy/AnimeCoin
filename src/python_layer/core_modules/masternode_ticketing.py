@@ -304,12 +304,11 @@ class TransferRegistrationClient:
         self.__chainwrapper = chainwrapper
         self.__artregistry = artregistry
 
-    def register_transfer(self, recipient_pubkey, imagedata_hash, final_actticket_txid, copies):
+    def register_transfer(self, recipient_pubkey, imagedata_hash, copies):
         transferticket = TransferTicket(dictionary={
-            "author": self.__pubkey,
+            "public_key": self.__pubkey,
             "recipient": recipient_pubkey,
             "imagedata_hash": imagedata_hash,
-            "final_actticket_txid": final_actticket_txid,
             "copies": copies,
         })
         transferticket.validate(self.__chainwrapper, self.__artregistry)
