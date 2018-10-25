@@ -8,7 +8,7 @@ from core_modules.blockchain import NotEnoughConfirmations
 from core_modules.chunkmanager import ChunkManager
 from core_modules.chunkmanager_modules.chunkmanager_rpc import ChunkManagerRPC
 from core_modules.chunkmanager_modules.aliasmanager import AliasManager
-from core_modules.ticket_models import FinalActivationTicket, FinalTransferTicket
+from core_modules.ticket_models import FinalActivationTicket, FinalTransferTicket, FinalTradeTicket
 from core_modules.zmq_rpc import RPCException, RPCServer
 from core_modules.masternode_communication import NodeManager
 from core_modules.masternode_ticketing import ArtRegistrationServer
@@ -129,7 +129,17 @@ class MasterNodeLogic:
                         transfer_ticket.validate(self.__chainwrapper, self.__artregistry)
 
                         # add ticket to artregistry
-                        self.__artregistry.add_transfer_ticket(transfer_ticket)
+                        self.__artregistry.add_transfer_ticket(txid, transfer_ticket)
+                    elif type(ticket) == FinalTradeTicket:
+                        # validate ticket
+                        ticket.validate()
+
+                        # get the transfer ticket
+                        trade_ticket = ticket.ticket
+                        trade_ticket.validate(self.__chainwrapper, self.__artregistry)
+
+                        # add ticket to artregistry
+                        self.__artregistry.add_trade_ticket(txid, trade_ticket)
             except NotEnoughConfirmations:
                 # this block hasn't got enough confirmations yet
                 await asyncio.sleep(1)

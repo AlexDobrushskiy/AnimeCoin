@@ -3,8 +3,8 @@ from django.shortcuts import render, redirect, Http404, HttpResponse
 
 
 from core.models import pubkey, privkey, rpcclient, call_rpc
-from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm,\
-    TransferRegistraionForm
+from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm, \
+    TransferRegistrationForm, TradeRegistrationForm
 
 
 def index(request):
@@ -60,20 +60,46 @@ def identity(request):
 
 def portfolio(request):
     resp = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_artworks_owned_by_me"]))
+    transferform = TransferRegistrationForm()
+    tradeform = TradeRegistrationForm()
 
-    form = TransferRegistraionForm()
+    return render(request, "views/portfolio.tpl", {"resp": resp, "transferform": transferform,
+                                                   "tradeform": tradeform, "pubkey": pubkey})
+
+
+def artwork(request, artid):
+    art_owners, trade_tickets = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_art_owners", artid]))
+    trade_tickets.reverse()
+    return render(request, "views/artwork.tpl", {"art_owners": art_owners, "trade_tickets": trade_tickets, "artid": artid})
+
+
+def trading(request, function):
     if request.method == "POST":
-        form = TransferRegistraionForm(request.POST)
-        if form.is_valid():
-            recipient_pubkey = form.cleaned_data["recipient_pubkey"]
-            imagedata_hash = form.cleaned_data["imagedata_hash"]
-            copies = form.cleaned_data["copies"]
-            call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_transfer_ticket",
-                                                                             recipient_pubkey, imagedata_hash,
-                                                                             copies]))
-            return redirect("/portfolio")
-
-    return render(request, "views/portfolio.tpl", {"resp": resp, "form": form, "pubkey": pubkey})
+        if function == "transfer":
+            transferform = TransferRegistrationForm(request.POST)
+            if transferform.is_valid():
+                recipient_pubkey = transferform.cleaned_data["recipient_pubkey"]
+                imagedata_hash = transferform.cleaned_data["imagedata_hash"]
+                copies = transferform.cleaned_data["copies"]
+                call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_transfer_ticket",
+                                                                                 recipient_pubkey, imagedata_hash,
+                                                                                 copies]))
+                return redirect("/portfolio")
+        elif function == "trade":
+            tradeform = TradeRegistrationForm(request.POST)
+            if tradeform.is_valid():
+                imagedata_hash = tradeform.cleaned_data["imagedata_hash"]
+                tradetype = tradeform.cleaned_data["tradetype"]
+                copies = tradeform.cleaned_data["copies"]
+                price = tradeform.cleaned_data["price"]
+                expiration = tradeform.cleaned_data["expiration"]
+                call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_trade_ticket",
+                                                                                 imagedata_hash, tradetype, copies,
+                                                                                 price, expiration]))
+                return redirect("/portfolio")
+        else:
+            # invalid function
+            raise Http404()
 
 
 def exchange(request):
@@ -87,9 +113,9 @@ def trending(request):
 
 
 def browse(request, txid=""):
-    tickets, regticket = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["browse", txid]))
-
-    return render(request, "views/browse.tpl", {"tickets": tickets, "txid": txid, "regticket": regticket})
+    tickets, ticket = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["browse", txid]))
+    tickets.reverse()
+    return render(request, "views/browse.tpl", {"tickets": tickets, "txid": txid, "ticket": ticket})
 
 
 def register(request):

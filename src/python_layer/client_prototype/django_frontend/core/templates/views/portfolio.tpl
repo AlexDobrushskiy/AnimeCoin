@@ -5,14 +5,28 @@
 
 {% block body %}
 <div class="row">
-    <div class="col-sm-12 mt-3">
+    <div class="col-sm-12">
         <p>My pubkey: {{ pubkey.hex() }}</p>
-        <form method="post">
+    </div>
+    <div class="col-sm-4 mt-3">
+        <h2>Transfer</h2>
+        <form method="post" action="/trading/transfer">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
             <table class="table">
-                {{ form }}
+                {{ transferform }}
             </table>
             <button type="submit" class="btn btn-success btn-center">Transfer artwork</button>
+        </form>
+    </div>
+
+    <div class="col-sm-4 mt-3">
+        <h2>Trade</h2>
+        <form method="post" action="/trading/trade">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+            <table class="table">
+                {{ tradeform }}
+            </table>
+            <button type="submit" class="btn btn-success btn-center">Trade artwork</button>
         </form>
     </div>
 
@@ -21,7 +35,7 @@
             {% for artid, copies in resp %}
                 <tr>
                     <td>
-                        artwork: <a href="/portfolio/{{ artid.hex() }}">{{ artid.hex() }}</a><br />
+                        artwork: <a href="/portfolio/artwork/{{ artid.hex() }}">{{ artid.hex() }}</a><br />
                         {{ copies }}
                     </td>
                 </tr>

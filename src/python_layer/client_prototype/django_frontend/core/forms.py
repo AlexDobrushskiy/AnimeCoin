@@ -26,7 +26,15 @@ class ArtworkRegistrationForm(forms.Form):
     # total_copies = forms.FloatField(label='Total Copies')
 
 
-class TransferRegistraionForm(forms.Form):
+class TransferRegistrationForm(forms.Form):
     recipient_pubkey = forms.CharField(label='Recipient\'s public key', max_length=200)
     imagedata_hash = forms.CharField(label='Image hash', max_length=200)
     copies = forms.IntegerField(label='copies')
+
+
+class TradeRegistrationForm(forms.Form):
+    imagedata_hash = forms.CharField(label='Image hash', max_length=200)
+    tradetype = forms.ChoiceField(label="Trade type", choices=(("bid", "bid"), ("ask", "ask")))
+    copies = forms.IntegerField(label='copies')
+    price = forms.IntegerField(label='price')
+    expiration = forms.IntegerField(label='expiration')

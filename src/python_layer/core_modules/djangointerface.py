@@ -2,7 +2,10 @@ import asyncio
 
 from bitcoinrpc.authproxy import JSONRPCException
 
-from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient, TransferRegistrationClient
+from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient, TransferRegistrationClient,\
+    TradeRegistrationClient
+from core_modules.masternode_ticketing import FinalIDTicket, FinalTradeTicket, FinalTransferTicket,\
+    FinalActivationTicket, FinalRegistrationTicket
 from core_modules.logger import initlogging
 from core_modules.helpers import bytes_to_chunkid, hex_to_chunkid, bytes_from_hex
 
@@ -63,6 +66,10 @@ class DjangoInterface:
             return self.__get_artworks_owned_by_me()
         elif rpcname == "register_transfer_ticket":
             return self.__register_transfer_ticket(*args)
+        elif rpcname == "get_art_owners":
+            return self.__get_art_owners(args[0])
+        elif rpcname == "register_trade_ticket":
+            return self.__register_trade_ticket(*args)
         else:
             raise ValueError("Invalid RPC: %s" % rpcname)
 
@@ -103,23 +110,23 @@ class DjangoInterface:
         return image_data
 
     def __browse(self, txid):
-        tickets, regticket, lubyhashes = [], None, []
+        tickets, ticket = [], None
         if txid == "":
-            for tmptxid, final_actticket in self.__chainwrapper.get_tickets_by_type("actticket"):
-                final_actticket.validate(self.__chainwrapper)
-                final_regticket = self.__chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
-                final_regticket.validate(self.__chainwrapper)
-                regticket = final_regticket.ticket
-                tickets.append((tmptxid, regticket.to_dict()))
-
+            for txid, ticket in self.__chainwrapper.all_ticket_iterator():
+                if type(ticket) == FinalIDTicket:
+                    tickets.append((txid, "identity", ticket.to_dict()))
+                if type(ticket) == FinalRegistrationTicket:
+                    tickets.append((txid, "regticket", ticket.to_dict()))
+                if type(ticket) == FinalActivationTicket:
+                    tickets.append((txid, "actticket", ticket.to_dict()))
+                if type(ticket) == FinalTransferTicket:
+                    tickets.append((txid, "transticket", ticket.to_dict()))
+                if type(ticket) == FinalTradeTicket:
+                    tickets.append((txid, "tradeticket", ticket.to_dict()))
         else:
             # get and process ticket as new node
-            final_actticket = self.__chainwrapper.retrieve_ticket(txid)
-            final_actticket.validate(self.__chainwrapper)
-            final_regticket = self.__chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
-            final_regticket.validate(self.__chainwrapper)
-            regticket = final_regticket.ticket
-        return tickets, regticket.to_dict()
+            ticket = self.__chainwrapper.retrieve_ticket(txid)
+        return tickets, None if ticket is None else ticket.to_dict()
 
     def __get_wallet_info(self):
         listunspent = self.__blockchain.listunspent()
@@ -227,3 +234,14 @@ class DjangoInterface:
         imagedata_hash = bytes_from_hex(imagedata_hash_hex)
         transreg = TransferRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
         transreg.register_transfer(recipient_pubkey, imagedata_hash, copies)
+
+    def __get_art_owners(self, artid_hex):
+        artid = bytes_from_hex(artid_hex)
+        art_owners = self.__artregistry.get_art_owners(artid)
+        trade_tickets = self.__artregistry.get_art_trade_tickets(artid)
+        return art_owners, trade_tickets
+
+    def __register_trade_ticket(self, imagedata_hash_hex, tradetype, copies, price, expiration):
+        imagedata_hash = bytes_from_hex(imagedata_hash_hex)
+        transreg = TradeRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
+        transreg.register_trade(imagedata_hash, tradetype, copies, price, expiration)

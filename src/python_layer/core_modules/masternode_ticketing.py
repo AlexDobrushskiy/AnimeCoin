@@ -1,7 +1,8 @@
 import time
 
 from .ticket_models import RegistrationTicket, Signature, FinalRegistrationTicket, ActivationTicket,\
-    FinalActivationTicket, ImageData, IDTicket, FinalIDTicket, TransferTicket, FinalTransferTicket
+    FinalActivationTicket, ImageData, IDTicket, FinalIDTicket, TransferTicket, FinalTransferTicket, TradeTicket,\
+    FinalTradeTicket
 from core_modules.blackbox_modules.signatures import\
     pastel_id_write_signature_on_data_func
 from core_modules.settings import NetWorkSettings
@@ -328,6 +329,46 @@ class TransferRegistrationClient:
 
         finalticket = FinalTransferTicket(dictionary={
             "ticket": transferticket.to_dict(),
+            "signature": signature.to_dict(),
+        })
+        finalticket.validate()
+
+        self.__chainwrapper.store_ticket(finalticket)
+
+
+class TradeRegistrationClient:
+    def __init__(self, privkey, pubkey, chainwrapper, artregistry):
+        self.__privkey = privkey
+        self.__pubkey = pubkey
+        self.__chainwrapper = chainwrapper
+        self.__artregistry = artregistry
+
+    def register_trade(self, imagedata_hash, tradetype, copies, price, expiration):
+        tradeticket = TradeTicket(dictionary={
+            "public_key": self.__pubkey,
+            "imagedata_hash": imagedata_hash,
+            "type": tradetype,
+            "copies": copies,
+            "price": price,
+            "expiration": expiration,
+        })
+        tradeticket.validate(self.__chainwrapper, self.__artregistry)
+
+        # Make sure enough remaining copies are left on our key
+        # We do this here to prevent creating a ticket we know now as invalid. However anything
+        # might happen before this tickets makes it to the network, os this check can't be put in validate()
+        require_true(self.__artregistry.enough_copies_left(tradeticket.imagedata_hash,
+                                                           tradeticket.public_key,
+                                                           tradeticket.copies))
+
+        signature = Signature(dictionary={
+            "signature": pastel_id_write_signature_on_data_func(tradeticket.serialize(), self.__privkey, self.__pubkey),
+            "pubkey": self.__pubkey,
+        })
+        signature.validate(tradeticket)
+
+        finalticket = FinalTradeTicket(dictionary={
+            "ticket": tradeticket.to_dict(),
             "signature": signature.to_dict(),
         })
         finalticket.validate()

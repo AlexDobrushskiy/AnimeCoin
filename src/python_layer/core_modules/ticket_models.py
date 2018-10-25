@@ -330,7 +330,7 @@ class ActivationTicket(TicketModelBase):
         #     raise ValueError("Image is NSFW, score: %s" % NSFWDetector.get_score(image.image))
 
 
-class OrderTicket(TicketModelBase):
+class TradeTicket(TicketModelBase):
     methods = {
         "public_key": PubkeyField(),
         "imagedata_hash": SHA3512Field(),
@@ -449,10 +449,10 @@ class FinalIDTicket(SelfSignedTicket):
     }
 
 
-class FinalOrderTicket(SelfSignedTicket):
+class FinalTradeTicket(SelfSignedTicket):
     # TODO: this should be a MasterNodeSignedTicket, although that provides no tangible benefits here
     methods = {
-        "ticket": OrderTicket,
+        "ticket": TradeTicket,
         "signature": Signature,
     }
 

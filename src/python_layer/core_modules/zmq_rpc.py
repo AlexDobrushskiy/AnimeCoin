@@ -229,7 +229,7 @@ class RPCServer:
                 ret = await fn(data)
         except Exception as exc:
             self.__logger.exception("Exception received while doing RPC: %s" % exc)
-            msg = [response_name, "ERROR", "RPC ERRROR happened: %s" % exc]
+            msg = [response_name, "ERROR", "RPC ERROR happened: %s" % exc]
         else:
             # generate response if everything went well
             msg = [response_name, "SUCCESS", ret]
