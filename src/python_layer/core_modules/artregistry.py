@@ -2,6 +2,12 @@ from core_modules.logger import initlogging
 from core_modules.helpers import require_true
 
 
+class TicketWrapper:
+    def __init__(self, ticket):
+        self.ticket = ticket
+        self.valid = None
+
+
 class ArtRegistry:
     def __init__(self, nodenum):
         self.__logger = initlogging(nodenum, __name__)
@@ -25,27 +31,35 @@ class ArtRegistry:
         artdb[regticket.author] = regticket.total_copies
         self.__logger.debug("Author %s granted %s copies" % (regticket.author, regticket.total_copies))
 
-    def add_trade_ticket(self, ticket):
+    def add_transfer_ticket(self, ticket):
         artid = ticket.imagedata_hash
+
+        # collect trade tickets for debug purposes
         if self.__tradetickets.get(artid) is None:
             self.__tradetickets[artid] = []
-        self.__tradetickets[artid].append(ticket)
+
+        wrappedticket = TicketWrapper(ticket)
+        self.__tradetickets[artid].append(wrappedticket)
         self.__logger.debug("TradeTicket added to artregistry: %s" % ticket)
 
-        # update owners dict
         artdb = self.__owners[artid]
-
         author_copies = artdb.get(ticket.public_key)
-        require_true(author_copies > ticket.copies)
 
-        if artdb.get(ticket.recipient) is None:
-            artdb[ticket.recipient] = 0
+        # validate that enough copies exist
+        if author_copies > ticket.copies:
+            # enough copies exist, transfer them
+            if artdb.get(ticket.recipient) is None:
+                artdb[ticket.recipient] = 0
 
-        # move the copies
-        artdb[ticket.recipient] += ticket.copies
-        artdb[ticket.public_key] -= ticket.copies
-        self.__logger.debug("Copies updated: %s -> %s, %s -> %s" % (ticket.recipient, artdb[ticket.recipient],
-                                                                    ticket.public_key, artdb[ticket.public_key]))
+            # move the copies
+            artdb[ticket.recipient] += ticket.copies
+            artdb[ticket.public_key] -= ticket.copies
+            self.__logger.debug("Copies updated: %s -> %s, %s -> %s" % (ticket.recipient, artdb[ticket.recipient],
+                                                                        ticket.public_key, artdb[ticket.public_key]))
+            wrappedticket.valid = True
+        else:
+            self.__logger.debug("Not enough copies exist %s <= %s, skipping ticket" % (author_copies, ticket.copies))
+            wrappedticket.valid = False
 
     def enough_copies_left(self, artid, author, copies):
         artdb = self.__owners.get(artid)

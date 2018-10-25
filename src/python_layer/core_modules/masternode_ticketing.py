@@ -313,6 +313,13 @@ class TransferRegistrationClient:
         })
         transferticket.validate(self.__chainwrapper, self.__artregistry)
 
+        # Make sure enough remaining copies are left on our key
+        # We do this here to prevent creating a ticket we know now as invalid. However anything
+        # might happen before this tickets makes it to the network, os this check can't be put in validate()
+        require_true(self.__artregistry.enough_copies_left(transferticket.imagedata_hash,
+                                                           transferticket.public_key,
+                                                           transferticket.copies))
+
         signature = Signature(dictionary={
             "signature": pastel_id_write_signature_on_data_func(transferticket.serialize(), self.__privkey, self.__pubkey),
             "pubkey": self.__pubkey,

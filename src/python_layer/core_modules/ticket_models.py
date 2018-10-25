@@ -332,17 +332,24 @@ class ActivationTicket(TicketModelBase):
 
 class OrderTicket(TicketModelBase):
     methods = {
-        "author": PubkeyField(),
-        "artwork_txid": TXIDField(),
-        "count": IntegerField(minsize=0, maxsize=1000),
+        "public_key": PubkeyField(),
+        "imagedata_hash": SHA3512Field(),
+        "type": StringChoiceField(choices=["ask", "bid"]),
+        "copies": IntegerField(minsize=0, maxsize=1000),
         "price": IntegerField(minsize=0, maxsize=2**32-1),
-        "fill_or_kill": IntegerField(minsize=-1, maxsize=10000),   # -1 means don't expire
-        "type": StringChoiceField(choices=["bid", "ask"]),
+        "expiration": IntegerField(minsize=0, maxsize=1000),   # x==0 means never expire, x > 0 mean X blocks
     }
 
-    def validate(self):
+    def validate(self, chainwrapper, artregistry):
         # TODO
-        pass
+
+        # make sure artwork is properly registered
+        artregistry.get_ticket_for_artwork(self.imagedata_hash)
+
+        # we can't validate anything else here as all other checks are dependent on other tickets:
+        #  o copies is dependent on the current order book
+        #  o price can be anything
+        #  o expiration is time dependent
 
 
 class TransferTicket(TicketModelBase):
@@ -357,23 +364,12 @@ class TransferTicket(TicketModelBase):
         # TODO: audit this
 
         # make sure artwork is properly registered
-        final_actticket = artregistry.get_ticket_for_artwork(self.imagedata_hash)
-        final_actticket.validate(chainwrapper)
+        artregistry.get_ticket_for_artwork(self.imagedata_hash)
 
-        actticket = final_actticket.ticket
-
-        final_regticket = chainwrapper.retrieve_ticket(final_actticket.ticket.registration_ticket_txid)
-
-        regticket = final_regticket.ticket
-
-        # make sure final_actticket_txid and imagedata_hash belongs to the same artwork
-        require_true(regticket.imagedata_hash == self.imagedata_hash)
-
-        # make sure author owns the artwork
-        require_true(actticket.author == self.public_key)
-
-        # make sure enough remaining copies left
-        require_true(artregistry.enough_copies_left(regticket.imagedata_hash, self.public_key, self.copies))
+        # we can't validate anything else here as all other checks are dependent on other tickets:
+        #  o public_key might not own any more copies
+        #  o recipient can be any key
+        #  o copies depends on whether public_key owns enough copies which is time dependent
 
 
 class IDTicket(TicketModelBase):
@@ -449,6 +445,14 @@ class SelfSignedTicket(TicketModelBase):
 class FinalIDTicket(SelfSignedTicket):
     methods = {
         "ticket": IDTicket,
+        "signature": Signature,
+    }
+
+
+class FinalOrderTicket(SelfSignedTicket):
+    # TODO: this should be a MasterNodeSignedTicket, although that provides no tangible benefits here
+    methods = {
+        "ticket": OrderTicket,
         "signature": Signature,
     }
 

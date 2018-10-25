@@ -105,7 +105,6 @@ class MasterNodeLogic:
 
                         # fetch corresponding finalregticket
                         final_regticket = self.__chainwrapper.retrieve_ticket(ticket.ticket.registration_ticket_txid)
-                        final_regticket.validate(self.__chainwrapper)
 
                         # get the actual regticket
                         regticket = final_regticket.ticket
@@ -130,7 +129,7 @@ class MasterNodeLogic:
                         transfer_ticket.validate(self.__chainwrapper, self.__artregistry)
 
                         # add ticket to artregistry
-                        self.__artregistry.add_trade_ticket(transfer_ticket)
+                        self.__artregistry.add_transfer_ticket(transfer_ticket)
             except NotEnoughConfirmations:
                 # this block hasn't got enough confirmations yet
                 await asyncio.sleep(1)
