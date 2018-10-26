@@ -64,6 +64,8 @@ NetWorkSettings.COIN = 100000
 NetWorkSettings.BASE_TRANSACTION_AMOUNT = 300.0/NetWorkSettings.COIN  #0.00300
 NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
 
+NetWorkSettings.TICKET_MATCH_EXPIRY = 30                 # 30s blocks x 30: 900s -> 15m
+
 
 if NetWorkSettings.DEBUG:
     NetWorkSettings.REQUIRED_CONFIRMATIONS = 1

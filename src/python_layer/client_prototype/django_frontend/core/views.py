@@ -69,7 +69,8 @@ def portfolio(request):
 
 def artwork(request, artid):
     art_owners, trade_tickets = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_art_owners", artid]))
-    trade_tickets.reverse()
+    if trade_tickets is not None:
+        trade_tickets.reverse()
     return render(request, "views/artwork.tpl", {"art_owners": art_owners, "trade_tickets": trade_tickets, "artid": artid})
 
 
@@ -90,16 +91,17 @@ def trading(request, function):
             if tradeform.is_valid():
                 imagedata_hash = tradeform.cleaned_data["imagedata_hash"]
                 tradetype = tradeform.cleaned_data["tradetype"]
+                wallet_address = tradeform.cleaned_data["wallet_address"]
                 copies = tradeform.cleaned_data["copies"]
                 price = tradeform.cleaned_data["price"]
                 expiration = tradeform.cleaned_data["expiration"]
                 call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_trade_ticket",
-                                                                                 imagedata_hash, tradetype, copies,
+                                                                                 imagedata_hash, tradetype,
+                                                                                 wallet_address, copies,
                                                                                  price, expiration]))
                 return redirect("/portfolio")
-        else:
-            # invalid function
-            raise Http404()
+    # invalid function
+    raise Http404()
 
 
 def exchange(request):

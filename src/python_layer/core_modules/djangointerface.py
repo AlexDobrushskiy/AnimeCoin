@@ -241,7 +241,7 @@ class DjangoInterface:
         trade_tickets = self.__artregistry.get_art_trade_tickets(artid)
         return art_owners, trade_tickets
 
-    def __register_trade_ticket(self, imagedata_hash_hex, tradetype, copies, price, expiration):
+    def __register_trade_ticket(self, imagedata_hash_hex, tradetype, wallet_address, copies, price, expiration):
         imagedata_hash = bytes_from_hex(imagedata_hash_hex)
         transreg = TradeRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
-        transreg.register_trade(imagedata_hash, tradetype, copies, price, expiration)
+        transreg.register_trade(imagedata_hash, tradetype, wallet_address, copies, price, expiration)

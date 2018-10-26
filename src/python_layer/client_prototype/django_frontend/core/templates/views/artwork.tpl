@@ -26,13 +26,21 @@
     <div class="col-sm-12 mt-3">
         <h3>Tickets</h3>
         <table class="table table-striped">
-            {% for txid, valid, tickettype, ticket in trade_tickets %}
+            {% for created, txid, valid, status, tickettype, ticket in trade_tickets %}
                 <tr>
                     <td>
+                        created: {{ created }}<br />
                         txid: <a href="/browse/{{ txid }}">{{ txid }}</a><br />
                         type: {{ tickettype }}<br />
-                        valid: {{ valid }}<br />
-                        ticket: {{ ticket }}
+                        done: {{ valid }}<br />
+                        status: {{ status }}<br />
+                        ticket: vvvvvvvvvvvvvvvvvvvvvvv<br />
+                        copies: {{ ticket["copies"] }}<br />
+                        expiration: {{ ticket["expiration"] }}<br />
+                        imagedata_hash: {{ ticket["imagedata_hash"].hex() }}<br />
+                        price: {{ ticket["price"] }}<br />
+                        public_key: {{ ticket["public_key"].hex() }}<br />
+                        type: {{ ticket["type"] }}<br />
                     </td>
                 </tr>
             {% endfor %}

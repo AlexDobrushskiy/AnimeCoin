@@ -337,6 +337,7 @@ class TradeTicket(TicketModelBase):
         "type": StringChoiceField(choices=["ask", "bid"]),
         "copies": IntegerField(minsize=0, maxsize=1000),
         "price": IntegerField(minsize=0, maxsize=2**32-1),
+        "wallet_address": BlockChainAddressField(),
         "expiration": IntegerField(minsize=0, maxsize=1000),   # x==0 means never expire, x > 0 mean X blocks
     }
 

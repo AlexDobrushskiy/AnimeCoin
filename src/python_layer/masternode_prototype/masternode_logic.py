@@ -94,6 +94,10 @@ class MasterNodeLogic:
         current_block = 0
         while True:
             try:
+                # update current block height in artregistry
+                self.__artregistry.update_current_block_height(current_block)
+
+                # notify objects of the tickets discovered
                 for txid, ticket in self.__chainwrapper.get_tickets_for_block(current_block):
                     # give others some room to breathe
                     await asyncio.sleep(0)
