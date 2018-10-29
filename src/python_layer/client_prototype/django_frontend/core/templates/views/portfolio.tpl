@@ -58,7 +58,7 @@
                         ticket: vvvvvvvvvvvvvvvvvvvvvvv<br />
                         copies: {{ ticket["copies"] }}<br />
                         expiration: {{ ticket["expiration"] }}<br />
-                        imagedata_hash: {{ ticket["imagedata_hash"].hex() }}<br />
+                        imagedata_hash: <a href="/portfolio/artwork/{{ ticket["imagedata_hash"].hex() }}">{{ ticket["imagedata_hash"].hex() }}</a><br />
                         price: {{ ticket["price"] }}<br />
                         public_key: {{ ticket["public_key"].hex() }}<br />
                         type: {{ ticket["type"] }}<br />

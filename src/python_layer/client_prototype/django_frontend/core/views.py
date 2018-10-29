@@ -71,10 +71,13 @@ def portfolio(request):
 
 
 def artwork(request, artid):
-    art_owners, trade_tickets = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_art_owners", artid]))
+    art_ticket, art_owners, trade_tickets = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
+                                                                               ["get_art_owners", artid]))
+
     if trade_tickets is not None:
         trade_tickets.reverse()
-    return render(request, "views/artwork.tpl", {"art_owners": art_owners, "trade_tickets": trade_tickets, "artid": artid})
+    return render(request, "views/artwork.tpl", {"art_ticket": art_ticket, "art_owners": art_owners,
+                                                 "trade_tickets": trade_tickets, "artid": artid})
 
 
 def trading(request, function):

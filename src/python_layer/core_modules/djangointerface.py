@@ -244,9 +244,18 @@ class DjangoInterface:
 
     def __get_art_owners(self, artid_hex):
         artid = bytes_from_hex(artid_hex)
+
+        ticket = self.__artregistry.get_ticket_for_artwork(artid)
+        if ticket is not None:
+            # extract the regticket
+            regticket = self.__chainwrapper.retrieve_ticket(ticket.ticket.registration_ticket_txid)
+            ticket = regticket.ticket.to_dict()
+        else:
+            ticket = {}
+
         art_owners = self.__artregistry.get_art_owners(artid)
         trade_tickets = self.__artregistry.get_art_trade_tickets(artid)
-        return art_owners, trade_tickets
+        return ticket, art_owners, trade_tickets
 
     def __register_trade_ticket(self, imagedata_hash_hex, tradetype, copies, price, expiration):
         imagedata_hash = bytes_from_hex(imagedata_hash_hex)

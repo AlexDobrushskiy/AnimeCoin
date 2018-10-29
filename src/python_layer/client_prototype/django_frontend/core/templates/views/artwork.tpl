@@ -7,6 +7,8 @@
 <div class="row">
     <div class="col-sm-12">
         <h3>Artid: {{ artid }}</h3>
+        {% set thumbnailhash=art_ticket["thumbnailhash"].hex() %}
+        <img src="/chunk/{{ thumbnailhash }}" />
     </div>
 
     <div class="col-sm-12 mt-3">
@@ -42,6 +44,19 @@
                         public_key: {{ ticket["public_key"].hex() }}<br />
                         type: {{ ticket["type"] }}<br />
                         wallet_address: {{ ticket["wallet_address"] }}<br />
+                        {% if status == "open" and ticket["type"] == "ask" %}
+                            <form method="post" action="/trading/trade">
+                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+
+                                <input type="hidden" name="imagedata_hash" value="{{ ticket["imagedata_hash"].hex() }}" />
+                                <input type="hidden" name="tradetype" value="bid" />
+                                <input type="hidden" name="copies" value="{{ ticket["copies"] }}" />
+                                <input type="hidden" name="price" value="{{ ticket["price"] }}" />
+                                <input type="hidden" name="expiration" value="0" />
+
+                                <button type="submit" class="btn btn-success btn-center">Buy</button>
+                            </form>
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}

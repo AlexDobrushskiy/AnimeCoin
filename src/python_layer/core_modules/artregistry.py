@@ -103,6 +103,11 @@ class ArtRegistry:
                 if ticket.expired(self.__current_block_height):
                     ticket.status = "invalid"
                     ticket.done = True
+
+                    # unlock the copies
+                    artdb = self.__owners[artid]
+                    artdb[ticket.ticket.public_key] += ticket.ticket.copies
+
                     self.__logger.debug("Ticket has expired: %s" % ticket)
 
     def update_matches(self, vout):
