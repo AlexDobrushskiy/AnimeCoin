@@ -91,8 +91,11 @@ class BlockChain:
     def getbalance(self):
         return self.__call_jsonrpc("getbalance")
 
-    def sendtoaddress(self, address, amount):
-        return self.__call_jsonrpc("sendtoaddress", address, amount)
+    def getnewaddress(self):
+        return self.__call_jsonrpc("getnewaddress")
+
+    def sendtoaddress(self, address, amount, private_comment="", public_comment=""):
+        return self.__call_jsonrpc("sendtoaddress", address, amount, private_comment, public_comment)
 
     def getblock(self, blocknum):
         return self.__call_jsonrpc("getblock", blocknum)

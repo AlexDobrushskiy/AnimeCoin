@@ -24,9 +24,10 @@ def walletinfo(request):
         if form.is_valid():
             address = form.cleaned_data["recipient_wallet"]
             amount = form.cleaned_data["amount"]
+            comment = form.cleaned_data["comment"]
 
             ret = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
-                                                     ["send_to_address", address, amount]))
+                                                     ["send_to_address", address, amount, comment]))
 
             if ret is not None:
                 form.add_error(None, ret)
@@ -59,12 +60,14 @@ def identity(request):
 
 
 def portfolio(request):
-    resp = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_artworks_owned_by_me"]))
+    my_artworks = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_artworks_owned_by_me"]))
+    my_trades = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_my_trades"]))
     transferform = TransferRegistrationForm()
     tradeform = TradeRegistrationForm()
 
-    return render(request, "views/portfolio.tpl", {"resp": resp, "transferform": transferform,
-                                                   "tradeform": tradeform, "pubkey": pubkey})
+    return render(request, "views/portfolio.tpl", {"my_artworks": my_artworks, "my_trades": my_trades,
+                                                   "transferform": transferform, "tradeform": tradeform,
+                                                   "pubkey": pubkey})
 
 
 def artwork(request, artid):
@@ -91,15 +94,17 @@ def trading(request, function):
             if tradeform.is_valid():
                 imagedata_hash = tradeform.cleaned_data["imagedata_hash"]
                 tradetype = tradeform.cleaned_data["tradetype"]
-                wallet_address = tradeform.cleaned_data["wallet_address"]
                 copies = tradeform.cleaned_data["copies"]
                 price = tradeform.cleaned_data["price"]
                 expiration = tradeform.cleaned_data["expiration"]
                 call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_trade_ticket",
                                                                                  imagedata_hash, tradetype,
-                                                                                 wallet_address, copies,
-                                                                                 price, expiration]))
+                                                                                 copies, price, expiration]))
                 return redirect("/portfolio")
+        elif function == "consummate":
+            txid = request.POST["txid"]
+            call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["consummate_trade", txid]))
+            return redirect("/portfolio")
     # invalid function
     raise Http404()
 

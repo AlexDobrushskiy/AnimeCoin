@@ -26,13 +26,17 @@ class TicketWrapper:
 
 
 class Match:
-    def __init__(self, logger, first, second, lockstart):
+    def __init__(self, logger, artid, first, second, lockstart):
         # order is important here: first is always the ticket that comes first!
         self.__logger = logger
 
+        self.artid = artid
         self.first = first
         self.second = second
+
+        # these two variables mark the block numbers in between which this match is considered valid
         self.lockstart = lockstart
+        self.lockend = lockstart + NetWorkSettings.TICKET_MATCH_EXPIRY
 
     def __str__(self):
         return "first: %s, second: %s" % (self.first, self.second)
@@ -65,8 +69,7 @@ class Match:
                 self.__logger.debug("Unsuccessful match, first ticket remains open: %s" % self.first)
 
     def expired(self, current_block_height):
-        blocks_elapsed = current_block_height - self.lockstart
-        if blocks_elapsed > NetWorkSettings.TICKET_MATCH_EXPIRY:
+        if current_block_height > self.lockend:
             return True
         return False
 
@@ -84,12 +87,15 @@ class ArtRegistry:
         self.__current_block_height = new_height
 
         # invalidate matches that expired
-        for match in self.__matches.copy():
+        newmatches = []
+        for match in self.__matches:
             if match.expired(self.__current_block_height):
                 # match has expired without valid transaction
                 match.unlock(success=False, current_block_height=self.__current_block_height)
-                self.__matches.remove(match)
                 self.__logger.debug("Match has expired: %s" % match)
+            else:
+                newmatches.append(match)
+        self.__matches = newmatches
 
         # invalidate open tickets (only these can expire)
         for artid in self.__artworks.keys():
@@ -99,9 +105,36 @@ class ArtRegistry:
                     ticket.done = True
                     self.__logger.debug("Ticket has expired: %s" % ticket)
 
-    def update_matches(self, transaction):
-        # TODO: this function should monitor transactions to addresses we are interested in (for matches)
-        pass
+    def update_matches(self, vout):
+        self.__logger.debug("Relevant transaction received: %s" % vout)
+        address = vout["scriptPubKey"]["addresses"][0]
+        value = vout["value"]
+
+        found = None
+        for match in self.__matches:
+            if match.first.ticket.wallet_address == address and match.first.ticket.price == value:
+                match.unlock(success=True, current_block_height=self.__current_block_height)
+
+                # assign artwork over to the new owner
+                artdb = self.__owners[match.artid]
+                new_owner = match.second.ticket.public_key
+                if artdb.get(new_owner) is None:
+                    artdb[new_owner] = 0
+                artdb[new_owner] += match.first.ticket.copies
+
+                self.__logger.debug("Consummation successful for txid %s, %s copies reassigned!" % (match.first.txid,
+                                                                                                    match.first.ticket.copies))
+                found = match
+                break
+
+        if found is not None:
+            self.__matches.remove(found)
+
+    def get_valid_match_addresses(self):
+        addresses = set()
+        for match in self.__matches:
+            addresses.add(match.first.ticket.wallet_address)
+        return addresses
 
     def add_artwork(self, txid, finalactticket, regticket):
         artid = regticket.imagedata_hash
@@ -154,18 +187,22 @@ class ArtRegistry:
         newticket.done = False
         self.__tickets[artid].append(newticket)
 
-        # TODO:
-        # validate that enough copies exist
-        # "lock" copies that are being sold
-
         matchedticket = self.__find_match(artid, ticket)
         if matchedticket is None:
             # no match
             newticket.status = "open"
+
+            # lock up artworks in the trade
+            artdb = self.__owners[artid]
+            if ticket.copies > artdb[ticket.public_key]:
+                self.__logger.debug("Artist tried to sell more art than they have, ignoring ticket!")
+                return
+            artdb[ticket.public_key] -= ticket.copies
+
             self.__logger.debug("Open trade ticket added to artregistry: %s" % ticket)
         else:
             # tickets matched, add a match object and lock
-            match = Match(self.__logger, matchedticket, newticket, self.__current_block_height)
+            match = Match(self.__logger, artid, matchedticket, newticket, self.__current_block_height)
             match.lock()
 
             self.__matches.append(match)
@@ -181,7 +218,9 @@ class ArtRegistry:
     def __find_match(self, artid, newticket):
         tickets = self.__get_open_trade_tickets_for_art(artid)
         for wrappedticket in tickets:
-            if wrappedticket.ticket.price == newticket.price and wrappedticket.ticket.copies == newticket.copies:
+            if wrappedticket.ticket.price == newticket.price\
+            and wrappedticket.ticket.copies == newticket.copies\
+            and wrappedticket.ticket.public_key != newticket.public_key:
                 self.__logger.debug("Ticket match found at price %s, copies: %s" % (newticket.price, newticket.copies))
                 return wrappedticket
         return None
@@ -205,6 +244,22 @@ class ArtRegistry:
                     artworks.append((artid, copies))
         return artworks
 
+    def get_my_trades(self, pubkey):
+        ret = []
+        for artid in self.__artworks.keys():
+            for ticketwrapper in self.__tickets[artid]:
+                if ticketwrapper.ticket.public_key == pubkey:
+                    ret.append(self.__ticket_to_django_format(ticketwrapper))
+        return ret
+
+    def get_information_for_consummation(self, txid):
+        for match in self.__matches:
+            price = match.first.ticket.price
+            if match.first.txid == txid:
+                return match.second.ticket.wallet_address, price
+            elif match.second.txid == txid:
+                return match.first.ticket.wallet_address, price
+
     def get_ticket_for_artwork(self, artid):
         return self.__artworks[artid][1]
 
@@ -222,5 +277,9 @@ class ArtRegistry:
 
         ret = []
         for ticketwrapper in tradetickets:
-            ret.append((ticketwrapper.created, ticketwrapper.txid, ticketwrapper.done, ticketwrapper.status, ticketwrapper.tickettype, ticketwrapper.ticket.to_dict()))
+            ret.append(self.__ticket_to_django_format(ticketwrapper))
         return ret
+
+    def __ticket_to_django_format(self, ticketwrapper):
+        return (ticketwrapper.created, ticketwrapper.txid, ticketwrapper.done, ticketwrapper.status,
+                ticketwrapper.tickettype, ticketwrapper.ticket.to_dict())

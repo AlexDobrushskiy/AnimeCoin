@@ -127,12 +127,13 @@ class ChainWrapper:
                     continue
             yield txid, ticket
 
-    def get_tickets_for_block(self, blocknum, confirmations=NetWorkSettings.REQUIRED_CONFIRMATIONS):
+    def get_transactions_for_block(self, blocknum, confirmations=NetWorkSettings.REQUIRED_CONFIRMATIONS):
         for txid in self.__blockchain.get_txids_for_block(blocknum, confirmations):
             try:
                 ticket = self.retrieve_ticket(txid, validate=False)
-            except Exception as exc:
-                # self.__logger.debug("ERROR parsing txid %s: %s" % (txid, exc))
+            except JSONRPCException as exc:
                 continue
-
-            yield txid, ticket
+            except Exception as exc:
+                yield txid, "transaction", self.__blockchain.getrawtransaction(txid, 1)
+            else:
+                yield txid, "ticket", ticket

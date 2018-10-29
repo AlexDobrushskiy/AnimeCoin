@@ -41,6 +41,7 @@
                         price: {{ ticket["price"] }}<br />
                         public_key: {{ ticket["public_key"].hex() }}<br />
                         type: {{ ticket["type"] }}<br />
+                        wallet_address: {{ ticket["wallet_address"] }}<br />
                     </td>
                 </tr>
             {% endfor %}

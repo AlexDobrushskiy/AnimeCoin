@@ -355,8 +355,6 @@ class TradeRegistrationClient:
         })
         tradeticket.validate(self.__chainwrapper, self.__artregistry)
 
-        # TODO: make sure wallet_address belongs to us
-
         # We do this here to prevent creating a ticket we know now as invalid. However anything
         # might happen before this ticket makes it to the network, so this check can't be put in validate()
         if tradeticket.type == "ask":

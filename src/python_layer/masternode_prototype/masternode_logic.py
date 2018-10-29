@@ -94,56 +94,71 @@ class MasterNodeLogic:
         current_block = 0
         while True:
             try:
-                # update current block height in artregistry
+                # try to get block - will raise NotEnoughConfirmations if block is not mature
+                # TODO: this is a somewhat ugly workaround, should be refactored with get_transactions_for_block below
+                self.__blockchain.get_txids_for_block(current_block, confirmations=NetWorkSettings.REQUIRED_CONFIRMATIONS)
+
+                # update current block height in artregistry - this purges old tickets / matches
                 self.__artregistry.update_current_block_height(current_block)
 
+                # get the currently listened-for addresses
+                listen_addresses = self.__artregistry.get_valid_match_addresses()
+
                 # notify objects of the tickets discovered
-                for txid, ticket in self.__chainwrapper.get_tickets_for_block(current_block):
-                    # give others some room to breathe
-                    await asyncio.sleep(0)
+                for txid, transtype, data in self.__chainwrapper.get_transactions_for_block(current_block):
+                    if transtype == "ticket":
+                        ticket = data
 
-                    # only parse FinalActivationTickets for now
-                    if type(ticket) == FinalActivationTicket:
-                        # validate ticket
-                        ticket.validate(self.__chainwrapper)
+                        # only parse FinalActivationTickets for now
+                        if type(ticket) == FinalActivationTicket:
+                            # validate ticket
+                            ticket.validate(self.__chainwrapper)
 
-                        # fetch corresponding finalregticket
-                        final_regticket = self.__chainwrapper.retrieve_ticket(ticket.ticket.registration_ticket_txid)
+                            # fetch corresponding finalregticket
+                            final_regticket = self.__chainwrapper.retrieve_ticket(ticket.ticket.registration_ticket_txid)
 
-                        # get the actual regticket
-                        regticket = final_regticket.ticket
+                            # get the actual regticket
+                            regticket = final_regticket.ticket
 
-                        # get the chunkids that we need to store
-                        chunks = []
-                        for chunkid_bytes in [regticket.thumbnailhash] + regticket.lubyhashes:
-                            chunkid = bytes_to_chunkid(chunkid_bytes)
-                            chunks.append(chunkid)
+                            # get the chunkids that we need to store
+                            chunks = []
+                            for chunkid_bytes in [regticket.thumbnailhash] + regticket.lubyhashes:
+                                chunkid = bytes_to_chunkid(chunkid_bytes)
+                                chunks.append(chunkid)
 
-                        # add this chunkid to chunkmanager
-                        self.__chunkmanager.add_new_chunks(chunks)
+                            # add this chunkid to chunkmanager
+                            self.__chunkmanager.add_new_chunks(chunks)
 
-                        # add ticket to artregistry
-                        self.__artregistry.add_artwork(txid, ticket, regticket)
-                    elif type(ticket) == FinalTransferTicket:
-                        # validate ticket
-                        ticket.validate()
+                            # add ticket to artregistry
+                            self.__artregistry.add_artwork(txid, ticket, regticket)
+                        elif type(ticket) == FinalTransferTicket:
+                            # validate ticket
+                            ticket.validate()
 
-                        # get the transfer ticket
-                        transfer_ticket = ticket.ticket
-                        transfer_ticket.validate(self.__chainwrapper, self.__artregistry)
+                            # get the transfer ticket
+                            transfer_ticket = ticket.ticket
+                            transfer_ticket.validate(self.__chainwrapper, self.__artregistry)
 
-                        # add ticket to artregistry
-                        self.__artregistry.add_transfer_ticket(txid, transfer_ticket)
-                    elif type(ticket) == FinalTradeTicket:
-                        # validate ticket
-                        ticket.validate()
+                            # add ticket to artregistry
+                            self.__artregistry.add_transfer_ticket(txid, transfer_ticket)
+                        elif type(ticket) == FinalTradeTicket:
+                            # validate ticket
+                            ticket.validate()
 
-                        # get the transfer ticket
-                        trade_ticket = ticket.ticket
-                        trade_ticket.validate(self.__chainwrapper, self.__artregistry)
+                            # get the transfer ticket
+                            trade_ticket = ticket.ticket
+                            trade_ticket.validate(self.__chainwrapper, self.__artregistry)
 
-                        # add ticket to artregistry
-                        self.__artregistry.add_trade_ticket(txid, trade_ticket)
+                            # add ticket to artregistry
+                            self.__artregistry.add_trade_ticket(txid, trade_ticket)
+                    else:
+                        transaction = data
+                        for vout in transaction["vout"]:
+                            if len(vout["scriptPubKey"]["addresses"]) > 1:
+                                continue
+                            address = vout["scriptPubKey"]["addresses"][0]
+                            if address in listen_addresses:
+                                self.__artregistry.update_matches(vout)
             except NotEnoughConfirmations:
                 # this block hasn't got enough confirmations yet
                 await asyncio.sleep(1)

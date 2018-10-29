@@ -64,12 +64,16 @@ class DjangoInterface:
             return self.__explorer_getaddresses(args[0])
         elif rpcname == "get_artworks_owned_by_me":
             return self.__get_artworks_owned_by_me()
+        elif rpcname == "get_my_trades":
+            return self.__get_my_trades()
         elif rpcname == "register_transfer_ticket":
             return self.__register_transfer_ticket(*args)
         elif rpcname == "get_art_owners":
             return self.__get_art_owners(args[0])
         elif rpcname == "register_trade_ticket":
             return self.__register_trade_ticket(*args)
+        elif rpcname == "consummate_trade":
+            return self.__consummate_trade(*args)
         else:
             raise ValueError("Invalid RPC: %s" % rpcname)
 
@@ -134,9 +138,9 @@ class DjangoInterface:
         balance = self.__blockchain.getbalance()
         return listunspent, receivingaddress, balance
 
-    def __send_to_address(self, address, amount):
+    def __send_to_address(self, address, amount, comment):
         try:
-            self.__blockchain.sendtoaddress(address, amount)
+            self.__blockchain.sendtoaddress(address, amount, public_comment=comment)
         except JSONRPCException as exc:
             return str(exc)
         else:
@@ -174,7 +178,7 @@ class DjangoInterface:
         identity_txid, identity_ticket = self.__chainwrapper.get_identity_ticket(pubkey)
         all_identities = list(
             (txid, ticket.to_dict()) for txid, ticket in self.__chainwrapper.get_tickets_by_type("identity"))
-        return addresses, all_identities, identity_txid, identity_ticket.to_dict()
+        return addresses, all_identities, identity_txid, {} if identity_ticket is None else identity_ticket.to_dict()
 
     def __register_identity(self, address):
         regclient = IDRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper)
@@ -229,6 +233,9 @@ class DjangoInterface:
     def __get_artworks_owned_by_me(self):
         return self.__artregistry.get_art_owned_by(self.__pubkey)
 
+    def __get_my_trades(self):
+        return self.__artregistry.get_my_trades(self.__pubkey)
+
     def __register_transfer_ticket(self, recipient_pubkey_hex, imagedata_hash_hex, copies):
         recipient_pubkey = bytes_from_hex(recipient_pubkey_hex)
         imagedata_hash = bytes_from_hex(imagedata_hash_hex)
@@ -241,7 +248,12 @@ class DjangoInterface:
         trade_tickets = self.__artregistry.get_art_trade_tickets(artid)
         return art_owners, trade_tickets
 
-    def __register_trade_ticket(self, imagedata_hash_hex, tradetype, wallet_address, copies, price, expiration):
+    def __register_trade_ticket(self, imagedata_hash_hex, tradetype, copies, price, expiration):
         imagedata_hash = bytes_from_hex(imagedata_hash_hex)
+        wallet_address = self.__blockchain.getnewaddress()
         transreg = TradeRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
         transreg.register_trade(imagedata_hash, tradetype, wallet_address, copies, price, expiration)
+
+    def __consummate_trade(self, txid):
+        address, price = self.__artregistry.get_information_for_consummation(txid)
+        self.__blockchain.sendtoaddress(address, price)

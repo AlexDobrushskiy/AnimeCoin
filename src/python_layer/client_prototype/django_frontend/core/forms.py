@@ -8,6 +8,7 @@ class ConsoleCommandForm(forms.Form):
 class SendCoinsForm(forms.Form):
     recipient_wallet = forms.CharField(label='Wallet Address', max_length=100)
     amount = forms.FloatField(label='amount')
+    comment = forms.CharField(label='Comment', max_length=100)
 
 
 class IdentityRegistrationForm(forms.Form):
@@ -35,7 +36,6 @@ class TransferRegistrationForm(forms.Form):
 class TradeRegistrationForm(forms.Form):
     imagedata_hash = forms.CharField(label='Image hash', max_length=200)
     tradetype = forms.ChoiceField(label="Trade type", choices=(("bid", "bid"), ("ask", "ask")))
-    wallet_address = forms.CharField(label='My wallet address', max_length=200)
     copies = forms.IntegerField(label='copies')
     price = forms.IntegerField(label='price')
     expiration = forms.IntegerField(label='expiration')
