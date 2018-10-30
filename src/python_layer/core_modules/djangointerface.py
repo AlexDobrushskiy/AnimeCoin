@@ -7,7 +7,7 @@ from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrat
 from core_modules.masternode_ticketing import FinalIDTicket, FinalTradeTicket, FinalTransferTicket,\
     FinalActivationTicket, FinalRegistrationTicket
 from core_modules.logger import initlogging
-from core_modules.helpers import bytes_to_chunkid, hex_to_chunkid, bytes_from_hex
+from core_modules.helpers import bytes_to_chunkid, hex_to_chunkid, bytes_from_hex, require_true
 
 
 class DjangoInterface:
@@ -68,8 +68,8 @@ class DjangoInterface:
             return self.__get_my_trades()
         elif rpcname == "register_transfer_ticket":
             return self.__register_transfer_ticket(*args)
-        elif rpcname == "get_art_owners":
-            return self.__get_art_owners(args[0])
+        elif rpcname == "get_artwork_info":
+            return self.__get_artwork_info(args[0])
         elif rpcname == "register_trade_ticket":
             return self.__register_trade_ticket(*args)
         elif rpcname == "consummate_trade":
@@ -114,6 +114,8 @@ class DjangoInterface:
         return image_data
 
     def __browse(self, txid):
+        artworks = self.__artregistry.get_all_artworks()
+
         tickets, ticket = [], None
         if txid == "":
             for txid, ticket in self.__chainwrapper.all_ticket_iterator():
@@ -130,7 +132,10 @@ class DjangoInterface:
         else:
             # get and process ticket as new node
             ticket = self.__chainwrapper.retrieve_ticket(txid)
-        return tickets, None if ticket is None else ticket.to_dict()
+
+        if ticket is not None:
+            ticket = ticket.to_dict()
+        return artworks, tickets, ticket
 
     def __get_wallet_info(self):
         listunspent = self.__blockchain.listunspent()
@@ -242,7 +247,7 @@ class DjangoInterface:
         transreg = TransferRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
         transreg.register_transfer(recipient_pubkey, imagedata_hash, copies)
 
-    def __get_art_owners(self, artid_hex):
+    def __get_artwork_info(self, artid_hex):
         artid = bytes_from_hex(artid_hex)
 
         ticket = self.__artregistry.get_ticket_for_artwork(artid)
@@ -259,6 +264,18 @@ class DjangoInterface:
 
     def __register_trade_ticket(self, imagedata_hash_hex, tradetype, copies, price, expiration):
         imagedata_hash = bytes_from_hex(imagedata_hash_hex)
+
+        # We do this here to prevent creating a ticket we know now as invalid. However anything
+        # might happen before this ticket makes it to the network, so this check can't be put in validate()
+        if tradetype == "ask":
+            # make sure we have enough remaining copies left if we are asking
+            require_true(self.__artregistry.enough_copies_left(imagedata_hash,
+                                                               self.__pubkey,
+                                                               copies))
+        else:
+            if self.__blockchain.getbalance() < price:
+                raise ValueError("Not enough money in wallet!")
+
         wallet_address = self.__blockchain.getnewaddress()
         transreg = TradeRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
         transreg.register_trade(imagedata_hash, tradetype, wallet_address, copies, price, expiration)

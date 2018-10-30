@@ -95,7 +95,7 @@ class MasterNodeLogic:
         while True:
             try:
                 # try to get block - will raise NotEnoughConfirmations if block is not mature
-                # TODO: this is a somewhat ugly workaround, should be refactored with get_transactions_for_block below
+                # we do this so that it's guaranteed that we don't update artregistry with a bad block
                 self.__blockchain.get_txids_for_block(current_block, confirmations=NetWorkSettings.REQUIRED_CONFIRMATIONS)
 
                 # update current block height in artregistry - this purges old tickets / matches

@@ -61,23 +61,34 @@ def identity(request):
 
 def portfolio(request):
     my_artworks = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_artworks_owned_by_me"]))
-    my_trades = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_my_trades"]))
     transferform = TransferRegistrationForm()
     tradeform = TradeRegistrationForm()
 
-    return render(request, "views/portfolio.tpl", {"my_artworks": my_artworks, "my_trades": my_trades,
+    return render(request, "views/portfolio.tpl", {"my_artworks": my_artworks,
                                                    "transferform": transferform, "tradeform": tradeform,
                                                    "pubkey": pubkey})
 
 
 def artwork(request, artid):
     art_ticket, art_owners, trade_tickets = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
-                                                                               ["get_art_owners", artid]))
+                                                                               ["get_artwork_info", artid]))
+    my_trades = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_my_trades"]))
 
-    if trade_tickets is not None:
-        trade_tickets.reverse()
+    # process trade tickets
+    open_tickets, closed_tickets = [], []
+
+    for ticket in trade_tickets:
+        created, txid, done, status, tickettype, regticket = ticket
+        if done is not True:
+            open_tickets.append(ticket)
+        else:
+            closed_tickets.append(ticket)
+
     return render(request, "views/artwork.tpl", {"art_ticket": art_ticket, "art_owners": art_owners,
-                                                 "trade_tickets": trade_tickets, "artid": artid})
+                                                 "open_tickets": open_tickets,
+                                                 "closed_tickets": closed_tickets,
+                                                 "artid": artid,
+                                                 "my_trades": my_trades})
 
 
 def trading(request, function):
@@ -123,9 +134,9 @@ def trending(request):
 
 
 def browse(request, txid=""):
-    tickets, ticket = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["browse", txid]))
+    artworks, tickets, ticket = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["browse", txid]))
     tickets.reverse()
-    return render(request, "views/browse.tpl", {"tickets": tickets, "txid": txid, "ticket": ticket})
+    return render(request, "views/browse.tpl", {"artworks": artworks, "tickets": tickets, "txid": txid, "ticket": ticket})
 
 
 def register(request):
