@@ -139,7 +139,7 @@ class ArtRegistry:
 
         found = None
         for match in self.__matches:
-            if match.first.tickettype == "ask":
+            if match.first.ticket.type == "ask":
                 ask = match.first
                 bid = match.second
             else:
@@ -154,10 +154,10 @@ class ArtRegistry:
                 new_owner = bid.ticket.public_key
                 if artdb.get(new_owner) is None:
                     artdb[new_owner] = 0
-                artdb[new_owner] += ask.ticket.copies
+                artdb[new_owner] += bid.ticket.copies
 
-                self.__logger.debug("%s Consummation successful for txid %s, %s copies reassigned!" % (
-                    match.artid, ask.txid, ask.ticket.copies))
+                self.__logger.debug("%s Consummation successful for txid %s, %s copies reassigned from %s to %s!" % (
+                    match.artid, ask.txid, ask.ticket.copies, ask.ticket.public_key.hex(), bid.ticket.public_key.hex()))
                 found = match
                 break
 
@@ -167,7 +167,7 @@ class ArtRegistry:
     def get_valid_match_addresses(self):
         addresses = set()
         for match in self.__matches:
-            if match.first.tickettype == "ask":
+            if match.first.ticket.type == "ask":
                 ask = match.first
             else:
                 ask = match.second
@@ -225,6 +225,7 @@ class ArtRegistry:
             if artdb.get(ticket.public_key) is None or ticket.copies > artdb[ticket.public_key]:
                 self.__logger.debug("Artist tried to sell more art than they have, ignoring ticket!")
                 return
+            self.__logger.debug("Ask ticket locked %s artworks from %s" % (ticket.copies, ticket.public_key.hex()))
             artdb[ticket.public_key] -= ticket.copies
 
         # create a new wrapped ticket
@@ -298,7 +299,7 @@ class ArtRegistry:
         for match in self.__matches:
             # find the ticket with the txid
             if match.first.txid == txid or match.second.txid == txid:
-                if match.first.tickettype == "ask":
+                if match.first.ticket.type == "ask":
                     ask = match.first
                 else:
                     ask = match.second
