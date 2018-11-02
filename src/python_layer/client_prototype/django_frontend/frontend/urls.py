@@ -30,6 +30,7 @@ urlpatterns = [
     url(r'^trending/$', views.trending, name='trending'),
     url(r'^browse/(?P<txid>.*)$', views.browse, name='browse'),
     url(r'^register/$', views.register, name='register'),
+    url(r'^download/(?P<artid>.*)$', views.download, name='download'),
     url(r'^console/$', views.console, name='console'),
     url(r'^explorer/(?P<functionality>(chaininfo|block|transaction|address))/?(?P<id>.*)?$', views.explorer, name='explorer'),
     url(r'^chunk/(?P<chunkid_hex>.*?)$', views.chunk, name='chunk'),

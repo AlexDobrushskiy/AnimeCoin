@@ -211,3 +211,8 @@ def chunk(request, chunkid_hex):
 
     # TODO: set content type properly
     return HttpResponse(image_data, content_type="image/png")
+
+
+def download(request, artid):
+    image = call_local_process("download_image", artid)
+    return HttpResponse(image, content_type="image/png")

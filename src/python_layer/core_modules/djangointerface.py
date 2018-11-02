@@ -2,6 +2,7 @@ import asyncio
 
 from bitcoinrpc.authproxy import JSONRPCException
 
+from core_modules.blackbox_modules.luby import decode as luby_decode, NotEnoughChunks
 from core_modules.masternode_ticketing import ArtRegistrationClient, IDRegistrationClient, TransferRegistrationClient,\
     TradeRegistrationClient
 from core_modules.masternode_ticketing import FinalIDTicket, FinalTradeTicket, FinalTransferTicket,\
@@ -76,6 +77,8 @@ class DjangoInterface:
             return self.__register_trade_ticket(*args)
         elif rpcname == "consummate_trade":
             return self.__consummate_trade(*args)
+        elif rpcname == "download_image":
+            return await self.__download_image(*args)
         else:
             raise ValueError("Invalid RPC: %s" % rpcname)
 
@@ -101,19 +104,19 @@ class DjangoInterface:
     async def __get_chunk_id(self, chunkid_hex):
         chunkid = hex_to_chunkid(chunkid_hex)
 
-        image_data = None
+        chunk_data = None
 
         # find MNs that have this chunk
         owners = self.__aliasmanager.find_other_owners_for_chunk(chunkid)
         for owner in owners:
             mn = self.__nodemanager.get(owner)
 
-            image_data = await mn.send_rpc_fetchchunk(chunkid)
+            chunk_data = await mn.send_rpc_fetchchunk(chunkid)
 
-            if image_data is not None:
+            if chunk_data is not None:
                 break
 
-        return image_data
+        return chunk_data
 
     def __browse(self, txid):
         artworks = self.__artregistry.get_all_artworks()
@@ -285,3 +288,42 @@ class DjangoInterface:
     def __consummate_trade(self, txid):
         address, price = self.__artregistry.get_information_for_consummation(txid)
         self.__blockchain.sendtoaddress(address, price)
+
+    async def __download_image(self, artid_hex):
+        artid = bytes_from_hex(artid_hex)
+
+        ticket = self.__artregistry.get_ticket_for_artwork(artid)
+        if ticket is not None:
+            finalregticket = self.__chainwrapper.retrieve_ticket(ticket.ticket.registration_ticket_txid)
+            regticket = finalregticket.ticket
+            lubyhashes = regticket.lubyhashes.copy()
+
+            lubychunks = []
+            while True:
+                # fetch chunks 5 at a time
+                # TODO: maybe turn this into a parameter or a settings variable
+                rpcs = []
+                while len(rpcs) < 15 and len(lubyhashes) > 0:
+                    lubyhash = lubyhashes.pop(0)
+                    rpcs.append(self.__get_chunk_id(lubyhash.hex()))
+
+                # if we ran out of chunks, abort
+                if len(rpcs) == 0:
+                    break
+
+                chunks = await asyncio.gather(*rpcs)
+                for chunk in chunks:
+                    lubychunks.append(chunk)
+
+                self.__logger.debug("Fetched luby chunks, total chunks: %s" % len(lubychunks))
+
+                try:
+                    decoded = luby_decode(lubychunks)
+                except NotEnoughChunks:
+                    self.__logger.debug("Luby decode failed with NotEnoughChunks!")
+                else:
+                    self.__logger.debug("Luby decode successful!")
+                    return decoded
+
+            self.__logger.warning("Could not get enough Luby chunks to reconstruct image!")
+            raise RuntimeError("Could not get enough Luby chunks to reconstruct image!")

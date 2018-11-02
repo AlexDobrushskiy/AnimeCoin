@@ -17,6 +17,11 @@
                     <img width="169" height="240" src="/chunk/{{ art_ticket["thumbnailhash"].hex() }}" />
                 </td>
             </tr>
+            <tr>
+                <td>
+                    <a href="/download/{{ artid }}">Download</a>
+                </td>
+            </tr>
             {% for owner, copies in art_owners.items() %}
                 <tr>
                     <td>
