@@ -146,7 +146,7 @@ class ArtRegistry:
                 ask = match.second
                 bid = match.first
 
-            if ask.ticket.wallet_address == address and ask.ticket.price == value:
+            if ask.ticket.wallet_address == address and ask.ticket.price * ask.ticket.copies == value:
                 match.unlock(success=True, current_block_height=self.__current_block_height)
 
                 # assign artwork over to the new owner
@@ -304,7 +304,7 @@ class ArtRegistry:
                 else:
                     ask = match.second
 
-                return ask.ticket.wallet_address, ask.ticket.price
+                return ask.ticket.wallet_address, ask.ticket.price * ask.ticket.copies
 
     def get_ticket_for_artwork(self, artid):
         return self.__artworks[artid].finalactticket
