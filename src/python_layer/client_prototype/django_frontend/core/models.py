@@ -74,6 +74,10 @@ def call_rpc(task):
     return result
 
 
+def call_local_process(*args):
+    return call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", args))
+
+
 logger = initlogging()
 
 privkey = open(settings.PASTEL_PRIVKEY, "rb").read()

@@ -2,21 +2,20 @@ from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
 
-from core.models import pubkey, privkey, rpcclient, call_rpc
+from core.models import pubkey, privkey, call_local_process
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm, \
     TransferRegistrationForm, TradeRegistrationForm
 
 
 def index(request):
-    infos = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_info"]))
+    infos = call_local_process("get_info")
 
     return render(request, "views/index.tpl", {"infos": infos,
                                                "pastel_basedir": settings.PASTEL_BASEDIR})
 
 
 def walletinfo(request):
-    listunspent, receivingaddress, balance = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
-                                                                                ["get_wallet_info"]))
+    listunspent, receivingaddress, balance = call_local_process("get_wallet_info")
 
     form = SendCoinsForm()
     if request.method == "POST":
@@ -26,8 +25,7 @@ def walletinfo(request):
             amount = form.cleaned_data["amount"]
             comment = form.cleaned_data["comment"]
 
-            ret = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
-                                                     ["send_to_address", address, amount, comment]))
+            ret = call_local_process("send_to_address", address, amount, comment)
 
             if ret is not None:
                 form.add_error(None, ret)
@@ -39,7 +37,7 @@ def walletinfo(request):
 
 
 def identity(request):
-    ret = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_identities", pubkey]))
+    ret = call_local_process("get_identities", pubkey)
     addresses, all_identities, identity_txid, identity_ticket = ret
 
     form = IdentityRegistrationForm()
@@ -50,7 +48,7 @@ def identity(request):
             if address not in addresses:
                 form.add_error(None, "Addess does not belong to us!")
             else:
-                call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_identity", address]))
+                call_local_process("register_identity", address)
                 return redirect("/identity")
 
     return render(request, "views/identity.tpl", {"addresses": addresses,
@@ -60,7 +58,7 @@ def identity(request):
 
 
 def portfolio(request):
-    my_artworks = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_artworks_owned_by_me"]))
+    my_artworks = call_local_process("get_artworks_owned_by_me")
     transferform = TransferRegistrationForm()
     tradeform = TradeRegistrationForm()
 
@@ -70,9 +68,8 @@ def portfolio(request):
 
 
 def artwork(request, artid):
-    art_ticket, art_owners, trade_tickets = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
-                                                                               ["get_artwork_info", artid]))
-    my_trades = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_my_trades"]))
+    art_ticket, art_owners, trade_tickets = call_local_process("get_artwork_info", artid)
+    my_trades = call_local_process("get_my_trades")
 
     # process trade tickets
     open_tickets, closed_tickets = [], []
@@ -99,9 +96,7 @@ def trading(request, function):
                 recipient_pubkey = transferform.cleaned_data["recipient_pubkey"]
                 imagedata_hash = transferform.cleaned_data["imagedata_hash"]
                 copies = transferform.cleaned_data["copies"]
-                call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_transfer_ticket",
-                                                                                 recipient_pubkey, imagedata_hash,
-                                                                                 copies]))
+                call_local_process("register_transfer_ticket", recipient_pubkey, imagedata_hash, copies)
                 return redirect("/portfolio")
         elif function == "trade":
             tradeform = TradeRegistrationForm(request.POST)
@@ -111,20 +106,18 @@ def trading(request, function):
                 copies = tradeform.cleaned_data["copies"]
                 price = tradeform.cleaned_data["price"]
                 expiration = tradeform.cleaned_data["expiration"]
-                call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["register_trade_ticket",
-                                                                                 imagedata_hash, tradetype,
-                                                                                 copies, price, expiration]))
+                call_local_process("register_trade_ticket", imagedata_hash, tradetype, copies, price, expiration)
                 return redirect("/portfolio")
         elif function == "consummate":
             txid = request.POST["txid"]
-            call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["consummate_trade", txid]))
+            call_local_process("consummate_trade", txid)
             return redirect("/portfolio")
     # invalid function
     raise Http404()
 
 
 def exchange(request):
-    results = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["ping_masternodes"]))
+    results = call_local_process("ping_masternodes")
     return render(request, "views/exchange.tpl", {"results": results})
 
 
@@ -134,7 +127,7 @@ def trending(request):
 
 
 def browse(request, txid=""):
-    artworks, tickets, ticket = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["browse", txid]))
+    artworks, tickets, ticket = call_local_process("browse", txid)
     tickets.reverse()
     return render(request, "views/browse.tpl", {"artworks": artworks, "tickets": tickets, "txid": txid, "ticket": ticket})
 
@@ -152,9 +145,7 @@ def register(request):
             image_data = image_field.read()
             image_name = image_field.name
 
-            actticket_txid, final_actticket = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
-                                                                                 ["register_image", image_name,
-                                                                                  image_data]))
+            actticket_txid, final_actticket = call_local_process("register_image", image_name, image_data)
 
     return render(request, "views/register.tpl", {"form": form, "actticket_txid": actticket_txid,
                                                   "final_actticket": final_actticket})
@@ -168,8 +159,7 @@ def console(request):
         if form.is_valid():
             command = form.cleaned_data["command"].split(" ")
 
-            error, result = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP",
-                                                               ["execute_console_command", *command]))
+            error, result = call_local_process("execute_console_command", *command)
             output = result
 
     return render(request, "views/console.tpl", {"form": form, "output": output})
@@ -177,10 +167,10 @@ def console(request):
 
 def explorer(request, functionality, id=""):
     if functionality == "chaininfo":
-        chaininfo = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["explorer_get_chaininfo"]))
+        chaininfo = call_local_process("explorer_get_chaininfo")
         return render(request, "views/explorer_chaininfo.tpl", {"chaininfo": chaininfo})
     elif functionality == "block":
-        blockcount, block = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["explorer_get_block", id]))
+        blockcount, block = call_local_process("explorer_get_block", id)
 
         if id == "":
             return redirect("/explorer/block/%s" % blockcount)
@@ -200,12 +190,12 @@ def explorer(request, functionality, id=""):
                                                             "pages": pages,
                                                             "blockcount": blockcount})
     elif functionality == "transaction":
-        transaction = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["explorer_gettransaction", id]))
+        transaction = call_local_process("explorer_gettransaction", id)
         if transaction is None:
             raise Http404("Address does not exist")
         return render(request, "views/explorer_transaction.tpl", {"transaction": transaction})
     elif functionality == "address":
-        transactions = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["explorer_getaddresses", id]))
+        transactions = call_local_process("explorer_getaddresses", id)
         if transactions is None:
             raise Http404("Address does not exist")
         return render(request, "views/explorer_addresses.tpl", {"id": id, "transactions": transactions})
@@ -214,7 +204,7 @@ def explorer(request, functionality, id=""):
 
 
 def chunk(request, chunkid_hex):
-    image_data = call_rpc(rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", ["get_chunk", chunkid_hex]))
+    image_data = call_local_process("get_chunk", chunkid_hex)
 
     if image_data is None:
         raise Http404
