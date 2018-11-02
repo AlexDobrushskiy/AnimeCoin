@@ -342,8 +342,6 @@ class TradeTicket(TicketModelBase):
     }
 
     def validate(self, chainwrapper, artregistry):
-        # TODO
-
         # make sure artwork is properly registered
         artregistry.get_ticket_for_artwork(self.imagedata_hash)
 
@@ -362,8 +360,6 @@ class TransferTicket(TicketModelBase):
     }
 
     def validate(self, chainwrapper, artregistry):
-        # TODO: audit this
-
         # make sure artwork is properly registered
         artregistry.get_ticket_for_artwork(self.imagedata_hash)
 
