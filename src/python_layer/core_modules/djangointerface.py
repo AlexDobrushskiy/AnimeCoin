@@ -1,4 +1,5 @@
 import asyncio
+import random
 
 from bitcoinrpc.authproxy import JSONRPCException
 
@@ -102,12 +103,15 @@ class DjangoInterface:
         return ret
 
     async def __get_chunk_id(self, chunkid_hex):
+        await asyncio.sleep(0)
         chunkid = hex_to_chunkid(chunkid_hex)
 
         chunk_data = None
 
         # find MNs that have this chunk
-        owners = self.__aliasmanager.find_other_owners_for_chunk(chunkid)
+        owners = list(self.__aliasmanager.find_other_owners_for_chunk(chunkid))
+        random.shuffle(owners)
+        
         for owner in owners:
             mn = self.__nodemanager.get(owner)
 
