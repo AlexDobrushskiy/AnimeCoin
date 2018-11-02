@@ -30,7 +30,13 @@ class MasterNodeDaemon:
         self.__djangoprocess = None
 
         # load or generate keys
-        self.__load_keys()
+        daemon_keys = self.__load_or_create_keys(basedir=os.path.join(self.__settings.basedir, "config"),
+                                                 privname="private.key", pubname="public.key")
+        self.__privkey, self.__pubkey = daemon_keys
+
+        django_keys = self.__load_or_create_keys(basedir=os.path.join(self.__settings.basedir, "config"),
+                                                 privname="django_private.key", pubname="django_public.key")
+        self.__django_privkey, self.__django_pubkey = django_keys
 
         # start actual blockchain daemon process
         self.__start_cmn()
@@ -52,27 +58,36 @@ class MasterNodeDaemon:
                                      privkey=self.__privkey,
                                      pubkey=self.__pubkey,
                                      ip=self.__settings.ip,
-                                     port=self.__settings.pyrpcport)
+                                     port=self.__settings.pyrpcport,
+                                     django_pubkey=self.__django_pubkey)
 
-    def __load_keys(self):
+    def __load_or_create_keys(self, basedir, privname, pubname):
         # TODO: rethink key generation and audit storage process
-        privkeypath = os.path.join(self.__settings.basedir, "config", "private.key")
-        pubkeypath = os.path.join(self.__settings.basedir, "config", "public.key")
+        privkeypath = os.path.join(basedir, privname)
+        pubkeypath = os.path.join(basedir, pubname)
 
+        # if we need to generate keys, do this now
         if not os.path.isfile(privkeypath) or not os.path.isfile(pubkeypath):
-            self.__logger.debug("It seems that public and private keys are not generated, creating them now...")
-            self.__privkey, self.__pubkey = id_keypair_generation_func()
-            with open(privkeypath, "wb") as f:
-                f.write(self.__privkey)
-            os.chmod(privkeypath, 0o0700)
-            with open(pubkeypath, "wb") as f:
-                f.write(self.__pubkey)
-            os.chmod(pubkeypath, 0o0700)
-        else:
-            with open(privkeypath, "rb") as f:
-                self.__privkey = f.read()
-            with open(pubkeypath, "rb") as f:
-                self.__pubkey = f.read()
+            self.__logger.debug("Key pair for %s and %s does not exist, creating..." % (privname, pubname))
+            self.__gen_keys(privkeypath, pubkeypath)
+
+        # open keys
+        with open(privkeypath, "rb") as f:
+            priv = f.read()
+        with open(pubkeypath, "rb") as f:
+            pub = f.read()
+        return priv, pub
+
+    def __gen_keys(self, privpath, pubpath):
+        self.__logger.debug("Generated keys -> private: %s, public: %s" % (privpath, pubpath))
+
+        self.__privkey, self.__pubkey = id_keypair_generation_func()
+        with open(privpath, "wb") as f:
+            f.write(self.__privkey)
+        os.chmod(privpath, 0o0700)
+        with open(pubpath, "wb") as f:
+            f.write(self.__pubkey)
+        os.chmod(pubpath, 0o0700)
 
     def __start_django(self):
         env = os.environ.copy()

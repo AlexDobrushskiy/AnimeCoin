@@ -207,8 +207,8 @@ class RPCServer:
         # add our only call
         self.add_callback("PING_REQ", "PING_RESP", self.__receive_rpc_ping)
 
-    def add_callback(self, callback_req, callback_resp, callback_function, coroutine=False):
-        self.__RPCs[callback_req] = [callback_resp, callback_function, coroutine]
+    def add_callback(self, callback_req, callback_resp, callback_function, coroutine=False, allowed_pubkey=None):
+        self.__RPCs[callback_req] = [callback_resp, callback_function, coroutine, allowed_pubkey]
 
     def __receive_rpc_ping(self, data):
         if not isinstance(data, bytes):
@@ -223,29 +223,37 @@ class RPCServer:
         return response_packet
 
     async def __process_local_rpc(self, sender_id, rpcname, data):
-        self.__logger.debug("Received RPC %s" % (rpcname))
+        self.__logger.debug("Received RPC %s" % rpcname)
         # get the appropriate rpc function or send back an error
         rpc = self.__RPCs.get(rpcname)
         if rpc is None:
             self.__logger.info("RPC %s is not implemented, ignoring packet!" % rpcname)
 
-        # call the RPC function, catch all exceptions
-        response_name, fn, coroutine = self.__RPCs.get(rpcname)
-        try:
-            # handle callback depending on whether or not it's old-style blocking or new-style coroutine
-            if not coroutine:
-                ret = fn(data)
-            else:
-                ret = await fn(data)
-        except Exception as exc:
-            self.__logger.exception("Exception received while doing RPC: %s" % exc)
-            msg = [response_name, "ERROR", "RPC ERROR happened: %s" % exc]
+        # figure out which RPC this is
+        response_name, fn, coroutine, allowed_pubkey = self.__RPCs.get(rpcname)
+
+        # check ACLs
+        if allowed_pubkey is not None and allowed_pubkey != sender_id:
+            self.__logger.warning("RPC ACL failed: %s does not match %s for RPC %s" % (
+                allowed_pubkey, sender_id, rpcname))
+            msg = [response_name, "ERROR", "ACL ERROR"]
         else:
-            # generate response if everything went well
-            msg = [response_name, "SUCCESS", ret]
+            # call the RPC function, catch all exceptions
+            try:
+                # handle callback depending on whether or not it's old-style blocking or new-style coroutine
+                if not coroutine:
+                    ret = fn(data)
+                else:
+                    ret = await fn(data)
+            except Exception as exc:
+                self.__logger.exception("Exception received while doing RPC: %s" % exc)
+                msg = [response_name, "ERROR", "RPC ERROR happened: %s" % exc]
+            else:
+                # generate response if everything went well
+                msg = [response_name, "SUCCESS", ret]
 
         ret = self.__return_rpc_packet(sender_id, msg)
-        self.__logger.debug("Done with RPC RPC %s" % (rpcname))
+        self.__logger.debug("Done with RPC RPC %s" % rpcname)
         return ret
 
     async def __zmq_process(self, ident, msgid, msg):

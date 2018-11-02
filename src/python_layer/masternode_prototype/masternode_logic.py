@@ -17,7 +17,7 @@ from core_modules.helpers import get_pynode_digest_int, get_nodeid_from_pubkey, 
 
 
 class MasterNodeLogic:
-    def __init__(self, nodenum, blockchain, chainwrapper, basedir, privkey, pubkey, ip, port):
+    def __init__(self, nodenum, blockchain, chainwrapper, basedir, privkey, pubkey, ip, port, django_pubkey):
         self.__name = "node%s" % nodenum
         self.__nodenum = nodenum
         self.__nodeid = get_nodeid_from_pubkey(pubkey)
@@ -26,6 +26,7 @@ class MasterNodeLogic:
         self.__pubkey = pubkey
         self.__ip = ip
         self.__port = port
+        self.__django_pubkey = django_pubkey
 
         self.__logger = initlogging(self.__nodenum, __name__)
         self.__blockchain = blockchain
@@ -57,7 +58,7 @@ class MasterNodeLogic:
         self.__djangointerface = DjangoInterface(self.__privkey, self.__pubkey, self.__nodenum,
                                                  self.__artregistry, self.__chunkmanager,
                                                  self.__blockchain, self.__chainwrapper, self.__aliasmanager,
-                                                 self.__mn_manager)
+                                                 self.__mn_manager, self.__django_pubkey)
 
         # functions exposed from chunkmanager
         # self.load_full_chunks = self.__chunkmanager.load_full_chunks
