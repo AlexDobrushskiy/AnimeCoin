@@ -53,7 +53,7 @@ class DjangoInterface:
         elif rpcname == "register_image":
             return await self.__register_image(*args)
         elif rpcname == "get_identities":
-            return self.__get_identities(args[0])
+            return self.__get_identities()
         elif rpcname == "register_identity":
             return self.__register_identity(args[0])
         elif rpcname == "execute_console_command":
@@ -68,16 +68,14 @@ class DjangoInterface:
             return self.__explorer_getaddresses(args[0])
         elif rpcname == "get_artworks_owned_by_me":
             return self.__get_artworks_owned_by_me()
-        elif rpcname == "get_my_trades":
-            return self.__get_my_trades()
+        elif rpcname == "get_my_trades_for_artwork":
+            return self.__get_my_trades_for_artwork(args[0])
         elif rpcname == "register_transfer_ticket":
             return self.__register_transfer_ticket(*args)
         elif rpcname == "get_artwork_info":
             return self.__get_artwork_info(args[0])
         elif rpcname == "register_trade_ticket":
             return self.__register_trade_ticket(*args)
-        elif rpcname == "consummate_trade":
-            return self.__consummate_trade(*args)
         elif rpcname == "download_image":
             return await self.__download_image(*args)
         else:
@@ -183,13 +181,13 @@ class DjangoInterface:
         final_actticket = self.__chainwrapper.retrieve_ticket(actticket_txid, validate=True)
         return actticket_txid, final_actticket.to_dict()
 
-    def __get_identities(self, pubkey):
+    def __get_identities(self):
         addresses = []
         for unspent in self.__blockchain.listunspent():
             if unspent["address"] not in addresses:
                 addresses.append(unspent["address"])
 
-        identity_txid, identity_ticket = self.__chainwrapper.get_identity_ticket(pubkey)
+        identity_txid, identity_ticket = self.__chainwrapper.get_identity_ticket(self.__pubkey)
         all_identities = list(
             (txid, ticket.to_dict()) for txid, ticket in self.__chainwrapper.get_tickets_by_type("identity"))
         return addresses, all_identities, identity_txid, {} if identity_ticket is None else identity_ticket.to_dict()
@@ -247,8 +245,9 @@ class DjangoInterface:
     def __get_artworks_owned_by_me(self):
         return self.__artregistry.get_art_owned_by(self.__pubkey)
 
-    def __get_my_trades(self):
-        return self.__artregistry.get_my_trades(self.__pubkey)
+    def __get_my_trades_for_artwork(self, artid_hex):
+        artid = bytes_from_hex(artid_hex)
+        return self.__artregistry.get_my_trades_for_artwork(self.__pubkey, artid)
 
     def __register_transfer_ticket(self, recipient_pubkey_hex, imagedata_hash_hex, copies):
         recipient_pubkey = bytes_from_hex(recipient_pubkey_hex)
@@ -268,8 +267,16 @@ class DjangoInterface:
             ticket = {}
 
         art_owners = self.__artregistry.get_art_owners(artid)
-        trade_tickets = self.__artregistry.get_art_trade_tickets(artid)
-        return ticket, art_owners, trade_tickets
+
+        open_tickets, closed_tickets = [], []
+        for tradeticket in self.__artregistry.get_art_trade_tickets(artid):
+            created, txid, done, status, tickettype, regticket = tradeticket
+            if done is not True:
+                open_tickets.append(tradeticket)
+            else:
+                closed_tickets.append(tradeticket)
+
+        return ticket, art_owners, open_tickets, closed_tickets
 
     def __register_trade_ticket(self, imagedata_hash_hex, tradetype, copies, price, expiration):
         imagedata_hash = bytes_from_hex(imagedata_hash_hex)
@@ -288,10 +295,6 @@ class DjangoInterface:
         wallet_address = self.__blockchain.getnewaddress()
         transreg = TradeRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
         transreg.register_trade(imagedata_hash, tradetype, wallet_address, copies, price, expiration)
-
-    def __consummate_trade(self, txid):
-        address, price = self.__artregistry.get_information_for_consummation(txid)
-        self.__blockchain.sendtoaddress(address, price)
 
     async def __download_image(self, artid_hex):
         artid = bytes_from_hex(artid_hex)

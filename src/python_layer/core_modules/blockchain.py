@@ -124,6 +124,9 @@ class BlockChain:
     def getrawtransaction(self, txid, verbose):
         return self.__call_jsonrpc("getrawtransaction", txid, verbose)
 
+    def getrawmempool(self, verbose):
+        return self.__call_jsonrpc("getrawmempool", verbose)
+
     def generate(self, n):
         return self.__call_jsonrpc("generate", int(n))
 

@@ -80,10 +80,15 @@ def call_local_process(*args):
 
 logger = initlogging()
 
-privkey = open(settings.PASTEL_PRIVKEY, "rb").read()
-pubkey = open(settings.PASTEL_PUBKEY, "rb").read()
+# internal keys used for RPC between Django and the backend
+__privkey = open(settings.PASTEL_DJANGO_PRIVKEY, "rb").read()
+__pubkey = open(settings.PASTEL_DJANGO_PUBKEY, "rb").read()
+
+# trade_pubkey - this is the key the backend uses for trading
+pubkey = open(settings.PASTEL_TRADE_PUBKEY, "rb").read()
+
 NODEID = get_nodeid_from_pubkey(pubkey)
 
 # we need the server's nodeid, ip, port, pubkey
-rpcclient = RPCClient(settings.PASTEL_NODENUM, privkey, pubkey, NODEID, settings.PASTEL_RPC_IP,
+rpcclient = RPCClient(settings.PASTEL_NODENUM, __privkey, __pubkey, NODEID, settings.PASTEL_RPC_IP,
                       settings.PASTEL_RPC_PORT, settings.PASTEL_RPC_PUBKEY)

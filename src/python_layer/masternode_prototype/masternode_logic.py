@@ -3,6 +3,7 @@ import asyncio
 
 from core_modules.logger import initlogging
 from core_modules.artregistry import ArtRegistry
+from core_modules.autotrader import AutoTrader
 from core_modules.djangointerface import DjangoInterface
 from core_modules.blockchain import NotEnoughConfirmations
 from core_modules.chunkmanager import ChunkManager
@@ -34,6 +35,9 @@ class MasterNodeLogic:
 
         # the art registry
         self.__artregistry = ArtRegistry(self.__nodenum)
+
+        # the automatic trader
+        self.__autotrader = AutoTrader(self.__nodenum, self.__pubkey, self.__artregistry, self.__blockchain)
 
         # masternode manager
         self.__mn_manager = NodeManager(self.__nodenum, self.__privkey, self.__pubkey)
@@ -95,6 +99,9 @@ class MasterNodeLogic:
         current_block = 0
         while True:
             try:
+                # get the block count to be used later
+                blockcount = self.__blockchain.getblockcount()
+
                 # try to get block - will raise NotEnoughConfirmations if block is not mature
                 # we do this so that it's guaranteed that we don't update artregistry with a bad block
                 self.__blockchain.get_txids_for_block(current_block, confirmations=NetWorkSettings.REQUIRED_CONFIRMATIONS)
@@ -157,9 +164,26 @@ class MasterNodeLogic:
                         for vout in transaction["vout"]:
                             if len(vout["scriptPubKey"]["addresses"]) > 1:
                                 continue
+
+                            # valid transaction received, notify artregistry
+                            value = vout["value"]
                             address = vout["scriptPubKey"]["addresses"][0]
                             if address in listen_addresses:
-                                self.__artregistry.update_matches(vout)
+                                self.__artregistry.update_matches(address, value)
+
+                # new tickets are in, call automatic trader
+                if current_block < blockcount:
+                    # only print a message every 5%
+                    if current_block % int(blockcount/20) == 0:
+                        self.__logger.debug("Parsing historic block %s / %s (%.2f%%)" % (
+                            current_block, blockcount, current_block/blockcount*100))
+                else:
+                    if not self.__autotrader.enabled():
+                        self.__logger.debug("Done parsing history, enabling autottrader")
+                        self.__autotrader.enable()
+
+                # update autotrade - this is a NOP until enabled() is called
+                self.__autotrader.consummate_trades()
             except NotEnoughConfirmations:
                 # this block hasn't got enough confirmations yet
                 await asyncio.sleep(1)

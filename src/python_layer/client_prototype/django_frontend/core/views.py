@@ -2,7 +2,7 @@ from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
 
-from core.models import pubkey, privkey, call_local_process
+from core.models import pubkey, call_local_process
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm, \
     TransferRegistrationForm, TradeRegistrationForm
 
@@ -37,7 +37,7 @@ def walletinfo(request):
 
 
 def identity(request):
-    ret = call_local_process("get_identities", pubkey)
+    ret = call_local_process("get_identities")
     addresses, all_identities, identity_txid, identity_ticket = ret
 
     form = IdentityRegistrationForm()
@@ -68,23 +68,14 @@ def portfolio(request):
 
 
 def artwork(request, artid):
-    art_ticket, art_owners, trade_tickets = call_local_process("get_artwork_info", artid)
-    my_trades = call_local_process("get_my_trades")
-
-    # process trade tickets
-    open_tickets, closed_tickets = [], []
-
-    for ticket in trade_tickets:
-        created, txid, done, status, tickettype, regticket = ticket
-        if done is not True:
-            open_tickets.append(ticket)
-        else:
-            closed_tickets.append(ticket)
+    art_ticket, art_owners, open_tickets, closed_tickets = call_local_process("get_artwork_info", artid)
+    my_trades = call_local_process("get_my_trades_for_artwork", artid)
 
     return render(request, "views/artwork.tpl", {"art_ticket": art_ticket, "art_owners": art_owners,
                                                  "open_tickets": open_tickets,
                                                  "closed_tickets": closed_tickets,
                                                  "artid": artid,
+                                                 "pubkey": pubkey,
                                                  "my_trades": my_trades})
 
 
@@ -108,10 +99,6 @@ def trading(request, function):
                 expiration = tradeform.cleaned_data["expiration"]
                 call_local_process("register_trade_ticket", imagedata_hash, tradetype, copies, price, expiration)
                 return redirect("/portfolio")
-        elif function == "consummate":
-            txid = request.POST["txid"]
-            call_local_process("consummate_trade", txid)
-            return redirect("/portfolio")
     # invalid function
     raise Http404()
 

@@ -51,7 +51,7 @@
                 <div class="row">
                     {% for created, txid, valid, status, tickettype, ticket in my_trades %}
                         <div class="col-sm-3 mx-2 my-2 bg-light border border-primary">
-                            {{ macros.render_trade(created, txid, valid, status, tickettype, ticket, csrf_token) }}
+                            {{ macros.render_trade(created, txid, valid, status, tickettype, ticket, pubkey, csrf_token) }}
                         </div>
                     {% endfor %}
                 </div>
@@ -62,18 +62,20 @@
                 <div class="row">
                     {% for created, txid, valid, status, tickettype, ticket in open_tickets %}
                         <div class="col-sm-3 mx-2 my-2 bg-light border border-primary">
-                            {{ macros.render_trade(created, txid, valid, status, tickettype, ticket, csrf_token) }}
+                            {{ macros.render_trade(created, txid, valid, status, tickettype, ticket, pubkey, csrf_token) }}
                         </div>
                     {% endfor %}
                 </div>
             </div>
 
             <div class="tab-pane fade" id="closedtickets" role="tabpanel" aria-labelledby="closedtickets-tab">
-                {% for created, txid, valid, status, tickettype, ticket in closed_tickets %}
-                    <div class="col-sm-3 mx-2 my-2 bg-light border border-primary">
-                        {{ macros.render_trade(created, txid, valid, status, tickettype, ticket, csrf_token) }}
-                    </div>
-                {% endfor %}
+                <div class="row">
+                    {% for created, txid, valid, status, tickettype, ticket in closed_tickets %}
+                        <div class="col-sm-3 mx-2 my-2 bg-light border border-primary">
+                            {{ macros.render_trade(created, txid, valid, status, tickettype, ticket, pubkey, csrf_token) }}
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>

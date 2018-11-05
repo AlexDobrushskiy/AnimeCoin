@@ -10,7 +10,7 @@
     <a href="/explorer/address/{{ id }}">{{ id }}</a><br />
 {% endmacro %}
 
-{% macro render_trade(created, txid, valid, status, tickettype, ticket, csrf_token) %}
+{% macro render_trade(created, txid, valid, status, tickettype, ticket, pubkey, csrf_token) %}
     <table class="table">
         <tr>
             <td>status</td>
@@ -51,10 +51,6 @@
             <td><a href="/browse/{{ txid }}">{{ txid|truncate(10) }}</a></td>
         </tr>
         <tr>
-            <td>expiration</td>
-            <td>{{ ticket["expiration"] }}</td>
-        </tr>
-        <tr>
             <td>user</td>
             <td><abbr title="{{ ticket["public_key"].hex() }}">{{ ticket["public_key"].hex()|truncate(10) }}</abbr></td>
         </tr>
@@ -79,21 +75,15 @@
                         <input type="hidden" name="price" value="{{ ticket["price"] }}" />
                         <input type="hidden" name="expiration" value="0" />
 
-                        <button type="submit" class="btn btn-success btn-center">
-                        {% if ticket["type"] == "ask" %}
-                            Buy
-                        {% else %}
-                            Sell
+                        {% if pubkey != ticket["public_key"] %}
+                            <button type="submit" class="btn btn-success btn-center">
+                            {% if ticket["type"] == "ask" %}
+                                Buy
+                            {% else %}
+                                Sell
+                            {% endif %}
+                            </button>
                         {% endif %}
-                        </button>
-                    </form>
-                {% elif status == "locked" %}
-                    <form method="post" action="/trading/consummate">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
-                        <table class="table">
-                            <input type="hidden" name="txid" value="{{ txid }}" />
-                        </table>
-                        <button type="submit" class="btn btn-success btn-center">Consummate</button>
                     </form>
                 {% endif %}
             </td>

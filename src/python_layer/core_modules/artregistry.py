@@ -132,10 +132,8 @@ class ArtRegistry:
         for ticket in unlocked_tickets:
             self.__find_match(ticket)
 
-    def update_matches(self, vout):
-        self.__logger.debug("Relevant transaction received: %s" % vout)
-        address = vout["scriptPubKey"]["addresses"][0]
-        value = vout["value"]
+    def update_matches(self, address, value):
+        self.__logger.debug("Relevant transaction received for address %s with value %s" % (address, value))
 
         found = None
         for match in self.__matches:
@@ -287,24 +285,31 @@ class ArtRegistry:
                     artworks.append((artid, copies))
         return artworks
 
-    def get_my_trades(self, pubkey):
+    def get_trades_for_automatic_consummation(self, pubkey):
         ret = []
-        for artid in self.__artworks.keys():
+        for match in self.__matches:
+            # find matches that are in the locked state
+            if match.first.status == "locked":
+                # and either ticket belongs to us with type "bid"
+                ask = None
+                if match.first.ticket.public_key == pubkey and match.first.ticket.type == "bid":
+                    ask = match.second
+                if match.second.ticket.public_key == pubkey and match.second.ticket.type == "bid":
+                    ask = match.first
+
+                if ask is not None:
+                    # return the wallet address and total price
+                    ret.append((ask.ticket.wallet_address, ask.ticket.price * ask.ticket.copies))
+        return ret
+
+    def get_my_trades_for_artwork(self, pubkey, artid):
+        ret = []
+
+        if artid in self.__tickets:
             for ticketwrapper in self.__tickets[artid]:
                 if ticketwrapper.ticket.public_key == pubkey:
                     ret.append(self.__ticket_to_django_format(ticketwrapper))
         return ret
-
-    def get_information_for_consummation(self, txid):
-        for match in self.__matches:
-            # find the ticket with the txid
-            if match.first.txid == txid or match.second.txid == txid:
-                if match.first.ticket.type == "ask":
-                    ask = match.first
-                else:
-                    ask = match.second
-
-                return ask.ticket.wallet_address, ask.ticket.price * ask.ticket.copies
 
     def get_ticket_for_artwork(self, artid):
         return self.__artworks[artid].finalactticket
