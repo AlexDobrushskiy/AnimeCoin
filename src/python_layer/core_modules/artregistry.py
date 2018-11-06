@@ -35,50 +35,53 @@ class TicketWrapper:
 
 
 class Match:
-    def __init__(self, logger, artid, first, second, lockstart):
-        # order is important here: first is always the ticket that comes first!
+    def __init__(self, logger, artid, bid, ask, lockstart):
         self.__logger = logger
 
         self.artid = artid
-        self.first = first
-        self.second = second
+        self.bid = bid
+        self.ask = ask
+
+        # sanity check
+        if self.bid.ticket.type != "bid" or self.ask.ticket.type != "ask":
+            raise ValueError("Bid is not bid or Ask is not ask!")
 
         # these two variables mark the block numbers in between which this match is considered valid
         self.lockstart = lockstart
         self.lockend = lockstart + NetWorkSettings.TICKET_MATCH_EXPIRY
 
     def __str__(self):
-        return "art: %s, first: %s, second: %s" % (self.artid.hex(), self.first, self.second)
+        return "art: %s, bid: %s, ask: %s" % (self.artid.hex(), self.bid, self.ask)
 
     def lock(self):
-        self.__logger.debug("%s Tickets locked: %s, %s" % (self.artid.hex(), self.first, self.second))
-        self.first.status = "locked"
-        self.second.status = "locked"
+        self.__logger.debug("%s Tickets locked: %s, %s" % (self.artid.hex(), self.bid, self.ask))
+        self.bid.status = "locked"
+        self.ask.status = "locked"
 
     def unlock(self, success, current_block_height):
         if success:
-            self.first.status = "done"
-            self.first.done = True
-            self.second.status = "done"
-            self.second.done = True
-            self.__logger.debug("%s Successful match, tickets are done: %s, %s" % (self.artid.hex(), self.first, self.second))
+            self.bid.status = "done"
+            self.bid.done = True
+            self.ask.status = "done"
+            self.ask.done = True
+            self.__logger.debug("%s Successful match, tickets are done: %s, %s" % (self.artid.hex(), self.bid, self.ask))
         else:
-            # unsuccessful match, second ticket is invalidated
-            self.second.status = "invalid"
-            self.second.done = True
+            # unsuccessful match, bid ticket is invalidated
+            self.bid.status = "invalid"
+            self.bid.done = True
             self.__logger.debug("%s Unsuccessful match, second ticket is invalid %s, height: %s" % (
-                self.artid.hex(), self.second, current_block_height))
+                self.artid.hex(), self.ask, current_block_height))
 
             # check if ticket has expired
-            if self.first.expired(current_block_height):
-                self.first.status = "invalid"
-                self.first.done = True
+            if self.ask.expired(current_block_height):
+                self.ask.status = "invalid"
+                self.ask.done = True
                 self.__logger.debug("%s Unsuccessful match, first ticket expired: %s, height: %s" % (
-                    self.artid.hex(), self.first, current_block_height))
+                    self.artid.hex(), self.ask, current_block_height))
             else:
-                self.first.status = "open"
+                self.ask.status = "open"
                 self.__logger.debug("%s Unsuccessful match, first ticket remains open: %s, height: %s" % (
-                    self.artid.hex(), self.first, current_block_height))
+                    self.artid.hex(), self.ask, current_block_height))
 
     def expired(self, current_block_height):
         if current_block_height > self.lockend:
@@ -108,9 +111,9 @@ class ArtRegistry:
                 match.unlock(success=False, current_block_height=self.__current_block_height)
                 self.__logger.debug("Match has expired: %s, height: %s" % (match, self.__current_block_height))
 
-                # if match.first has not expired add it back to the matcher engine
-                if match.first.done is not True:
-                    unlocked_tickets.append(match.first)
+                # if match.ask has not expired add it back to the matcher engine
+                if match.ask.done is not True:
+                    unlocked_tickets.append(match.ask)
             else:
                 newmatches.append(match)
         self.__matches = newmatches
@@ -137,12 +140,8 @@ class ArtRegistry:
 
         found = None
         for match in self.__matches:
-            if match.first.ticket.type == "ask":
-                ask = match.first
-                bid = match.second
-            else:
-                ask = match.second
-                bid = match.first
+            ask = match.ask
+            bid = match.bid
 
             if ask.ticket.wallet_address == address and ask.ticket.price * ask.ticket.copies == value:
                 match.unlock(success=True, current_block_height=self.__current_block_height)
@@ -165,11 +164,7 @@ class ArtRegistry:
     def get_valid_match_addresses(self):
         addresses = set()
         for match in self.__matches:
-            if match.first.ticket.type == "ask":
-                ask = match.first
-            else:
-                ask = match.second
-            addresses.add(ask.ticket.wallet_address)
+            addresses.add(match.ask.ticket.wallet_address)
         return addresses
 
     def add_artwork(self, txid, finalactticket, regticket):
@@ -257,7 +252,14 @@ class ArtRegistry:
                     newticket.ticket.price, newticket.ticket.copies))
 
                 # tickets matched, add a match object and lock
-                match = Match(self.__logger, newticket.artid, matchticket, newticket, self.__current_block_height)
+                if matchticket.ticket.type == "ask":
+                    ask = matchticket
+                    bid = newticket
+                else:
+                    ask = newticket
+                    bid = matchticket
+
+                match = Match(self.__logger, newticket.artid, bid, ask, self.__current_block_height)
                 match.lock()
 
                 self.__matches.append(match)
@@ -289,17 +291,11 @@ class ArtRegistry:
         ret = []
         for match in self.__matches:
             # find matches that are in the locked state
-            if match.first.status == "locked":
-                # and either ticket belongs to us with type "bid"
-                ask = None
-                if match.first.ticket.public_key == pubkey and match.first.ticket.type == "bid":
-                    ask = match.second
-                if match.second.ticket.public_key == pubkey and match.second.ticket.type == "bid":
-                    ask = match.first
-
-                if ask is not None:
+            if match.ask.status == "locked":
+                # if the bid belongs to us
+                if match.bid.ticket.public_key == pubkey:
                     # return the wallet address and total price
-                    ret.append((ask.ticket.wallet_address, ask.ticket.price * ask.ticket.copies))
+                    ret.append((match.ask.ticket.wallet_address, match.ask.ticket.price * match.ask.ticket.copies))
         return ret
 
     def get_my_trades_for_artwork(self, pubkey, artid):
