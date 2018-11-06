@@ -8,27 +8,7 @@
     <div class="col-sm-12">
         <p>My pubkey: {{ pubkey.hex() }}</p>
     </div>
-    <div class="col-sm-4 mt-3">
-        <h2>Transfer</h2>
-        <form method="post" action="/trading/transfer">
-            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
-            <table class="table">
-                {{ transferform }}
-            </table>
-            <button type="submit" class="btn btn-success btn-center">Transfer artwork</button>
-        </form>
-    </div>
 
-    <div class="col-sm-4 mt-3">
-        <h2>Trade</h2>
-        <form method="post" action="/trading/trade">
-            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
-            <table class="table">
-                {{ tradeform }}
-            </table>
-            <button type="submit" class="btn btn-success btn-center">Trade artwork</button>
-        </form>
-    </div>
 
     <div class="col-sm-12 mt-3">
         <p>My artworks</p>

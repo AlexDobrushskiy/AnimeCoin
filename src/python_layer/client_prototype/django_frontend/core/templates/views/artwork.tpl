@@ -7,6 +7,7 @@
 <div class="row">
     <div class="col-sm-12">
         <h3><a href="/artwork/{{ artid }}">Share url</a></h3>
+        {{ function }}
     </div>
 
     <div class="col-sm-2 mt-3">
@@ -39,10 +40,13 @@
                 <a class="nav-link active" id="home-tab" data-toggle="tab" href="#mytrades" role="tab" aria-controls="mytrades" aria-selected="true">My trades</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="profile-tab" data-toggle="tab" href="#opentickets" role="tab" aria-controls="opentickets" aria-selected="false">Open Tickets</a>
+                <a class="nav-link" data-toggle="tab" href="#opentickets" role="tab" aria-controls="opentickets" aria-selected="false">Open Tickets</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="profile-tab" data-toggle="tab" href="#closedtickets" role="tab" aria-controls="closedtickets" aria-selected="false">Closed Tickets</a>
+                <a class="nav-link" data-toggle="tab" href="#closedtickets" role="tab" aria-controls="closedtickets" aria-selected="false">Closed Tickets</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#newtrade" role="tab" aria-controls="newtrade" aria-selected="false">New Trade</a>
             </li>
         </ul>
 
@@ -75,6 +79,32 @@
                             {{ macros.render_trade(created, txid, valid, status, tickettype, ticket, pubkey, csrf_token) }}
                         </div>
                     {% endfor %}
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="newtrade" role="tabpanel" aria-labelledby="newtrade-tab">
+                <div class="row">
+                    <div class="col-sm-6 mt-3">
+                        <h2>Transfer</h2>
+                        <form method="post" action="/artwork/{{ artid }}?function=transfer">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+                            <table class="table">
+                                {{ transferform }}
+                            </table>
+                            <button type="submit" class="btn btn-success btn-center">Transfer artwork</button>
+                        </form>
+                    </div>
+
+                    <div class="col-sm-6 mt-3">
+                        <h2>Trade</h2>
+                        <form method="post" action="/artwork/{{ artid }}?function=trade">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+                            <table class="table">
+                                {{ tradeform }}
+                            </table>
+                            <button type="submit" class="btn btn-success btn-center">Trade artwork</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

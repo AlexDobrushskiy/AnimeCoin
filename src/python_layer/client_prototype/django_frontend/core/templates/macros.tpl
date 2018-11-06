@@ -62,7 +62,7 @@
             <td>Action:</td>
             <td>
                 {% if status == "open" %}
-                    <form method="post" action="/trading/trade">
+                    <form method="post" action="/artwork/{{ ticket["imagedata_hash"].hex() }}?function=trade">
                         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
 
                         <input type="hidden" name="imagedata_hash" value="{{ ticket["imagedata_hash"].hex() }}" />

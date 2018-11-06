@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
-
 from core.models import pubkey, call_local_process
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm, \
     TransferRegistrationForm, TradeRegistrationForm
@@ -59,27 +58,14 @@ def identity(request):
 
 def portfolio(request):
     my_artworks = call_local_process("get_artworks_owned_by_me")
-    transferform = TransferRegistrationForm()
-    tradeform = TradeRegistrationForm()
-
     return render(request, "views/portfolio.tpl", {"my_artworks": my_artworks,
-                                                   "transferform": transferform, "tradeform": tradeform,
                                                    "pubkey": pubkey})
 
 
-def artwork(request, artid):
-    art_ticket, art_owners, open_tickets, closed_tickets = call_local_process("get_artwork_info", artid)
-    my_trades = call_local_process("get_my_trades_for_artwork", artid)
+def artwork(request, artid_hex):
+    transferform, tradeform = None, None
 
-    return render(request, "views/artwork.tpl", {"art_ticket": art_ticket, "art_owners": art_owners,
-                                                 "open_tickets": open_tickets,
-                                                 "closed_tickets": closed_tickets,
-                                                 "artid": artid,
-                                                 "pubkey": pubkey,
-                                                 "my_trades": my_trades})
-
-
-def trading(request, function):
+    function = request.GET.get("function")
     if request.method == "POST":
         if function == "transfer":
             transferform = TransferRegistrationForm(request.POST)
@@ -88,7 +74,7 @@ def trading(request, function):
                 imagedata_hash = transferform.cleaned_data["imagedata_hash"]
                 copies = transferform.cleaned_data["copies"]
                 call_local_process("register_transfer_ticket", recipient_pubkey, imagedata_hash, copies)
-                return redirect("/portfolio")
+                return redirect('artwork', artid_hex=artid_hex)
         elif function == "trade":
             tradeform = TradeRegistrationForm(request.POST)
             if tradeform.is_valid():
@@ -98,11 +84,34 @@ def trading(request, function):
                 price = tradeform.cleaned_data["price"]
                 expiration = tradeform.cleaned_data["expiration"]
                 call_local_process("register_trade_ticket", imagedata_hash, tradetype, copies, price, expiration)
-                return redirect("/portfolio")
-    # invalid function
-    raise Http404()
+                return redirect('artwork', artid_hex=artid_hex)
+        else:
+            return HttpResponse("Invalid function")
 
+    if transferform is None:
+        if artid_hex is not "":
+            transferform = TransferRegistrationForm(initial={"imagedata_hash": artid_hex})
+        else:
+            transferform = TransferRegistrationForm()
 
+    if tradeform is None:
+        if artid_hex is not "":
+            tradeform = TradeRegistrationForm(initial={"imagedata_hash": artid_hex})
+        else:
+            tradeform = TradeRegistrationForm()
+
+    art_ticket, art_owners, open_tickets, closed_tickets = call_local_process("get_artwork_info", artid_hex)
+    my_trades = call_local_process("get_my_trades_for_artwork", artid_hex)
+
+    return render(request, "views/artwork.tpl", {"function": function,
+                                                 "art_ticket": art_ticket,
+                                                 "art_owners": art_owners,
+                                                 "open_tickets": open_tickets,
+                                                 "closed_tickets": closed_tickets,
+                                                 "transferform": transferform, "tradeform": tradeform,
+                                                 "artid": artid_hex,
+                                                 "pubkey": pubkey,
+                                                 "my_trades": my_trades})
 def exchange(request):
     results = call_local_process("ping_masternodes")
     return render(request, "views/exchange.tpl", {"results": results})
