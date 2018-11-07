@@ -1,3 +1,4 @@
+import uuid
 import time
 
 from .ticket_models import RegistrationTicket, Signature, FinalRegistrationTicket, ActivationTicket,\
@@ -130,6 +131,7 @@ class ArtRegistrationClient:
             "signature_1": mn_signatures[0].to_dict(),
             "signature_2": mn_signatures[1].to_dict(),
             "signature_3": mn_signatures[2].to_dict(),
+            "nonce": str(uuid.uuid4()),
         })
 
         # make sure we validate correctly
@@ -292,8 +294,9 @@ class IDRegistrationClient:
         finalticket = FinalIDTicket(dictionary={
             "ticket": idticket.to_dict(),
             "signature": signature.to_dict(),
+            "nonce": str(uuid.uuid4()),
         })
-        finalticket.validate()
+        finalticket.validate(self.__chainwrapper)
 
         self.__chainwrapper.store_ticket(finalticket)
 
@@ -330,8 +333,9 @@ class TransferRegistrationClient:
         finalticket = FinalTransferTicket(dictionary={
             "ticket": transferticket.to_dict(),
             "signature": signature.to_dict(),
+            "nonce": str(uuid.uuid4()),
         })
-        finalticket.validate()
+        finalticket.validate(self.__chainwrapper)
 
         self.__chainwrapper.store_ticket(finalticket)
 
@@ -364,7 +368,8 @@ class TradeRegistrationClient:
         finalticket = FinalTradeTicket(dictionary={
             "ticket": tradeticket.to_dict(),
             "signature": signature.to_dict(),
+            "nonce": str(uuid.uuid4()),
         })
-        finalticket.validate()
+        finalticket.validate(self.__chainwrapper)
 
         self.__chainwrapper.store_ticket(finalticket)

@@ -42,3 +42,6 @@ class MockChainWrapper:
         print("DEBUG DUMP")
         for txid, ticket in self.__storage.items():
             print(bytes_to_hex(txid), pprint.pformat(ticket.to_dict(), indent=4))
+
+    def valid_nonce(self, nonce):
+        return True

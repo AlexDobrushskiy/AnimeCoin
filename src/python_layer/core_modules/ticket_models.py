@@ -6,7 +6,7 @@ from PIL import Image
 from core_modules.helpers import get_pynode_digest_bytes, require_true
 from core_modules.blackbox_modules.signatures import pastel_id_verify_signature_with_public_key_func
 from core_modules.model_validators import FieldValidator, StringField, IntegerField, FingerprintField, SHA3512Field,\
-    LubyChunkHashField, LubyChunkField, ImageField, ThumbnailField, TXIDField, SignatureField, PubkeyField,\
+    LubyChunkHashField, LubyChunkField, ImageField, ThumbnailField, TXIDField, UUIDField, SignatureField, PubkeyField,\
     LubySeedField, BlockChainAddressField, UnixTimeField, StringChoiceField
 from core_modules.blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas
 from core_modules.blackbox_modules import luby
@@ -403,6 +403,9 @@ class MasterNodeSignedTicket(TicketModelBase):
         if self.signature_author.pubkey != self.ticket.author:
             raise ValueError("Signature pubkey does not match regticket.author!")
 
+        # prevent nonce reuse
+        require_true(chainwrapper.valid_nonce(self.nonce))
+
         if NetWorkSettings.VALIDATE_MN_SIGNATURES:
             # validate masternode order that's in the ticket
             masternode_ordering = chainwrapper.get_masternode_order(self.ticket.order_block_txid)
@@ -433,16 +436,20 @@ class MasterNodeSignedTicket(TicketModelBase):
 
 
 class SelfSignedTicket(TicketModelBase):
-    def validate(self):
+    def validate(self, chainwrapper):
         # validate that the author is correct and pubkeys match MNs
         if self.signature.pubkey != self.ticket.public_key:
             raise ValueError("Signature pubkey does not match regticket.author!")
+
+        # prevent nonce reuse
+        require_true(chainwrapper.valid_nonce(self.nonce))
 
 
 class FinalIDTicket(SelfSignedTicket):
     methods = {
         "ticket": IDTicket,
         "signature": Signature,
+        "nonce": UUIDField(),
     }
 
 
@@ -451,6 +458,7 @@ class FinalTradeTicket(SelfSignedTicket):
     methods = {
         "ticket": TradeTicket,
         "signature": Signature,
+        "nonce": UUIDField(),
     }
 
 
@@ -459,6 +467,7 @@ class FinalTransferTicket(SelfSignedTicket):
     methods = {
         "ticket": TransferTicket,
         "signature": Signature,
+        "nonce": UUIDField(),
     }
 
 
@@ -469,6 +478,7 @@ class FinalRegistrationTicket(MasterNodeSignedTicket):
         "signature_1": Signature,
         "signature_2": Signature,
         "signature_3": Signature,
+        "nonce": UUIDField(),
     }
 
 
@@ -479,5 +489,6 @@ class FinalActivationTicket(MasterNodeSignedTicket):
         "signature_1": Signature,
         "signature_2": Signature,
         "signature_3": Signature,
+        "nonce": UUIDField(),
     }
 # ===== END ===== #

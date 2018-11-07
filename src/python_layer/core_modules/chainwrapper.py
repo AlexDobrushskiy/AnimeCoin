@@ -18,6 +18,9 @@ class ChainWrapper:
         self.__logger = initlogging(nodenum, __name__)
         self.__blockchain = blockchain
 
+        # nonces stores the nonces we have already seen
+        self.__nonces = set()
+
     def get_tickets_by_type(self, tickettype):
         if tickettype not in ["identity", "regticket", "actticket", "transticket", "tradeticket"]:
             raise ValueError("%s is not a valid ticket type!" % tickettype)
@@ -92,7 +95,7 @@ class ChainWrapper:
         if raw_ticket_data.startswith(b'idticket'):
             ticket = FinalIDTicket(serialized=raw_ticket_data[len(b'idticket'):])
             if validate:
-                ticket.validate()
+                ticket.validate(self)
         elif raw_ticket_data.startswith(b'regticket'):
             ticket = FinalRegistrationTicket(serialized=raw_ticket_data[len(b'regticket'):])
             if validate:
@@ -104,11 +107,11 @@ class ChainWrapper:
         elif raw_ticket_data.startswith(b'transticket'):
             ticket = FinalTransferTicket(serialized=raw_ticket_data[len(b'transticket'):])
             if validate:
-                ticket.validate()
+                ticket.validate(self)
         elif raw_ticket_data.startswith(b'tradeticket'):
             ticket = FinalTradeTicket(serialized=raw_ticket_data[len(b'tradeticket'):])
             if validate:
-                ticket.validate()
+                ticket.validate(self)
         else:
             raise ValueError("TXID %s is not a valid ticket: %s" % (txid, raw_ticket_data))
 
@@ -136,4 +139,25 @@ class ChainWrapper:
             except Exception as exc:
                 yield txid, "transaction", self.__blockchain.getrawtransaction(txid, 1)
             else:
-                yield txid, "ticket", ticket
+                # validate the tickets, only return them if we ran the validator
+                if type(ticket) == FinalActivationTicket:
+                    ticket.validate(self)
+                elif type(ticket) == FinalTransferTicket:
+                    ticket.validate(self)
+                elif type(ticket) == FinalTradeTicket:
+                    ticket.validate(self)
+                else:
+                    continue
+
+                ret = txid, "ticket", ticket
+
+                # TODO: implement an on-disk validation cache, so we can speed up this process and
+                # avoid re-parsing the tickets on each run
+
+                # mark nonce as used
+                self.__nonces.add(ticket.nonce)
+
+                yield ret
+
+    def valid_nonce(self, nonce):
+        return nonce not in self.__nonces

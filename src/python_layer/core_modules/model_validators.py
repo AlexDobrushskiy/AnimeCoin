@@ -167,6 +167,11 @@ class TXIDField(StringField):
         super().__init__(minsize=64, maxsize=64)
 
 
+class UUIDField(StringField):
+    def __init__(self):
+        super().__init__(minsize=36, maxsize=36)
+
+
 class SignatureField(BytesField):
     def __init__(self):
         super().__init__(minsize=132, maxsize=132)

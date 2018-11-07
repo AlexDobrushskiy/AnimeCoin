@@ -114,14 +114,13 @@ class MasterNodeLogic:
 
                 # notify objects of the tickets discovered
                 for txid, transtype, data in self.__chainwrapper.get_transactions_for_block(current_block):
+                    # tickets receveid by get_transactions_for_block are validated
+
                     if transtype == "ticket":
                         ticket = data
 
                         # only parse FinalActivationTickets for now
                         if type(ticket) == FinalActivationTicket:
-                            # validate ticket
-                            ticket.validate(self.__chainwrapper)
-
                             # fetch corresponding finalregticket
                             final_regticket = self.__chainwrapper.retrieve_ticket(ticket.ticket.registration_ticket_txid)
 
@@ -140,9 +139,6 @@ class MasterNodeLogic:
                             # add ticket to artregistry
                             self.__artregistry.add_artwork(txid, ticket, regticket)
                         elif type(ticket) == FinalTransferTicket:
-                            # validate ticket
-                            ticket.validate()
-
                             # get the transfer ticket
                             transfer_ticket = ticket.ticket
                             transfer_ticket.validate(self.__chainwrapper, self.__artregistry)
@@ -150,9 +146,6 @@ class MasterNodeLogic:
                             # add ticket to artregistry
                             self.__artregistry.add_transfer_ticket(txid, transfer_ticket)
                         elif type(ticket) == FinalTradeTicket:
-                            # validate ticket
-                            ticket.validate()
-
                             # get the transfer ticket
                             trade_ticket = ticket.ticket
                             trade_ticket.validate(self.__chainwrapper, self.__artregistry)
