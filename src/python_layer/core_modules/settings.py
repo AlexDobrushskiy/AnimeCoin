@@ -2,6 +2,8 @@ import math
 import os
 import hashlib
 
+import sys
+
 from core_modules.helpers_type import ensure_type_of_field
 
 
@@ -28,9 +30,21 @@ class __NetworkSettings:
     pass
 
 
+if getattr(sys, 'frozen', False):
+    FROZEN = True
+else:
+    FROZEN = False
+
+
 NetWorkSettings = __NetworkSettings()
 
-NetWorkSettings.DEBUG = True
+if FROZEN:
+    NetWorkSettings.DEBUG = False
+    NetWorkSettings.BLOCKCHAIN_BINARY = os.path.join(NetWorkSettings.BASEDIR, "animecoind", "animecoind")
+else:
+    NetWorkSettings.DEBUG = True
+    NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
+
 
 if NetWorkSettings.DEBUG:
     NetWorkSettings.VALIDATE_MN_SIGNATURES = False
@@ -59,7 +73,6 @@ NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", ".."))
 NetWorkSettings.NSFW_MODEL_FILE = os.path.join(NetWorkSettings.BASEDIR, "misc", "nsfw_trained_model.pb")
 NetWorkSettings.DJANGO_ROOT = os.path.join(NetWorkSettings.BASEDIR, "client_prototype", "django_frontend")
 
-NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
 NetWorkSettings.COIN = 100000
 NetWorkSettings.BASE_TRANSACTION_AMOUNT = 300.0/NetWorkSettings.COIN  #0.00300
 NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
