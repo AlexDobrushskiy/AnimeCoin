@@ -6,7 +6,7 @@ from test.helpers import Daemon
 
 class TestBlockChain(unittest.TestCase):
     def setUp(self):
-        self.daemon = Daemon("rt", "rt", 10001, "127.0.0.1", 10002)
+        self.daemon = Daemon("rt", "rt", 10011, "127.0.0.1", 10012)
         self.daemon.start()
         self.blockchain = self.daemon.connect()
 
