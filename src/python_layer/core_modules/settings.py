@@ -38,12 +38,18 @@ else:
 
 NetWorkSettings = __NetworkSettings()
 
+NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", ".."))
+NetWorkSettings.NSFW_MODEL_FILE = os.path.join(NetWorkSettings.BASEDIR, "misc", "nsfw_trained_model.pb")
+NetWorkSettings.DJANGO_ROOT = os.path.join(NetWorkSettings.BASEDIR, "client_prototype", "django_frontend")
+
 if FROZEN:
-    NetWorkSettings.DEBUG = False
+    NetWorkSettings.DEBUG = True    # TODO: change this to False!
     NetWorkSettings.BLOCKCHAIN_BINARY = os.path.join(NetWorkSettings.BASEDIR, "animecoind", "animecoind")
+    NetWorkSettings.DJANGOCMDLINE = [os.path.join(NetWorkSettings.BASEDIR, "start_django")]
 else:
     NetWorkSettings.DEBUG = True
     NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
+    NetWorkSettings.DJANGOCMDLINE = ["python", os.path.join(NetWorkSettings.BASEDIR, "start_django.py")]
 
 
 if NetWorkSettings.DEBUG:
@@ -67,11 +73,6 @@ if NetWorkSettings.DEBUG:
     ]
 else:
     NetWorkSettings.VALIDATE_MN_SIGNATURES = True
-
-NetWorkSettings.PYTHONPATH = "python"
-NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", ".."))
-NetWorkSettings.NSFW_MODEL_FILE = os.path.join(NetWorkSettings.BASEDIR, "misc", "nsfw_trained_model.pb")
-NetWorkSettings.DJANGO_ROOT = os.path.join(NetWorkSettings.BASEDIR, "client_prototype", "django_frontend")
 
 NetWorkSettings.COIN = 100000
 NetWorkSettings.BASE_TRANSACTION_AMOUNT = 300.0/NetWorkSettings.COIN  #0.00300
@@ -113,7 +114,7 @@ NetWorkSettings.MAX_LUBY_CHUNKS = math.ceil((NetWorkSettings.IMAGE_MAX_SIZE / Ne
 
 
 if NetWorkSettings.DEBUG:
-    NetWorkSettings.NSFW_THRESHOLD = 0.999
+    NetWorkSettings.NSFW_THRESHOLD = 0.9
 else:
     NetWorkSettings.NSFW_THRESHOLD = 0.7
 

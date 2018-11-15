@@ -57,7 +57,7 @@ ROOT_URLCONF = 'frontend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.jinja2.Jinja2',
-        'DIRS': ['core/templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'core', 'templates')],
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',

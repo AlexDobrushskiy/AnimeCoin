@@ -90,20 +90,18 @@ class MasterNodeDaemon:
         os.chmod(pubpath, 0o0700)
 
     def __start_django(self):
-        env = os.environ.copy()
-        env["PASTEL_BASEDIR"] = self.__settings.datadir
-        env["PASTEL_RPC_IP"] = self.__settings.ip
-        env["PASTEL_RPC_PORT"] = str(self.__settings.pyrpcport)
-        env["PASTEL_RPC_PUBKEY"] = base64.b64encode(self.__pubkey)
+        http_port = str(self.__settings.pyhttpadmin)
+        pastel_basedir = self.__settings.datadir
+        patel_rpc_ip = self.__settings.ip
+        pastel_rpc_port = str(self.__settings.pyrpcport)
+        pastel_rpc_pubkey = base64.b64encode(self.__pubkey)
 
-        cmdline = [
-            NetWorkSettings.PYTHONPATH,
-            "manage.py",
-            "runserver",
-            str(self.__settings.pyhttpadmin)
-        ]
+        cmdline = NetWorkSettings.DJANGOCMDLINE + [http_port, pastel_basedir, patel_rpc_ip, pastel_rpc_port, pastel_rpc_pubkey]
 
-        self.__djangoprocess = subprocess.Popen(cmdline, cwd=NetWorkSettings.DJANGO_ROOT, env=env)
+        print(os.getcwd())
+        print(cmdline)
+
+        self.__djangoprocess = subprocess.Popen(cmdline, cwd=NetWorkSettings.BASEDIR)
 
     def __stop_django(self):
         self.__djangoprocess.terminate()
