@@ -2,6 +2,8 @@
 import os
 import sys
 
+from django.core.management import execute_from_command_line
+
 from core_modules.settings import NetWorkSettings
 
 if __name__ == '__main__':
@@ -18,15 +20,6 @@ if __name__ == '__main__':
 
     # vvvvv this code is from the original manage.py vvvvv
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'frontend.settings')
-
-    try:
-        from django.core.management import execute_from_command_line
-    except ImportError as exc:
-        raise ImportError(
-            "Couldn't import Django. Are you sure it's installed and "
-            "available on your PYTHONPATH environment variable? Did you "
-            "forget to activate a virtual environment?"
-        ) from exc
 
     # we modify the function call to run the server
     execute_from_command_line([argv0, "runserver", http_port])
