@@ -23,7 +23,7 @@ class Builder:
         print("[+] Cleaning buildroot")
         shutil.rmtree(BUILDROOT, ignore_errors=True)
 
-    def __call_pyinstaller(self, target, extra_data=None, name=None, envparam=None, cwdparam=None):
+    def __call_pyinstaller(self, target, extra_data=None, name=None, envparam=None, cwdparam=None, extra_paths=None):
         if cwdparam is None:
             cwd = BASEDIR
         else:
@@ -48,6 +48,12 @@ class Builder:
             #"--clean"
         ]
 
+        # do we need extra paths?
+        if extra_paths is not None:
+            for path in extra_paths:
+                cmdline.append("--paths")
+                cmdline.append(path)
+
         # if extra data is set, append them
         if extra_data is not None:
             for data in extra_data:
@@ -58,6 +64,8 @@ class Builder:
         if name is not None:
             cmdline.append("--name")
             cmdline.append(name)
+        else:
+            name = target
 
         print("[+] Creating spec file for %s" % target)
         p = subprocess.Popen(cmdline + ["%s.py" % target], env=env, cwd=cwd)
@@ -65,7 +73,7 @@ class Builder:
             raise ValueError("Return code is not zero!")
 
         print("[+] Building spec file for %s" % target)
-        p = subprocess.Popen(cmdline + ["%s/%s.spec" % (SPECDIR, target)], env=env, cwd=cwd)
+        p = subprocess.Popen(cmdline + ["%s/%s.spec" % (SPECDIR, name)], env=env, cwd=cwd)
         p.wait()
         if p.wait() != 0:
             raise ValueError("Return code is not zero!")
@@ -120,16 +128,29 @@ class Builder:
 
         self.__clean_buildroot()
 
-        # self.__call_pyinstaller("run_all_unittests")
+        self.__call_pyinstaller("run_all_unittests")
 
         # NOTE: extra data is relative to BASEDIR, as that's the default cwd for pyinstaller
-        # self.__call_pyinstaller("start_single_masternode", extra_data=[
-        #             "%s/misc/nsfw_trained_model.pb:misc/" % BASEDIR,
-        #             "--add-data", "%s/../../../animecoin_blockchain/AnimeCoin/src/animecoind:animecoind/" % BASEDIR])
+        self.__call_pyinstaller("start_single_masternode", extra_data=[
+                    "%s/misc/nsfw_trained_model.pb:misc/" % BASEDIR,
+                    "%s/../../../animecoin_blockchain/AnimeCoin/src/animecoind:animecoind/" % BASEDIR])
 
-        self.__call_pyinstaller("manage",
-                                envparam={"DJANGO_SETTINGS_MODULE": "client_prototype/django_frontend/frontend/settings.py"},
-                                cwdparam=os.path.join(BASEDIR, "client_prototype", "django_frontend"))
+        DJANGO_ROOT = os.path.join(BASEDIR, "client_prototype", "django_frontend")
+        self.__call_pyinstaller("start_django",
+                                envparam={
+                                    "DJANGO_SETTINGS_MODULE": "client_prototype/django_frontend/frontend/settings.py",
+                                    "PASTEL_BASEDIR": "/tmp/nonexistentthisisjustadummydir/node0",
+                                    "PASTEL_RPC_IP": "0.0.0.0",
+                                    "PASTEL_RPC_PORT": "12345",
+                                    "PASTEL_RPC_PUBKEY": "dGVzdA==",
+                                },
+                                extra_data=[
+                                    "%s/client_prototype/django_frontend/core/templates:core/templates/" % BASEDIR,
+                                    "%s/client_prototype/django_frontend/static:static/" % BASEDIR,
+                                ],
+                                cwdparam=DJANGO_ROOT,
+                                extra_paths=[DJANGO_ROOT],
+                                name="start_django")
 
         self.__merge_built_directories()
 

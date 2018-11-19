@@ -98,9 +98,6 @@ class MasterNodeDaemon:
 
         cmdline = NetWorkSettings.DJANGOCMDLINE + [http_port, pastel_basedir, patel_rpc_ip, pastel_rpc_port, pastel_rpc_pubkey]
 
-        print(os.getcwd())
-        print(cmdline)
-
         self.__djangoprocess = subprocess.Popen(cmdline, cwd=NetWorkSettings.BASEDIR)
 
     def __stop_django(self):

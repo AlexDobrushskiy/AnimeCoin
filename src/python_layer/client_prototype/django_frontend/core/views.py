@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
-from core.models import pubkey, call_local_process
+from core.models import call_local_process, pubkey
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm, \
     TransferRegistrationForm, TradeRegistrationForm
 

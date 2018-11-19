@@ -4,10 +4,15 @@ import sys
 
 from django.core.management import execute_from_command_line
 
+# add project root before importing project modules
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../../../python_layer/")
+
 from core_modules.settings import NetWorkSettings
 
 if __name__ == '__main__':
-    # add django root folder to path
+    print("Starting django pid %s with parameters: %s" % (os.getpid(), sys.argv))
+
+    # add project root and django root folder to path
     sys.path.append(NetWorkSettings.DJANGO_ROOT)
 
     # parse arguments
@@ -22,4 +27,4 @@ if __name__ == '__main__':
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'frontend.settings')
 
     # we modify the function call to run the server
-    execute_from_command_line([argv0, "runserver", http_port])
+    execute_from_command_line([argv0, "runserver", http_port, "--noreload"])

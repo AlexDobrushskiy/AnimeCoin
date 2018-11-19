@@ -19,7 +19,7 @@ if __name__ == "__main__":
     else:
         msg = "WITH ERRORS"
 
-    print("Test results ran with %s:\n\tErrors: %s\n\tFailures: %s\n\tSkipped: %s" % (
+    print("Test results ran %s:\n\tErrors: %s\n\tFailures: %s\n\tSkipped: %s" % (
         msg, len(results.errors), len(results.failures), len(results.skipped)))
 
     for module, error in results.errors:
