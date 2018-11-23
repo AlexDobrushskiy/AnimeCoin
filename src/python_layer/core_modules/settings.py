@@ -48,7 +48,7 @@ if FROZEN:
     NetWorkSettings.DJANGOCMDLINE = [os.path.join(NetWorkSettings.BASEDIR, "start_django")]
 else:
     NetWorkSettings.DEBUG = True
-    NetWorkSettings.BLOCKCHAIN_BINARY = "/home/synapse/dev/toptal/animecoin/code/animecoin_blockchain/AnimeCoin/src/animecoind"
+    NetWorkSettings.BLOCKCHAIN_BINARY = os.path.join(NetWorkSettings.BASEDIR, "..", "..", "..", "animecoin_blockchain", "AnimeCoin", "src", "animecoind")
     NetWorkSettings.DJANGOCMDLINE = ["python", os.path.join(NetWorkSettings.DJANGO_ROOT, "start_django.py")]
 
 
