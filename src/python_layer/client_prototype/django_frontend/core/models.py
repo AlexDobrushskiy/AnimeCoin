@@ -23,15 +23,21 @@ logger = initlogging()
 
 class ClientConnection:
     def __init__(self):
+        self.__privkey = None
+        self.__pubkey = None
+        self.pubkey = None
+        self.__rpcclient = None
+
+    def __initialize(self):
         # internal keys used for RPC between Django and the backend
-        __privkey = open(settings.PASTEL_DJANGO_PRIVKEY, "rb").read()
-        __pubkey = open(settings.PASTEL_DJANGO_PUBKEY, "rb").read()
+        self.__privkey = open(settings.PASTEL_DJANGO_PRIVKEY, "rb").read()
+        self.__pubkey = open(settings.PASTEL_DJANGO_PUBKEY, "rb").read()
 
         # trade_pubkey - this is the key the backend uses for trading
         self.pubkey = open(settings.PASTEL_TRADE_PUBKEY, "rb").read()
 
         # we need the server's nodeid, ip, port, pubkey
-        self.__rpcclient = RPCClient(settings.PASTEL_NODENUM, __privkey, __pubkey,
+        self.__rpcclient = RPCClient(settings.PASTEL_NODENUM, self.__privkey, self.__pubkey,
                                      get_nodeid_from_pubkey(self.pubkey), settings.PASTEL_RPC_IP,
                                      settings.PASTEL_RPC_PORT, settings.PASTEL_RPC_PUBKEY)
 
@@ -59,16 +65,8 @@ class ClientConnection:
         return result
 
     def call(self, *args):
+        if self.__privkey is None:
+            self.__initialize()
         return self.__call_rpc(self.__rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", args))
 
-
-client = None
-pubkey = None
-
-
-def call_local_process(*args):
-    global client, pubkey
-    if client is None:
-        client = ClientConnection()
-        pubkey = client.pubkey
-    return client.call(*args)
+client = ClientConnection()

@@ -1,20 +1,20 @@
 from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
-from core.models import call_local_process, pubkey
+from core.models import client
 from core.forms import IdentityRegistrationForm, SendCoinsForm, ArtworkRegistrationForm, ConsoleCommandForm, \
     TransferRegistrationForm, TradeRegistrationForm
 
 
 def index(request):
-    infos = call_local_process("get_info")
+    infos = client.call("get_info")
 
     return render(request, "views/index.tpl", {"infos": infos,
                                                "pastel_basedir": settings.PASTEL_BASEDIR})
 
 
 def walletinfo(request):
-    listunspent, receivingaddress, balance = call_local_process("get_wallet_info")
+    listunspent, receivingaddress, balance = client.call("get_wallet_info")
 
     form = SendCoinsForm()
     if request.method == "POST":
@@ -24,7 +24,7 @@ def walletinfo(request):
             amount = form.cleaned_data["amount"]
             comment = form.cleaned_data["comment"]
 
-            ret = call_local_process("send_to_address", address, amount, comment)
+            ret = client.call("send_to_address", address, amount, comment)
 
             if ret is not None:
                 form.add_error(None, ret)
@@ -36,7 +36,7 @@ def walletinfo(request):
 
 
 def identity(request):
-    ret = call_local_process("get_identities")
+    ret = client.call("get_identities")
     addresses, all_identities, identity_txid, identity_ticket = ret
 
     form = IdentityRegistrationForm()
@@ -47,7 +47,7 @@ def identity(request):
             if address not in addresses:
                 form.add_error(None, "Addess does not belong to us!")
             else:
-                call_local_process("register_identity", address)
+                client.call("register_identity", address)
                 return redirect("/identity")
 
     return render(request, "views/identity.tpl", {"addresses": addresses,
@@ -57,9 +57,9 @@ def identity(request):
 
 
 def portfolio(request):
-    my_artworks = call_local_process("get_artworks_owned_by_me")
+    my_artworks = client.call("get_artworks_owned_by_me")
     return render(request, "views/portfolio.tpl", {"my_artworks": my_artworks,
-                                                   "pubkey": pubkey})
+                                                   "pubkey": client.pubkey})
 
 
 def artwork(request, artid_hex):
@@ -73,7 +73,7 @@ def artwork(request, artid_hex):
                 recipient_pubkey = transferform.cleaned_data["recipient_pubkey"]
                 imagedata_hash = transferform.cleaned_data["imagedata_hash"]
                 copies = transferform.cleaned_data["copies"]
-                call_local_process("register_transfer_ticket", recipient_pubkey, imagedata_hash, copies)
+                client.call("register_transfer_ticket", recipient_pubkey, imagedata_hash, copies)
                 return redirect('artwork', artid_hex=artid_hex)
         elif function == "trade":
             tradeform = TradeRegistrationForm(request.POST)
@@ -83,7 +83,7 @@ def artwork(request, artid_hex):
                 copies = tradeform.cleaned_data["copies"]
                 price = tradeform.cleaned_data["price"]
                 expiration = tradeform.cleaned_data["expiration"]
-                call_local_process("register_trade_ticket", imagedata_hash, tradetype, copies, price, expiration)
+                client.call("register_trade_ticket", imagedata_hash, tradetype, copies, price, expiration)
                 return redirect('artwork', artid_hex=artid_hex)
         else:
             return HttpResponse("Invalid function")
@@ -100,8 +100,8 @@ def artwork(request, artid_hex):
         else:
             tradeform = TradeRegistrationForm()
 
-    art_ticket, art_owners, open_tickets, closed_tickets = call_local_process("get_artwork_info", artid_hex)
-    my_trades = call_local_process("get_my_trades_for_artwork", artid_hex)
+    art_ticket, art_owners, open_tickets, closed_tickets = client.call("get_artwork_info", artid_hex)
+    my_trades = client.call("get_my_trades_for_artwork", artid_hex)
 
     return render(request, "views/artwork.tpl", {"function": function,
                                                  "art_ticket": art_ticket,
@@ -110,10 +110,10 @@ def artwork(request, artid_hex):
                                                  "closed_tickets": closed_tickets,
                                                  "transferform": transferform, "tradeform": tradeform,
                                                  "artid": artid_hex,
-                                                 "pubkey": pubkey,
+                                                 "pubkey": client.pubkey,
                                                  "my_trades": my_trades})
 def exchange(request):
-    results = call_local_process("ping_masternodes")
+    results = client.call("ping_masternodes")
     return render(request, "views/exchange.tpl", {"results": results})
 
 
@@ -123,7 +123,7 @@ def trending(request):
 
 
 def browse(request, txid=""):
-    artworks, tickets, ticket = call_local_process("browse", txid)
+    artworks, tickets, ticket = client.call("browse", txid)
     tickets.reverse()
     return render(request, "views/browse.tpl", {"artworks": artworks, "tickets": tickets, "txid": txid, "ticket": ticket})
 
@@ -141,7 +141,7 @@ def register(request):
             image_data = image_field.read()
             image_name = image_field.name
 
-            actticket_txid, final_actticket = call_local_process("register_image", image_name, image_data)
+            actticket_txid, final_actticket = client.call("register_image", image_name, image_data)
 
     return render(request, "views/register.tpl", {"form": form, "actticket_txid": actticket_txid,
                                                   "final_actticket": final_actticket})
@@ -155,7 +155,7 @@ def console(request):
         if form.is_valid():
             command = form.cleaned_data["command"].split(" ")
 
-            error, result = call_local_process("execute_console_command", *command)
+            error, result = client.call("execute_console_command", *command)
             output = result
 
     return render(request, "views/console.tpl", {"form": form, "output": output})
@@ -163,10 +163,10 @@ def console(request):
 
 def explorer(request, functionality, id=""):
     if functionality == "chaininfo":
-        chaininfo = call_local_process("explorer_get_chaininfo")
+        chaininfo = client.call("explorer_get_chaininfo")
         return render(request, "views/explorer_chaininfo.tpl", {"chaininfo": chaininfo})
     elif functionality == "block":
-        blockcount, block = call_local_process("explorer_get_block", id)
+        blockcount, block = client.call("explorer_get_block", id)
 
         if id == "":
             return redirect("/explorer/block/%s" % blockcount)
@@ -186,12 +186,12 @@ def explorer(request, functionality, id=""):
                                                             "pages": pages,
                                                             "blockcount": blockcount})
     elif functionality == "transaction":
-        transaction = call_local_process("explorer_gettransaction", id)
+        transaction = client.call("explorer_gettransaction", id)
         if transaction is None:
             raise Http404("Address does not exist")
         return render(request, "views/explorer_transaction.tpl", {"transaction": transaction})
     elif functionality == "address":
-        transactions = call_local_process("explorer_getaddresses", id)
+        transactions = client.call("explorer_getaddresses", id)
         if transactions is None:
             raise Http404("Address does not exist")
         return render(request, "views/explorer_addresses.tpl", {"id": id, "transactions": transactions})
@@ -200,7 +200,7 @@ def explorer(request, functionality, id=""):
 
 
 def chunk(request, chunkid_hex):
-    image_data = call_local_process("get_chunk", chunkid_hex)
+    image_data = client.call("get_chunk", chunkid_hex)
 
     if image_data is None:
         raise Http404
@@ -210,5 +210,5 @@ def chunk(request, chunkid_hex):
 
 
 def download(request, artid):
-    image = call_local_process("download_image", artid)
+    image = client.call("download_image", artid)
     return HttpResponse(image, content_type="image/png")
