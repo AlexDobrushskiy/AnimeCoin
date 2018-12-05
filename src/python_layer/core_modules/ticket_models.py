@@ -337,13 +337,39 @@ class TradeTicket(TicketModelBase):
         "type": StringChoiceField(choices=["ask", "bid"]),
         "copies": IntegerField(minsize=0, maxsize=1000),
         "price": IntegerField(minsize=0, maxsize=2**32-1),
-        "wallet_address": BlockChainAddressField(),
+        "watched_address": BlockChainAddressField(),
+        "collateral_txid": TXIDField(),
         "expiration": IntegerField(minsize=0, maxsize=1000),   # x==0 means never expire, x > 0 mean X blocks
     }
 
-    def validate(self, chainwrapper, artregistry):
+    def validate(self, blockchain, chainwrapper, artregistry):
         # make sure artwork is properly registered
         artregistry.get_ticket_for_artwork(self.imagedata_hash)
+
+        # if this is a bid, validate collateral
+        if self.type == "bid":
+            # does the collateral utxo exist?
+            transaction = blockchain.getrawtransaction(self.collateral_txid, 1)
+
+            # is the utxo a new one we are not currently watching? - this is to prevent a user reusing a collateral
+            _, listen_utxos = artregistry.get_listen_addresses_and_utxos()
+            require_true(self.collateral_txid not in listen_utxos)
+
+            # validate collateral
+            valid = False
+            for vout in transaction["vout"]:
+                if len(vout["scriptPubKey"]["addresses"]) > 1:
+                    continue
+
+                # validate address and amount of collateral
+                value = vout["value"]
+                address = vout["scriptPubKey"]["addresses"][0]
+                if address == self.watched_address and value == self.copies * self.price:
+                    valid = True
+                    break
+
+            if not valid:
+                raise ValueError("UTXO does not contain valid address as vout")
 
         # we can't validate anything else here as all other checks are dependent on other tickets:
         #  o copies is dependent on the current order book

@@ -6,6 +6,7 @@ from core_modules.artregistry import ArtRegistry
 from core_modules.autotrader import AutoTrader
 from core_modules.djangointerface import DjangoInterface
 from core_modules.blockchain import NotEnoughConfirmations
+from core_modules.chainwrapper import ChainWrapper
 from core_modules.chunkmanager import ChunkManager
 from core_modules.chunkmanager_modules.chunkmanager_rpc import ChunkManagerRPC
 from core_modules.chunkmanager_modules.aliasmanager import AliasManager
@@ -18,7 +19,7 @@ from core_modules.helpers import get_pynode_digest_int, get_nodeid_from_pubkey, 
 
 
 class MasterNodeLogic:
-    def __init__(self, nodenum, blockchain, chainwrapper, basedir, privkey, pubkey, ip, port, django_pubkey):
+    def __init__(self, nodenum, blockchain, basedir, privkey, pubkey, ip, port, django_pubkey):
         self.__name = "node%s" % nodenum
         self.__nodenum = nodenum
         self.__nodeid = get_nodeid_from_pubkey(pubkey)
@@ -31,10 +32,13 @@ class MasterNodeLogic:
 
         self.__logger = initlogging(self.__nodenum, __name__)
         self.__blockchain = blockchain
-        self.__chainwrapper = chainwrapper
 
         # the art registry
         self.__artregistry = ArtRegistry(self.__nodenum)
+
+        # set up ChainWrapper
+        self.__chainwrapper = ChainWrapper(self.__nodenum, self.__blockchain, self.__artregistry)
+
 
         # the automatic trader
         self.__autotrader = AutoTrader(self.__nodenum, self.__pubkey, self.__artregistry, self.__blockchain)
@@ -81,7 +85,9 @@ class MasterNodeLogic:
         self.__artregistrationserver.register_rpcs(self.__rpcserver)
         self.__djangointerface.register_rpcs(self.__rpcserver)
 
+        # we like to enable/disable this from masternodedaemon
         self.issue_random_tests_forever = self.__chunkmanager_rpc.issue_random_tests_forever
+        self.run_django_tasks_forever = self.__djangointerface.run_django_tasks_forever
 
     def __refresh_masternode_list(self):
         added, removed = self.__mn_manager.update_masternode_list()
@@ -109,12 +115,13 @@ class MasterNodeLogic:
                 # update current block height in artregistry - this purges old tickets / matches
                 self.__artregistry.update_current_block_height(current_block)
 
-                # get the currently listened-for addresses
-                listen_addresses = self.__artregistry.get_valid_match_addresses()
-
                 # notify objects of the tickets discovered
                 for txid, transtype, data in self.__chainwrapper.get_transactions_for_block(current_block):
                     # tickets receveid by get_transactions_for_block are validated
+
+                    # get the currently listened-for addresses:
+                    # we do this here as tickets in a block might add new stuff for the same block
+                    listen_addresses, listen_utxos = self.__artregistry.get_listen_addresses_and_utxos()
 
                     if transtype == "ticket":
                         ticket = data
@@ -148,12 +155,18 @@ class MasterNodeLogic:
                         elif type(ticket) == FinalTradeTicket:
                             # get the transfer ticket
                             trade_ticket = ticket.ticket
-                            trade_ticket.validate(self.__chainwrapper, self.__artregistry)
+                            trade_ticket.validate(self.__blockchain, self.__chainwrapper, self.__artregistry)
 
                             # add ticket to artregistry
                             self.__artregistry.add_trade_ticket(txid, trade_ticket)
                     else:
                         transaction = data
+
+                        # check on the transaction
+                        # NOTE: do vout first, as we don't want to invalidate a ticket when payment
+                        #       is made, due to the colletral being used as payment
+
+                        # for addresses we plan to receive payments to
                         for vout in transaction["vout"]:
                             if len(vout["scriptPubKey"]["addresses"]) > 1:
                                 continue
@@ -162,7 +175,14 @@ class MasterNodeLogic:
                             value = vout["value"]
                             address = vout["scriptPubKey"]["addresses"][0]
                             if address in listen_addresses:
-                                self.__artregistry.update_matches(address, value)
+                                self.__artregistry.process_watched_vout(address, value)
+
+                        # Do vin second, if collateral has been used as legit payment we consummated
+                        # the train above. If not, the ticket needs invalidation
+                        for vin in transaction["vin"]:
+                            if vin.get("txid") is not None:
+                                if vin["txid"] in listen_utxos:
+                                    self.__artregistry.process_watched_vin(vin["txid"])
 
                 # new tickets are in, call automatic trader
                 if current_block < blockcount:

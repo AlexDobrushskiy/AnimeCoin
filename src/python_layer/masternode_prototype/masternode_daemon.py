@@ -11,7 +11,7 @@ from core_modules.logger import initlogging
 from core_modules.settings import MNDeamonSettings, NetWorkSettings
 from core_modules.blackbox_modules.keys import id_keypair_generation_func
 from core_modules.blockchain import BlockChain
-from core_modules.chainwrapper import ChainWrapper
+
 from masternode_prototype.masternode_logic import MasterNodeLogic
 
 
@@ -47,13 +47,9 @@ class MasterNodeDaemon:
         # set up BlockChain object
         self.blockchain = self.__connect_to_daemon()
 
-        # set up ChainWrapper
-        self.chainwrapper = ChainWrapper(self.__nodenum, self.blockchain)
-
         # spawn logic
         self.logic = MasterNodeLogic(nodenum=self.__nodenum,
                                      blockchain=self.blockchain,
-                                     chainwrapper=self.chainwrapper,
                                      basedir=self.__settings.basedir,
                                      privkey=self.__privkey,
                                      pubkey=self.__pubkey,
@@ -166,6 +162,7 @@ class MasterNodeDaemon:
         loop.create_task(self.logic.zmq_run_forever())
         loop.create_task(self.logic.run_masternode_parser())
         loop.create_task(self.logic.run_ticket_parser())
+        loop.create_task(self.logic.run_django_tasks_forever())
         # loop.create_task(self.logic.run_heartbeat_forever())
         # loop.create_task(self.logic.run_ping_test_forever())
         # loop.create_task(self.logic.issue_random_tests_forever(1))

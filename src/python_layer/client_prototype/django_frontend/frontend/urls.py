@@ -24,6 +24,7 @@ from core import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    url(r'^tasks/$', views.tasks, name='tasks'),
     url(r'^walletinfo/$', views.walletinfo, name='walletinfo'),
     url(r'^identity/$', views.identity, name='identity'),
     url(r'^portfolio/$', views.portfolio, name='portfolio'),

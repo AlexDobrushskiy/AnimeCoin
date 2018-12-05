@@ -31,16 +31,16 @@ class AutoTrader:
                 mempool_transactions.add((address, value))
 
         # check on all tickets requiring consummation from us
-        for wallet_address, total_price in self.__artregistry.get_trades_for_automatic_consummation(self.__pubkey):
+        for watched_address, total_price in self.__artregistry.get_trades_for_automatic_consummation(self.__pubkey):
             # if a valid transaction makes it onto the blockchain the trade will be consummated,
             # so we only need to check mempool here
-            if (wallet_address, total_price) in mempool_transactions:
+            if (watched_address, total_price) in mempool_transactions:
                 # this transaction already exists, do nothing
                 continue
 
             # consummate
-            self.__blockchain.sendtoaddress(wallet_address, total_price)
-            self.__logger.debug("Consummating transaction: %s, price: %s" % (wallet_address, total_price))
+            self.__blockchain.sendtoaddress(watched_address, total_price)
+            self.__logger.debug("Consummating transaction: %s, price: %s" % (watched_address, total_price))
 
     def enable(self):
         self.__enabled = True

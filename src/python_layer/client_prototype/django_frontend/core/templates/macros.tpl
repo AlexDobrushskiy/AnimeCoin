@@ -2,12 +2,20 @@
     <a href="/explorer/block/{{ id }}">{{ id }}</a>
 {% endmacro %}
 
-{% macro render_transaction_link(id) %}
-    <a href="/explorer/transaction/{{ id }}">{{ id }}</a><br />
+{% macro render_transaction_link(id, truncate=False) %}
+    {% if truncate %}
+        <a href="/explorer/transaction/{{ id }}">{{ id|truncate(10) }}</a><br />
+    {% else %}
+        <a href="/explorer/transaction/{{ id }}">{{ id }}</a><br />
+    {% endif %}
 {% endmacro %}
 
-{% macro render_address_link(id) %}
-    <a href="/explorer/address/{{ id }}">{{ id }}</a><br />
+{% macro render_address_link(id, truncate=False) %}
+    {% if truncate %}
+        <a href="/explorer/address/{{ id }}">{{ id|truncate(10) }}</a><br />
+    {% else %}
+        <a href="/explorer/address/{{ id }}">{{ id }}</a><br />
+    {% endif %}
 {% endmacro %}
 
 {% macro render_trade(created, txid, valid, status, tickettype, ticket, pubkey, csrf_token) %}
@@ -55,8 +63,12 @@
             <td><abbr title="{{ ticket["public_key"].hex() }}">{{ ticket["public_key"].hex()|truncate(10) }}</abbr></td>
         </tr>
         <tr>
-            <td>wallet_address</td>
-            <td><abbr title="{{ ticket["wallet_address"] }}">{{ ticket["wallet_address"]|truncate(10) }}</abbr></td>
+            <td>watched_address</td>
+            <td><abbr title="{{ ticket["watched_address"] }}">{{ render_address_link(ticket["watched_address"], truncate=True) }}</abbr></td>
+        </tr>
+        <tr>
+            <td>collateral_txid</td>
+            <td><abbr title="{{ ticket["collateral_txid"] }}">{{ render_transaction_link(ticket["collateral_txid"], truncate=True) }}</abbr></td>
         </tr>
         <tr>
             <td>Action:</td>

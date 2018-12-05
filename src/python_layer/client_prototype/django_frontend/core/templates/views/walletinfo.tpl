@@ -22,6 +22,17 @@
             </form>
     </div>
 
+    <div class="col-sm-3 mt-3">
+        <h4>Collateral UTXOs:</h4>
+        <table class="table">
+            {% for txid in collateral_utxos %}
+                <tr>
+                    <td>{{ macros.render_transaction_link(txid) }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+
     <div class="col-sm-12 mt-3">
         <h4>Unspent Transactions:</h4>
         <table class="table">
@@ -31,7 +42,6 @@
                     <th>vout</th>
                     <th>generated</th>
                     <th>address</th>
-                    <th>scriptPubKey</th>
                     <th>amount</th>
                     <th>confirmations</th>
                     <th>spendable</th>
@@ -44,7 +54,6 @@
                         <td>{{ transaction["vout"] }}</td>
                         <td>{{ transaction["generated"] }}</td>
                         <td>{{ macros.render_address_link(transaction["address"]) }}</td>
-                        <td>{{ transaction["scriptPubKey"] }}</td>
                         <td>{{ transaction["amount"] }}</td>
                         <td>{{ transaction["confirmations"] }}</td>
                         <td>{{ transaction["spendable"] }}</td>

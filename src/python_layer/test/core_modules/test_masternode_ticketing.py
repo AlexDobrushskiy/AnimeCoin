@@ -5,7 +5,8 @@ from unittest import mock
 
 from core_modules.zmq_rpc import RPCException, RPCServer, RPCClient
 from core_modules.settings import NetWorkSettings
-from core_modules.masternode_ticketing import IDRegistrationClient, ArtRegistrationClient, ArtRegistrationServer
+from core_modules.masternode_ticketing import IDRegistrationClient, ArtRegistrationClient, ArtRegistrationServer,\
+    TradeRegistrationClient
 
 from test.mock_objects import MockChainWrapper
 
@@ -121,3 +122,26 @@ class TestArtRegistrationWithMockMNs(unittest.TestCase):
 
             # validate signatures by MNs
             final_actticket.validate(self.chainwrapper)
+
+
+class TestTradeRegistration(unittest.TestCase):
+    def setUp(self):
+        self.privkey = b'TEST RANDOM BYTES'
+        self.pubkey = b'\x03#m\xfa\xf4\xb9\xcf\xc8\x8cO\x9e\xca\xb8O\x17o\x07Ak\x0e:\x1fW\xdfi"\xb6' \
+                      b'\x06\xc1\x1a\x8dR\xa5\x07G\xc3\x1a\xbbF\xc6L\xe6jo{D\x0f\x8c\x89O\xb1\xfb\x9f' \
+                      b'\x970$\x98\x8d\xf0\xeb\x91\xbc\x06\x14X\x00'
+        self.imagedata_hash = b'd\x04\xbf\\\xfe\xb8"F0\xe1\x9b\xb1C\x0b\x8b#\x06kilGs(\xd1\x83\xe4\x92\xb5\x1d#\x88\xf2\x91\xd9\xf8\xc0j\x9e/Y\xb7f\x19\x89%\xfd\xbe,\xcaJ\xaf\x83\x93\x8d"/\xc2\xd3\x15\xb6\xedO\x1c\x98'
+
+        self.blockchain = mock.MagicMock()
+        self.chainwrapper = mock.MagicMock()
+        self.chainwrapper.store_ticket = mock.MagicMock(return_value=None)
+        self.artregistry = mock.MagicMock()
+
+    def test_registration(self):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.do_test_registration())
+
+    async def do_test_registration(self):
+        address = "eABqvpZCDAYAq11g65kKqUt3DuKKxebRfV5"
+        transreg = TradeRegistrationClient(self.privkey, self.pubkey, self.blockchain, self.chainwrapper, self.artregistry)
+        await transreg.register_trade(self.imagedata_hash, "ask", address, 1, 123, 0)

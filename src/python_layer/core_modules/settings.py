@@ -1,8 +1,9 @@
 import math
 import os
 import hashlib
-
 import sys
+
+from decimal import Decimal
 
 from core_modules.helpers_type import ensure_type_of_field
 
@@ -74,8 +75,9 @@ if NetWorkSettings.DEBUG:
 else:
     NetWorkSettings.VALIDATE_MN_SIGNATURES = True
 
-NetWorkSettings.COIN = 100000
-NetWorkSettings.BASE_TRANSACTION_AMOUNT = 300.0/NetWorkSettings.COIN  #0.00300
+NetWorkSettings.COIN = Decimal('100000')
+NetWorkSettings.BASE_TRANSACTION_AMOUNT = Decimal('300.0') / Decimal(NetWorkSettings.COIN)  #0.00300
+NetWorkSettings.FEEPERKB = Decimal('0.0001')
 NetWorkSettings.CDAEMON_CONFIG_FILE = "animecoin.conf"
 
 NetWorkSettings.TICKET_MATCH_EXPIRY = 30                 # 30s blocks x 30: 900s -> 15m
@@ -85,6 +87,10 @@ if NetWorkSettings.DEBUG:
     NetWorkSettings.REQUIRED_CONFIRMATIONS = 1
 else:
     NetWorkSettings.REQUIRED_CONFIRMATIONS = 10
+
+# We set this so low, because we don't care if the utxo gets invalidated. If it does, the ticket is lost anyway and
+# we need to be as fast as possible here.
+NetWorkSettings.REQUIRED_CONFIRMATIONS_FOR_TRADE_UTXO = 1
 
 NetWorkSettings.ALIAS_SEED = b'd\xad`n\xdc\x89\xc2/\xf6\xcd\xd6\xec\xcc\x1c\xc7\xd4\x83B9\x01\xb4\x06\xa2\xc9=\xf8_\x98\xa1p\x01&'
 NetWorkSettings.CNODE_HASH_ALGO = hashlib.sha256

@@ -1,5 +1,7 @@
 import asyncio
 import random
+import uuid
+import traceback
 
 from bitcoinrpc.authproxy import JSONRPCException
 
@@ -30,9 +32,27 @@ class DjangoInterface:
         self.__aliasmanager = aliasmanager
         self.__nodemanager = nodemanager
 
+        self.__active_tasks = {}
+
     def register_rpcs(self, rpcserver):
         rpcserver.add_callback("DJANGO_REQ", "DJANGO_RESP", self.process_django_request, coroutine=True,
                                allowed_pubkey=self.__django_pubkey)
+
+    async def run_django_tasks_forever(self):
+        while True:
+            await asyncio.sleep(1)
+
+            for future in self.__active_tasks.values():
+                if not future.done():
+                    try:
+                        await future
+                    except Exception as exc:
+                        self.__logger.exception("Exception received in %s" % future)
+
+    def __defer_execution(self, future):
+        identifier = str(uuid.uuid4())
+        self.__active_tasks[identifier] = future
+        return identifier
 
     async def process_django_request(self, data):
         rpcname = data[0]
@@ -47,7 +67,7 @@ class DjangoInterface:
         elif rpcname == "browse":
             return self.__browse(args[0])
         elif rpcname == "get_wallet_info":
-            return self.__get_wallet_info()
+            return self.__get_wallet_info(args[0])
         elif rpcname == "send_to_address":
             return self.__send_to_address(*args)
         elif rpcname == "register_image":
@@ -75,9 +95,34 @@ class DjangoInterface:
         elif rpcname == "get_artwork_info":
             return self.__get_artwork_info(args[0])
         elif rpcname == "register_trade_ticket":
-            return self.__register_trade_ticket(*args)
+            future = asyncio.ensure_future(self.__register_trade_ticket(*args))
+            return self.__defer_execution(future)
         elif rpcname == "download_image":
             return await self.__download_image(*args)
+        elif rpcname == "list_background_tasks":
+            tasks = []
+            for identifier, future in self.__active_tasks.items():
+                exception = None
+                if future.done():
+                    exception = future.exception()
+
+                    if exception is not None:
+                        try:
+                            raise exception
+                        except Exception as exc:
+                            self.__logger.exception("A background task has failed: %s" % (exc))
+
+                d = {
+                    "identifier": identifier,
+                    "done": future.done(),
+                    "exception": str(exception),
+                }
+                tasks.append(d)
+            return tasks
+        elif rpcname == "get_future_result":
+            identifier = args[0]
+            future = self.__active_tasks.get(identifier)
+            return future.result()
         else:
             raise ValueError("Invalid RPC: %s" % rpcname)
 
@@ -144,11 +189,12 @@ class DjangoInterface:
             ticket = ticket.to_dict()
         return artworks, tickets, ticket
 
-    def __get_wallet_info(self):
+    def __get_wallet_info(self, pubkey):
         listunspent = self.__blockchain.listunspent()
         receivingaddress = self.__blockchain.getaccountaddress("")
         balance = self.__blockchain.getbalance()
-        return listunspent, receivingaddress, balance
+        collateral_utxos = list(self.__artregistry.get_all_collateral_utxo_for_pubkey(pubkey))
+        return listunspent, receivingaddress, balance, collateral_utxos
 
     def __send_to_address(self, address, amount, comment):
         try:
@@ -278,7 +324,7 @@ class DjangoInterface:
 
         return ticket, art_owners, open_tickets, closed_tickets
 
-    def __register_trade_ticket(self, imagedata_hash_hex, tradetype, copies, price, expiration):
+    async def __register_trade_ticket(self, imagedata_hash_hex, tradetype, copies, price, expiration):
         imagedata_hash = bytes_from_hex(imagedata_hash_hex)
 
         # We do this here to prevent creating a ticket we know now as invalid. However anything
@@ -289,12 +335,16 @@ class DjangoInterface:
                                                                self.__pubkey,
                                                                copies))
         else:
+            # not a very thorough check, as we might have funds locked in collateral addresses
+            # if this is the case we will fail later when trying to move the funds
             if self.__blockchain.getbalance() < price:
                 raise ValueError("Not enough money in wallet!")
 
-        wallet_address = self.__blockchain.getnewaddress()
-        transreg = TradeRegistrationClient(self.__privkey, self.__pubkey, self.__chainwrapper, self.__artregistry)
-        transreg.register_trade(imagedata_hash, tradetype, wallet_address, copies, price, expiration)
+        # watched address is the address we are using to receive the funds in asks and send the collateral to in bids
+        watched_address = self.__blockchain.getnewaddress()
+
+        transreg = TradeRegistrationClient(self.__privkey, self.__pubkey, self.__blockchain, self.__chainwrapper, self.__artregistry)
+        await transreg.register_trade(imagedata_hash, tradetype, watched_address, copies, price, expiration)
 
     async def __download_image(self, artid_hex):
         artid = bytes_from_hex(artid_hex)

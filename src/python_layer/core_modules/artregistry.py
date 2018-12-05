@@ -98,6 +98,19 @@ class ArtRegistry:
         self.__matches = []
         self.__current_block_height = None
 
+    def __unlock_match(self, match, success):
+        match.unlock(success=success, current_block_height=self.__current_block_height)
+
+    def __invalidate_ticket(self, ticket):
+        artid = ticket.artid
+        ticket.status = "invalid"
+        ticket.done = True
+
+        # unlock the copies if ask
+        artdb = self.__owners[artid]
+        if ticket.ticket.type == "ask":
+            artdb[ticket.ticket.public_key] += ticket.ticket.copies
+
     def update_current_block_height(self, new_height):
         self.__current_block_height = new_height
 
@@ -108,7 +121,7 @@ class ArtRegistry:
         for match in self.__matches:
             if match.expired(self.__current_block_height):
                 # match has expired without valid transaction
-                match.unlock(success=False, current_block_height=self.__current_block_height)
+                self.__unlock_match(match, False)
                 self.__logger.debug("Match has expired: %s, height: %s" % (match, self.__current_block_height))
 
                 # if match.ask has not expired add it back to the matcher engine
@@ -122,20 +135,14 @@ class ArtRegistry:
         for artid in self.__artworks.keys():
             for ticket in self.__get_open_trade_tickets_for_art(artid):
                 if ticket.expired(self.__current_block_height):
-                    ticket.status = "invalid"
-                    ticket.done = True
-
-                    # unlock the copies
-                    artdb = self.__owners[artid]
-                    artdb[ticket.ticket.public_key] += ticket.ticket.copies
-
+                    self.__invalidate_ticket(ticket)
                     self.__logger.debug("Ticket has expired: %s" % ticket)
 
         # add back freshly unlocked tickets to the matcher engine
         for ticket in unlocked_tickets:
             self.__find_match(ticket)
 
-    def update_matches(self, address, value):
+    def process_watched_vout(self, address, value):
         self.__logger.debug("Relevant transaction received for address %s with value %s" % (address, value))
 
         found = None
@@ -143,8 +150,8 @@ class ArtRegistry:
             ask = match.ask
             bid = match.bid
 
-            if ask.ticket.wallet_address == address and ask.ticket.price * ask.ticket.copies == value:
-                match.unlock(success=True, current_block_height=self.__current_block_height)
+            if ask.ticket.watched_address == address and ask.ticket.price * ask.ticket.copies == value:
+                self.__unlock_match(match, True)
 
                 # assign artwork over to the new owner
                 artdb = self.__owners[match.artid]
@@ -161,11 +168,49 @@ class ArtRegistry:
         if found is not None:
             self.__matches.remove(found)
 
-    def get_valid_match_addresses(self):
-        addresses = set()
+    def process_watched_vin(self, utxo_txid):
+        self.__logger.debug("Relevant transaction received for utxo %s" % utxo_txid)
+
+        for ticketwrapper in self.get_all_tickets_watched_for_collateral():
+            # find the ticket for the utxo
+            if ticketwrapper.ticket.collateral_txid == utxo_txid:
+                self.__logger.debug("UTXO movement detected for txid %s" % utxo_txid)
+
+                # check if ticket is part of a match
+                match = None
+                if ticketwrapper.status == "locked":
+                    # find match
+                    for m in self.__matches:
+                        if m.bid is ticketwrapper:
+                            match = m
+                            break
+
+                # if it is, unlock the match
+                if match is not None:
+                    self.__logger.debug("UTXO movement (txid: %s) found in active match, unlocking match" % utxo_txid)
+                    self.__unlock_match(match, False)
+
+                    # remove match
+                    newmatches = [m for m in self.__matches if m is not match]
+                    self.__matches = newmatches
+
+                # close the ticket
+                self.__invalidate_ticket(ticketwrapper)
+                self.__logger.debug("Invalidated ticket %s due to UTXO movement: %s" % (ticketwrapper.ticket,
+                                                                                        utxo_txid))
+
+    def get_listen_addresses_and_utxos(self):
+        addresses, utxos = set(), set()
+
+        # we watch match deposit addresses for consummation
         for match in self.__matches:
-            addresses.add(match.ask.ticket.wallet_address)
-        return addresses
+            addresses.add(match.ask.ticket.watched_address)
+
+        # we watch all bid tickets for collateral movement
+        for ticketwrapper in self.get_all_tickets_watched_for_collateral():
+            utxos.add(ticketwrapper.ticket.collateral_txid)
+
+        return addresses, utxos
 
     def add_artwork(self, txid, finalactticket, regticket):
         artid = regticket.imagedata_hash
@@ -295,7 +340,25 @@ class ArtRegistry:
                 # if the bid belongs to us
                 if match.bid.ticket.public_key == pubkey:
                     # return the wallet address and total price
-                    ret.append((match.ask.ticket.wallet_address, match.ask.ticket.price * match.ask.ticket.copies))
+                    ret.append((match.ask.ticket.watched_address, match.ask.ticket.price * match.ask.ticket.copies))
+        return ret
+
+    def get_all_tickets_watched_for_collateral(self):
+        ret = set()
+        for artid in self.__artworks.keys():
+            for ticketwrapper in self.__tickets[artid]:
+                # if this ticket is a trade ticket, is open or locked, is mine and is a bid
+                if ticketwrapper.tickettype == "trade" \
+                and ticketwrapper.status in ["open", "locked"] \
+                and ticketwrapper.ticket.type == "bid":
+                    ret.add(ticketwrapper)
+        return ret
+
+    def get_all_collateral_utxo_for_pubkey(self, pubkey):
+        ret = set()
+        for ticketwrapper in self.get_all_tickets_watched_for_collateral():
+            if ticketwrapper.ticket.public_key == pubkey:
+                ret.add(ticketwrapper.ticket.collateral_txid)
         return ret
 
     def get_my_trades_for_artwork(self, pubkey, artid):

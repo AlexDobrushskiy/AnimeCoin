@@ -13,8 +13,14 @@ def index(request):
                                                "pastel_basedir": settings.PASTEL_BASEDIR})
 
 
+def tasks(request):
+    tasks = client.call("list_background_tasks")
+
+    return render(request, "views/tasks.tpl", {"tasks": tasks})
+
+
 def walletinfo(request):
-    listunspent, receivingaddress, balance = client.call("get_wallet_info")
+    listunspent, receivingaddress, balance, collateral_utxos = client.call("get_wallet_info", client.pubkey)
 
     form = SendCoinsForm()
     if request.method == "POST":
@@ -32,7 +38,8 @@ def walletinfo(request):
                 return redirect("/walletinfo/")
 
     return render(request, "views/walletinfo.tpl", {"listunspent": listunspent, "receivingaddress": receivingaddress,
-                                                    "balance": balance, "form": form})
+                                                    "balance": balance, "form": form,
+                                                    "collateral_utxos": collateral_utxos})
 
 
 def identity(request):
@@ -84,7 +91,7 @@ def artwork(request, artid_hex):
                 price = tradeform.cleaned_data["price"]
                 expiration = tradeform.cleaned_data["expiration"]
                 client.call("register_trade_ticket", imagedata_hash, tradetype, copies, price, expiration)
-                return redirect('artwork', artid_hex=artid_hex)
+                return redirect('/tasks', artid_hex=artid_hex)
         else:
             return HttpResponse("Invalid function")
 
@@ -112,6 +119,8 @@ def artwork(request, artid_hex):
                                                  "artid": artid_hex,
                                                  "pubkey": client.pubkey,
                                                  "my_trades": my_trades})
+
+
 def exchange(request):
     results = client.call("ping_masternodes")
     return render(request, "views/exchange.tpl", {"results": results})

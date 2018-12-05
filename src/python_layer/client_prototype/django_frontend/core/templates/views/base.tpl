@@ -118,6 +118,9 @@
           <!--</div>-->
         <!--</li>-->
         <li class="nav-item">
+          <a class="nav-link" href="/tasks"><i class="fas fa-fw fa-database"></i>&nbsp;<span>Tasks</span></a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="/walletinfo"><i class="fas fa-fw fa-wallet"></i>&nbsp;<span>Wallet</span></a>
         </li>
         <li class="nav-item">

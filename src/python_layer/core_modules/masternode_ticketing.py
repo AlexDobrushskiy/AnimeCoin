@@ -341,23 +341,33 @@ class TransferRegistrationClient:
 
 
 class TradeRegistrationClient:
-    def __init__(self, privkey, pubkey, chainwrapper, artregistry):
+    def __init__(self, privkey, pubkey, blockchain, chainwrapper, artregistry):
         self.__privkey = privkey
         self.__pubkey = pubkey
+        self.__blockchain = blockchain
         self.__chainwrapper = chainwrapper
         self.__artregistry = artregistry
 
-    def register_trade(self, imagedata_hash, tradetype, wallet_address, copies, price, expiration):
+    async def register_trade(self, imagedata_hash, tradetype, watched_address, copies, price, expiration):
+        # move funds to new address
+        if tradetype == "bid":
+            collateral_txid = await self.__chainwrapper.move_funds_to_new_wallet(self.__pubkey, watched_address,
+                                                                                 copies, price)
+        else:
+            # this is unused in ask tickets
+            collateral_txid = "0000000000000000000000000000000000000000000000000000000000000000"
+
         tradeticket = TradeTicket(dictionary={
             "public_key": self.__pubkey,
             "imagedata_hash": imagedata_hash,
             "type": tradetype,
-            "wallet_address": wallet_address,
             "copies": copies,
             "price": price,
             "expiration": expiration,
+            "watched_address": watched_address,
+            "collateral_txid": collateral_txid,
         })
-        tradeticket.validate(self.__chainwrapper, self.__artregistry)
+        tradeticket.validate(self.__blockchain, self.__chainwrapper, self.__artregistry)
 
         signature = Signature(dictionary={
             "signature": pastel_id_write_signature_on_data_func(tradeticket.serialize(), self.__privkey, self.__pubkey),

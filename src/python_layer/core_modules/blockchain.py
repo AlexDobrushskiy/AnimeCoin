@@ -94,8 +94,23 @@ class BlockChain:
     def getnewaddress(self):
         return self.__call_jsonrpc("getnewaddress")
 
+    def createrawtransaction(self, transactions, addresses):
+        return self.__call_jsonrpc("createrawtransaction", transactions, addresses)
+
+    def decoderawtransaction(self, transaction_hex):
+        return self.__call_jsonrpc("decoderawtransaction", transaction_hex)
+
+    def signrawtransaction(self, transaction_hex):
+        return self.__call_jsonrpc("signrawtransaction", transaction_hex)
+
+    def fundrawtransaction(self):
+        return self.__call_jsonrpc("fundrawtransaction")
+
     def sendtoaddress(self, address, amount, private_comment="", public_comment=""):
         return self.__call_jsonrpc("sendtoaddress", address, amount, private_comment, public_comment)
+
+    def sendrawtransaction(self, transaction_hex):
+        return self.__call_jsonrpc("sendrawtransaction", transaction_hex)
 
     def getblock(self, blocknum):
         return self.__call_jsonrpc("getblock", blocknum)

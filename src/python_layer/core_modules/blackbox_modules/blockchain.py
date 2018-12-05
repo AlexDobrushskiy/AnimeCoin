@@ -10,7 +10,7 @@ getcontext().prec = 16
 from core_modules.helpers import get_cnode_digest_hex, get_cnode_digest_bytes, require_true
 from core_modules.settings import NetWorkSettings
 
-FEEPERKB = Decimal(0.0001)
+FEEPERKB = NetWorkSettings.FEEPERKB
 
 
 OP_CHECKSIG = b'\xac'
@@ -145,7 +145,7 @@ def store_data_in_utxo(jsonrpc, input_data):
         scriptPubKey = checkmultisig_scriptPubKey_dump(fd)
         if scriptPubKey is None:
             break
-        value = Decimal(300.0 / NetWorkSettings.COIN)
+        value = NetWorkSettings.BASE_TRANSACTION_AMOUNT
         txouts.append((value, scriptPubKey))
         change -= value
     out_value = Decimal(NetWorkSettings.BASE_TRANSACTION_AMOUNT)  # dest output
@@ -157,7 +157,7 @@ def store_data_in_utxo(jsonrpc, input_data):
     txouts.append([change, OP_DUP + OP_HASH160 + pushdata(addr2bytes(change_address)) + OP_EQUALVERIFY + OP_CHECKSIG])
     tx = packtx(txins, txouts)
     signed_tx = jsonrpc.signrawtransaction(hexlify(tx).decode('utf-8'))
-    fee = Decimal(len(signed_tx['hex']) / 1000) * FEEPERKB
+    fee = (Decimal(len(signed_tx['hex'])) / 2 / 1024) * FEEPERKB
     change -= fee
     txouts[-1][0] = change
     final_tx = packtx(txins, txouts)
