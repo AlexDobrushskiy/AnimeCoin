@@ -8,10 +8,12 @@ from core_modules.blackbox_modules.signatures import\
     pastel_id_write_signature_on_data_func
 from core_modules.settings import NetWorkSettings
 from core_modules.helpers import require_true, bytes_to_chunkid
+from core_modules.jailed_image_parser import JailedImageParser
 
 
 class ArtRegistrationServer:
-    def __init__(self, privkey, pubkey, chainwrapper, chunkmanager):
+    def __init__(self, nodenum, privkey, pubkey, chainwrapper, chunkmanager):
+        self.__nodenum = nodenum
         self.__priv = privkey
         self.__pub = pubkey
         self.__chainwrapper = chainwrapper
@@ -57,6 +59,10 @@ class ArtRegistrationServer:
         image = ImageData(serialized=image_serialized)
         activation_ticket = ActivationTicket(serialized=activationticket_serialized)
 
+        # test image data for validity in a jailed environment
+        converter = JailedImageParser(self.__nodenum, image.image)
+        converter.parse()
+
         # validate client's signature on the ticket - so only original client can activate
         require_true(signed_actticket.pubkey == activation_ticket.author)
         signed_actticket.validate(activation_ticket)
@@ -88,6 +94,7 @@ class ArtRegistrationServer:
 
     def masternode_place_image_data_in_chunkstorage(self, data):
         regticket_txid, imagedata_serialized = data
+
         imagedata = ImageData(serialized=imagedata_serialized)
         image_hash = imagedata.get_thumbnail_hash()
 

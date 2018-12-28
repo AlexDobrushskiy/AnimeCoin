@@ -9,6 +9,7 @@ from core_modules.model_validators import FieldValidator, StringField, IntegerFi
     LubyChunkHashField, LubyChunkField, ImageField, ThumbnailField, TXIDField, UUIDField, SignatureField, PubkeyField,\
     LubySeedField, BlockChainAddressField, UnixTimeField, StringChoiceField
 from core_modules.blackbox_modules.dupe_detection import DupeDetector, measure_similarity, assemble_fingerprints_for_pandas
+from core_modules.blackbox_modules.nsfw import NSFWDetector
 from core_modules.blackbox_modules import luby
 from core_modules.settings import NetWorkSettings
 
@@ -325,9 +326,9 @@ class ActivationTicket(TicketModelBase):
         # image hash matches regticket hash
         require_true(regticket.imagedata_hash == image.get_artwork_hash())
 
-        # # run nsfw check - TODO: re-enable this
-        # if NSFWDetector.is_nsfw(image.image):
-        #     raise ValueError("Image is NSFW, score: %s" % NSFWDetector.get_score(image.image))
+        # run nsfw check
+        if NSFWDetector.is_nsfw(image.image):
+            raise ValueError("Image is NSFW, score: %s" % NSFWDetector.get_score(image.image))
 
 
 class TradeTicket(TicketModelBase):

@@ -135,6 +135,9 @@ class Builder:
                     "%s/misc/nsfw_trained_model.pb:misc/" % BASEDIR,
                     "%s/../../../animecoin_blockchain/AnimeCoin/src/animecoind:animecoind/" % BASEDIR])
 
+        # TODO: this does not place the chroot_dir in the resulting artifact
+        self.__call_pyinstaller("parse_image_in_jail", extra_data=["%s/chroot_dir:chroot_dir/" % BASEDIR])
+
         DJANGO_ROOT = os.path.join(BASEDIR, "client_prototype", "django_frontend")
         self.__call_pyinstaller("start_django",
                                 envparam={

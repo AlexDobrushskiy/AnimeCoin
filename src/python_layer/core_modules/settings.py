@@ -40,17 +40,26 @@ else:
 NetWorkSettings = __NetworkSettings()
 
 NetWorkSettings.BASEDIR = os.path.abspath(os.path.join(__file__, "..", ".."))
+NetWorkSettings.CHROOT_DIR = os.path.join(NetWorkSettings.BASEDIR, "chroot_dir")
 NetWorkSettings.NSFW_MODEL_FILE = os.path.join(NetWorkSettings.BASEDIR, "misc", "nsfw_trained_model.pb")
 NetWorkSettings.DJANGO_ROOT = os.path.join(NetWorkSettings.BASEDIR, "client_prototype", "django_frontend")
+
+NetWorkSettings.UNSHARE_CMDLINE = ["unshare", "-mUuinpCrf", "--mount-proc=/proc", "--"]
 
 if FROZEN:
     NetWorkSettings.DEBUG = True    # TODO: change this to False!
     NetWorkSettings.BLOCKCHAIN_BINARY = os.path.join(NetWorkSettings.BASEDIR, "animecoind", "animecoind")
     NetWorkSettings.DJANGOCMDLINE = [os.path.join(NetWorkSettings.BASEDIR, "start_django")]
+    NetWorkSettings.IMAGEPARSERCMDLINE = NetWorkSettings.UNSHARE_CMDLINE + [
+        os.path.join(NetWorkSettings.BASEDIR, "parse_image_in_jail")]
 else:
     NetWorkSettings.DEBUG = True
     NetWorkSettings.BLOCKCHAIN_BINARY = os.path.join(NetWorkSettings.BASEDIR, "..", "..", "..", "animecoin_blockchain", "AnimeCoin", "src", "animecoind")
     NetWorkSettings.DJANGOCMDLINE = ["python", os.path.join(NetWorkSettings.DJANGO_ROOT, "start_django.py")]
+    NetWorkSettings.IMAGEPARSERCMDLINE = NetWorkSettings.UNSHARE_CMDLINE + [
+        "python", os.path.join(NetWorkSettings.BASEDIR, "parse_image_in_jail.py")]
+
+NetWorkSettings.IMAGE_PARSER_TIMEOUT_SECONDS = 3
 
 
 if NetWorkSettings.DEBUG:
@@ -120,7 +129,7 @@ NetWorkSettings.MAX_LUBY_CHUNKS = math.ceil((NetWorkSettings.IMAGE_MAX_SIZE / Ne
 
 
 if NetWorkSettings.DEBUG:
-    NetWorkSettings.NSFW_THRESHOLD = 0.9
+    NetWorkSettings.NSFW_THRESHOLD = 1
 else:
     NetWorkSettings.NSFW_THRESHOLD = 0.7
 

@@ -59,7 +59,7 @@ class MasterNodeLogic:
                                                   self.__aliasmanager)
 
         # art registration server
-        self.__artregistrationserver = ArtRegistrationServer(self.__privkey, self.__pubkey,
+        self.__artregistrationserver = ArtRegistrationServer(self.__nodenum, self.__privkey, self.__pubkey,
                                                              self.__chainwrapper, self.__chunkmanager)
 
         # django interface

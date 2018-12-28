@@ -1,3 +1,6 @@
+import io
+from PIL import Image
+
 from django.conf import settings
 from django.shortcuts import render, redirect, Http404, HttpResponse
 
@@ -147,7 +150,13 @@ def register(request):
         if form.is_valid():
             # get the actual image data from the form field
             image_field = form.cleaned_data["image_data"]
-            image_data = image_field.read()
+
+            # convert image
+            converted_image = io.BytesIO()
+            tmp = Image.open(image_field)
+            tmp.save(converted_image, format="png")
+
+            image_data = converted_image.getvalue()
             image_name = image_field.name
 
             actticket_txid, final_actticket = client.call("register_image", image_name, image_data)
