@@ -7,7 +7,7 @@
 <div class="row">
     <div class="col-sm-3 mt-3">
             <h4>Receiving address:</h4>
-            <p>{{ receivingaddress }}</p>
+            <p class="break-word">{{ receivingaddress }}</p>
     </div>
 
     <div class="col-sm-3 mt-3">

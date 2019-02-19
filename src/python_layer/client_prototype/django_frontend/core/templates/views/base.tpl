@@ -19,7 +19,7 @@
 
     <!-- Custom styles for this template-->
     <link href="/static/design/css/sb-admin.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="/static/design/css/index.css">
     <!--{# Favicon #}-->
     <!--<link rel="shortcut icon" href="/static/images/favicon.ico" />-->
     <!--<link rel="icon" href="/static/images/favicon.ico" />-->
