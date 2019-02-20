@@ -56,3 +56,4 @@ tensorflow==1.8.0
 tqdm==4.23.3
 urllib3==1.22
 zstandard==0.9.1
+python-prctl==1.7
