@@ -148,3 +148,8 @@ PASTEL_TRADE_PUBKEY = os.path.join(PASTEL_BASEDIR, "pymn", "config", "public.key
 PASTEL_RPC_IP = os.environ["PASTEL_RPC_IP"]
 PASTEL_RPC_PORT = int(os.environ["PASTEL_RPC_PORT"])
 PASTEL_RPC_PUBKEY = base64.b64decode(os.environ["PASTEL_RPC_PUBKEY"])
+
+try:
+    from frontend.settings_dev import *
+except ImportError:
+    pass
