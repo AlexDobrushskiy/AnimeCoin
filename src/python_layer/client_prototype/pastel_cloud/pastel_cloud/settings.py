@@ -122,6 +122,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+
 AUTH_USER_MODEL = 'core.User'
 
 REST_FRAMEWORK = {
@@ -137,3 +139,8 @@ REST_FRAMEWORK = {
     'TIME_FORMAT': '%H:%M:%S',
     'TIME_INPUT_FORMATS': ['%H:%M:%S']
 }
+
+try:
+    from pastel_cloud.settings_dev import *
+except ImportError:
+    pass
