@@ -3,21 +3,26 @@ version: '3'
 services:
   db:
     image: postgres:9.6
-    expose:
-      - 5432
     volumes:
       - pg_data:/var/lib/postgresql/data
       - pg_backups:/pg_backups
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=pastel_cloud
+    networks:
+      - webnet
   web:
-    build: .
+    image: alexdobrushskiy/pastel_cloud:1
     ports:
       - "8000:8000"
     depends_on:
       - db
+    networks:
+      - webnet
 
 volumes:
   pg_data: {}
   pg_backups: {}
+networks:
+  webnet:

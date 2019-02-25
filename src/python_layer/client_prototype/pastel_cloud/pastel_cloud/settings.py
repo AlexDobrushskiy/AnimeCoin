@@ -140,7 +140,7 @@ if os.getenv('DJANGO_ENV') == 'prod':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'paste_cloud',
+            'NAME': 'pastel_cloud',
             'USER': 'postgres',
             'PASSWORD': 'postgres',
             'HOST': 'db',
