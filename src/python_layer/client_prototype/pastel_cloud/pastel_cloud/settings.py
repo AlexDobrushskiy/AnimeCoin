@@ -22,11 +22,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'fw=ih9+mz4vsc3@^yrlaxvd_$9zdm98e!h56s45@)ay#if&v6o'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -84,7 +79,6 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
@@ -140,7 +134,25 @@ REST_FRAMEWORK = {
     'TIME_INPUT_FORMATS': ['%H:%M:%S']
 }
 
-try:
-    from pastel_cloud.settings_dev import *
-except ImportError:
-    pass
+if os.getenv('DJANGO_ENV') == 'prod':
+    DEBUG = False
+    ALLOWED_HOSTS = ['pastel.dobrushskiy.name']
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'paste_cloud',
+            'USER': 'postgres',
+            'PASSWORD': 'postgres',
+            'HOST': 'db',
+            'PORT': '5432',
+        }
+    }
+else:
+    DEBUG = True
+    ALLOWED_HOSTS = []
+
+    # hook to pass any required settings for development placing the in `settings.dev`
+    try:
+        from pastel_cloud.settings_dev import *
+    except ImportError:
+        pass
