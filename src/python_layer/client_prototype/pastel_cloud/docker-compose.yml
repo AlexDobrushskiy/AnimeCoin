@@ -13,16 +13,27 @@ services:
     networks:
       - webnet
   web:
-    image: alexdobrushskiy/pastel_cloud:1
-    ports:
-      - "8000:8000"
+    build: .
+    volumes:
+      - static_files:/opt/static
     depends_on:
       - db
+    networks:
+      - webnet
+  nginx:
+    build: ./nginx_image
+    volumes:
+      - static_files:/var/www/pastel_static
+    depends_on:
+      - web
+    ports:
+     - "80:80"
     networks:
       - webnet
 
 volumes:
   pg_data: {}
   pg_backups: {}
+  static_files: {}
 networks:
   webnet:

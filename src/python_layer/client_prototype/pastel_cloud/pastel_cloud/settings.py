@@ -117,6 +117,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
+STATIC_ROOT = '/opt/static/'
 
 AUTH_USER_MODEL = 'core.User'
 
