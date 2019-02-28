@@ -35,6 +35,7 @@ class ClientConnection:
 
         # trade_pubkey - this is the key the backend uses for trading
         self.pubkey = open(settings.PASTEL_TRADE_PUBKEY, "rb").read()
+        self.privkey = open(settings.PASTEL_TRADE_PRIVKEY, "rb").read()
 
         # we need the server's nodeid, ip, port, pubkey
         self.__rpcclient = RPCClient(settings.PASTEL_NODENUM, self.__privkey, self.__pubkey,
@@ -68,5 +69,15 @@ class ClientConnection:
         if self.__privkey is None:
             self.__initialize()
         return self.__call_rpc(self.__rpcclient.call_masternode("DJANGO_REQ", "DJANGO_RESP", args))
+
+    def get_pubkey(self):
+        if not self.pubkey:
+            self.__initialize()
+        return self.pubkey
+
+    def get_privkey(self):
+        if not self.privkey:
+            self.__initialize()
+        return self.privkey
 
 client = ClientConnection()

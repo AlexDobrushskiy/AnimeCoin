@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -144,6 +145,7 @@ PASTEL_NODENUM = int(os.path.basename(PASTEL_BASEDIR).lstrip("node"))
 PASTEL_DJANGO_PRIVKEY = os.path.join(PASTEL_BASEDIR, "pymn", "config", "django_private.key")
 PASTEL_DJANGO_PUBKEY = os.path.join(PASTEL_BASEDIR, "pymn", "config", "django_public.key")
 PASTEL_TRADE_PUBKEY = os.path.join(PASTEL_BASEDIR, "pymn", "config", "public.key")
+PASTEL_TRADE_PRIVKEY = os.path.join(PASTEL_BASEDIR, "pymn", "config", "private.key")
 
 PASTEL_RPC_IP = os.environ["PASTEL_RPC_IP"]
 PASTEL_RPC_PORT = int(os.environ["PASTEL_RPC_PORT"])
