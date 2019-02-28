@@ -14,6 +14,8 @@ services:
       - webnet
   web:
     build: .
+    environment:
+      - HOST_DNS_NAME=$HOST_DNS_NAME
     volumes:
       - static_files:/opt/static
     depends_on:
