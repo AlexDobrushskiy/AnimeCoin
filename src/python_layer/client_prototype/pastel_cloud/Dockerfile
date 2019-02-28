@@ -13,7 +13,6 @@ RUN pip3 install -r /opt/app/requirements.txt
 
 ENV DJANGO_ENV=prod
 ENV DOCKER_CONTAINER=1
-ENV HOST_IP=/sbin/ip route|awk '/default/ { print $3 }'
 
 EXPOSE 8000
 
