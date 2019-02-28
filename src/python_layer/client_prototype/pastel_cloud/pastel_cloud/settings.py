@@ -137,7 +137,12 @@ REST_FRAMEWORK = {
 
 if os.getenv('DJANGO_ENV') == 'prod':
     DEBUG = False
-    ALLOWED_HOSTS = ['pastel.dobrushskiy.name']
+
+    if os.getenv('HOST_DNS_NAME'):
+        ALLOWED_HOSTS = [os.getenv('HOST_DNS_NAME')]
+    else:
+        ALLOWED_HOSTS = ['pastel.dobrushskiy.name']
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
