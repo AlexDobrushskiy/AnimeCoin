@@ -1,6 +1,5 @@
 import base64
 import json
-from django.forms import forms
 from django.http import JsonResponse
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -23,15 +22,16 @@ class SignUserDataView(View):
         return super(SignUserDataView, self).dispatch(request, *args, **kwargs)
 
     def post(self, request):
-        raw_data = request.body
-        json_data = json.loads(raw_data)
-        # TODO: sign `data` with users PK
-        # TODO: return data, pk, signature
-        public_key = client.get_pubkey()
-        private_key = client.get_privkey()
-        pub_key_as_string = bytes_to_string(public_key)
-        ed_521 = get_Ed521()
-        signature = bytes(ed_521.sign(private_key, public_key, raw_data))
-        json_data['public_key'] = pub_key_as_string
-        json_data['signature'] = bytes_to_string(signature)
+        try:
+            json_data = json.loads(request.body)
+            raw_data = json.dumps(json_data).encode()
+            public_key = client.get_pubkey()
+            private_key = client.get_privkey()
+            pub_key_as_string = bytes_to_string(public_key)
+            ed_521 = get_Ed521()
+            signature = bytes(ed_521.sign(private_key, public_key, raw_data))
+            json_data['public_key'] = pub_key_as_string
+            json_data['signature'] = bytes_to_string(signature)
+        except Exception as ex:
+            return JsonResponse({'error': '{}'.format(ex)}, status=400)
         return JsonResponse(json_data)
